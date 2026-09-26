@@ -84,13 +84,15 @@ def commit_and_push_state(commit_msg: str):
         subprocess.run(["git", "push", "origin", "HEAD:main"], check=True)
         print(f"Committed and pushed state: {commit_msg}")
 
-def send_telegram_msg(token: str, chat_id: str, text: str):
-    data = urllib.parse.urlencode({
+def send_telegram_msg(token: str, chat_id: str, text: str, parse_mode: str = "Markdown") -> bool:
+    params = {
         "chat_id": chat_id,
         "text": text,
-        "parse_mode": "Markdown",
         "disable_web_page_preview": "true",
-    }).encode("utf-8")
+    }
+    if parse_mode:
+        params["parse_mode"] = parse_mode
+    data = urllib.parse.urlencode(params).encode("utf-8")
     req = urllib.request.Request(
         f"https://api.telegram.org/bot{token}/sendMessage",
         data=data,
@@ -98,13 +100,33 @@ def send_telegram_msg(token: str, chat_id: str, text: str):
     )
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
-            return resp.read()
+            print(f"[TELEGRAM] Message sent successfully to {chat_id}.")
+            return True
+    except urllib.error.HTTPError as http_err:
+        err_body = http_err.read().decode("utf-8", "ignore")
+        print(f"[TELEGRAM] Notice: HTTP {http_err.code} sending message ({err_body}). Retrying without parse_mode...")
+        params.pop("parse_mode", None)
+        retry_data = urllib.parse.urlencode(params).encode("utf-8")
+        retry_req = urllib.request.Request(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data=retry_data,
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(retry_req, timeout=15) as retry_resp:
+                print(f"[TELEGRAM] Plain-text fallback sent successfully to {chat_id}.")
+                return True
+        except Exception as retry_err:
+            print(f"[TELEGRAM] Error sending plain-text fallback: {retry_err}")
+            return False
     except Exception as e:
-        print(f"Notice: Failed to send Telegram message: {e}")
+        print(f"[TELEGRAM] Error sending Telegram message: {e}")
+        return False
 
 def process_telegram_commands(state: dict, token: str, chat_id: str, active_shows_count: int) -> bool:
     last_update_id = state.get("last_update_id", 0)
     url = f"https://api.telegram.org/bot{token}/getUpdates?offset={last_update_id + 1}&timeout=5"
+    print(f"[TELEGRAM] Checking updates with offset={last_update_id + 1}...")
     req = urllib.request.Request(url)
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
@@ -114,13 +136,17 @@ def process_telegram_commands(state: dict, token: str, chat_id: str, active_show
         return False
 
     if not res_data.get("ok"):
+        print(f"[TELEGRAM] API response not ok: {res_data}")
         return False
 
     updates = res_data.get("result", [])
+    print(f"[TELEGRAM] Received {len(updates)} update(s).")
     if not updates:
         return False
 
     state_changed = False
+    configured_id = str(chat_id).strip().strip("'\"")
+
     for update in updates:
         uid = update.get("update_id", 0)
         if uid > last_update_id:
@@ -129,13 +155,18 @@ def process_telegram_commands(state: dict, token: str, chat_id: str, active_show
             state_changed = True
 
         msg = update.get("message") or update.get("edited_message") or update.get("channel_post") or {}
-        sender_chat_id = str(msg.get("chat", {}).get("id", "")).strip()
+        sender_chat_id = str(msg.get("chat", {}).get("id", "")).strip().strip("'\"")
+        sender_user_id = str(msg.get("from", {}).get("id", "")).strip().strip("'\"")
         text = str(msg.get("text", "")).strip()
 
-        # Only accept commands from the authorized user
-        if sender_chat_id != str(chat_id).strip():
+        print(f"[TELEGRAM] Update {uid}: chat={sender_chat_id}, user={sender_user_id}, text='{text}'")
+
+        # Accept commands if either chat ID or user ID matches the configured ID
+        if sender_chat_id != configured_id and sender_user_id != configured_id:
+            print(f"[TELEGRAM] Ignored update from unauthorized sender (chat: {sender_chat_id}, user: {sender_user_id}, expected: {configured_id})")
             continue
 
+        reply_chat_id = sender_chat_id if sender_chat_id else configured_id
         cmd = text.lower().split()[0].split("@")[0] if text else ""
 
         if cmd in ("/stop", "/pause", "stop", "pause"):
@@ -143,7 +174,7 @@ def process_telegram_commands(state: dict, token: str, chat_id: str, active_show
             state_changed = True
             send_telegram_msg(
                 token,
-                chat_id,
+                reply_chat_id,
                 "⏸️ *Monitoring Paused*\n\n"
                 "The bot has stopped checking BookMyShow.\n"
                 "Send /start anytime to resume tracking.",
@@ -155,7 +186,7 @@ def process_telegram_commands(state: dict, token: str, chat_id: str, active_show
             state_changed = True
             send_telegram_msg(
                 token,
-                chat_id,
+                reply_chat_id,
                 "▶️ *Monitoring Resumed*\n\n"
                 "The bot is now actively monitoring BookMyShow for new Avengers PCX 3D shows.\n"
                 "Send /stop anytime to pause.",
@@ -167,7 +198,7 @@ def process_telegram_commands(state: dict, token: str, chat_id: str, active_show
             status_str = "Paused ⏸️" if is_paused else "Active ✅"
             send_telegram_msg(
                 token,
-                chat_id,
+                reply_chat_id,
                 f"📊 *Tracker Status Report*\n\n"
                 f"• Status: *{status_str}*\n"
                 f"• Movie: *{MOVIE_NAME}*\n"
@@ -185,7 +216,7 @@ def process_telegram_commands(state: dict, token: str, chat_id: str, active_show
         elif cmd in ("/help", "help"):
             send_telegram_msg(
                 token,
-                chat_id,
+                reply_chat_id,
                 "🤖 *Movie Tracker Bot Commands:*\n\n"
                 "/stop - Pause monitoring (stops checks & alerts)\n"
                 "/start - Resume active monitoring\n"
@@ -193,6 +224,8 @@ def process_telegram_commands(state: dict, token: str, chat_id: str, active_show
                 "/help - Show this command list",
             )
             print("[COMMAND] /help received. Sent help message.")
+        else:
+            print(f"[TELEGRAM] Unrecognized text: '{text}'")
 
     return state_changed
 
