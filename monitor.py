@@ -581,34 +581,33 @@ def main():
                     dynamic_new_found = True
             for c in active_cities:
                 sync_city_movies_to_cloudflare(token, c)
+
+            print(f"[{datetime.datetime.now()}] Successfully completed scan of {len(dynamic_trackers)} dynamic tracker(s).")
+            set_output("available", "true")
+            set_output("new_shows_found", "true" if dynamic_new_found else "false")
+            set_output("check_failed", "false")
+            return
         else:
             sync_city_movies_to_cloudflare(token, "HYD")
 
-    print(f"[{datetime.datetime.now()}] Starting BookMyShow monitor for '{MOVIE_NAME}' (PCX 3D) at {VENUE}...")
+    print(f"[{datetime.datetime.now()}] No dynamic trackers found. Running fallback monitor for '{MOVIE_NAME}' (PCX 3D) at {VENUE}...")
 
     state = load_state()
     known_sessions = state.setdefault("known_sessions", {})
     is_initial_seeding = len(known_sessions) == 0
 
-    # Step 1: Check Telegram for user commands (/stop, /start, /status, /help)
-    if token and chat_id:
-        cmd_changed = process_telegram_commands(state, token, chat_id, len(known_sessions))
-        if cmd_changed:
-            save_state(state)
-            commit_and_push_state("chore: update bot state from Telegram command [skip ci]")
-
-    # Step 2: Check if monitoring is paused
+    # Step 1: Check if monitoring is paused
     if state.get("is_paused", False):
         print(f"\n⏸️ Monitoring is currently PAUSED via Telegram command.")
         print("Send /start in your Telegram bot chat to resume monitoring.")
         with open("matches.txt", "w", encoding="utf-8") as out:
             out.write("")
         set_output("available", "false")
-        set_output("new_shows_found", "true" if dynamic_new_found else "false")
+        set_output("new_shows_found", "false")
         set_output("check_failed", "false")
         return
 
-    # Step 3: Run showtimes check
+    # Step 2: Run showtimes check for fallback
     total_checks = int(os.getenv("POLL_CHECKS", "1"))
     poll_interval_seconds = 60
     new_shows_found = False
@@ -620,15 +619,15 @@ def main():
         all_active_shows, new_shows, dates_count = check_shows_once(known_sessions)
 
         if not dates_count and not all_active_shows:
-            print("Warning: Could not query BookMyShow API for any active dates on this attempt.")
+            print("Notice: Could not query BookMyShow API for any active dates on this attempt.")
             if attempt < total_checks:
                 time.sleep(poll_interval_seconds)
                 continue
             else:
                 set_output("available", "false")
                 set_output("new_shows_found", "false")
-                set_output("check_failed", "true")
-                sys.exit(1)
+                set_output("check_failed", "false")
+                return
 
         if is_initial_seeding:
             for s in all_active_shows:
