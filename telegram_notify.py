@@ -87,6 +87,6 @@ if os.getenv("GITHUB_ACTIONS") and os.path.exists(state_file):
     )
 
     if commit.returncode == 0:
-        subprocess.run(["git", "pull", "--rebase"], check=False)
-        subprocess.run(["git", "push"], check=True)
+        subprocess.run(["git", "pull", "--rebase", "origin", "main"], check=False)
+        subprocess.run(["git", "push", "origin", "HEAD:main"], check=True)
         print("Updated state committed and pushed to git.")

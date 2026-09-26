@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.parse
@@ -18,7 +19,6 @@ REGION_NAME = "hyderabad"
 MOVIE_NAME = "Avengers: Endgame - Encore"
 CINEMA_SLUG = "prasads-multiplex-hyderabad"
 
-# Target child event codes for Avengers Endgame: Encore 3D & PCX
 EVENT_CODES = [
     "ET00516731",  # Avengers Endgame: Encore (3D) - English
     "ET00516728",  # Avengers Endgame: Encore (MS-Infinity Vsn 3D)
@@ -59,14 +59,144 @@ def load_state() -> dict:
                 return json.load(f)
         except Exception as e:
             print(f"Warning: Could not read state file ({e}). Starting fresh.")
-    return {"known_sessions": {}}
+    return {"is_paused": False, "last_update_id": 0, "known_sessions": {}}
 
 def save_state(state: dict):
     os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
 
-def prune_old_sessions(known_sessions: dict):
+def commit_and_push_state(commit_msg: str):
+    if not os.getenv("GITHUB_ACTIONS"):
+        return
+    if not os.path.exists(STATE_FILE):
+        return
+    subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"],
+        check=True,
+    )
+    subprocess.run(["git", "add", STATE_FILE], check=True)
+    diff = subprocess.run(["git", "diff", "--staged", "--quiet"])
+    if diff.returncode != 0:
+        subprocess.run(["git", "commit", "-m", commit_msg], check=True)
+        subprocess.run(["git", "pull", "--rebase", "origin", "main"], check=False)
+        subprocess.run(["git", "push", "origin", "HEAD:main"], check=True)
+        print(f"Committed and pushed state: {commit_msg}")
+
+def send_telegram_msg(token: str, chat_id: str, text: str):
+    data = urllib.parse.urlencode({
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": "true",
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data=data,
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return resp.read()
+    except Exception as e:
+        print(f"Notice: Failed to send Telegram message: {e}")
+
+def process_telegram_commands(state: dict, token: str, chat_id: str, active_shows_count: int) -> bool:
+    last_update_id = state.get("last_update_id", 0)
+    url = f"https://api.telegram.org/bot{token}/getUpdates?offset={last_update_id + 1}&timeout=5"
+    req = urllib.request.Request(url)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            res_data = json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        print(f"Notice: Could not check Telegram commands ({e})")
+        return False
+
+    if not res_data.get("ok"):
+        return False
+
+    updates = res_data.get("result", [])
+    if not updates:
+        return False
+
+    state_changed = False
+    for update in updates:
+        uid = update.get("update_id", 0)
+        if uid > last_update_id:
+            last_update_id = uid
+            state["last_update_id"] = last_update_id
+            state_changed = True
+
+        msg = update.get("message") or update.get("edited_message") or update.get("channel_post") or {}
+        sender_chat_id = str(msg.get("chat", {}).get("id", "")).strip()
+        text = str(msg.get("text", "")).strip()
+
+        # Only accept commands from the authorized user
+        if sender_chat_id != str(chat_id).strip():
+            continue
+
+        cmd = text.lower().split()[0].split("@")[0] if text else ""
+
+        if cmd in ("/stop", "/pause", "stop", "pause"):
+            state["is_paused"] = True
+            state_changed = True
+            send_telegram_msg(
+                token,
+                chat_id,
+                "⏸️ *Monitoring Paused*\n\n"
+                "The bot has stopped checking BookMyShow.\n"
+                "Send /start anytime to resume tracking.",
+            )
+            print("[COMMAND] /stop received. Monitoring paused.")
+
+        elif cmd in ("/start", "/resume", "start", "resume"):
+            state["is_paused"] = False
+            state_changed = True
+            send_telegram_msg(
+                token,
+                chat_id,
+                "▶️ *Monitoring Resumed*\n\n"
+                "The bot is now actively monitoring BookMyShow for new Avengers PCX 3D shows.\n"
+                "Send /stop anytime to pause.",
+            )
+            print("[COMMAND] /start received. Monitoring resumed.")
+
+        elif cmd in ("/status", "status"):
+            is_paused = state.get("is_paused", False)
+            status_str = "Paused ⏸️" if is_paused else "Active ✅"
+            send_telegram_msg(
+                token,
+                chat_id,
+                f"📊 *Tracker Status Report*\n\n"
+                f"• Status: *{status_str}*\n"
+                f"• Movie: *{MOVIE_NAME}*\n"
+                f"• Screen: *PCX / Infinity Vision 3D*\n"
+                f"• Venue: *Prasads Multiplex, Hyderabad*\n"
+                f"• Active Shows: *{active_shows_count}* currently known\n\n"
+                f"Commands:\n"
+                f"/stop - Pause monitoring\n"
+                f"/start - Resume monitoring\n"
+                f"/status - Check status\n"
+                f"/help - Commands list",
+            )
+            print("[COMMAND] /status received. Sent status report.")
+
+        elif cmd in ("/help", "help"):
+            send_telegram_msg(
+                token,
+                chat_id,
+                "🤖 *Movie Tracker Bot Commands:*\n\n"
+                "/stop - Pause monitoring (stops checks & alerts)\n"
+                "/start - Resume active monitoring\n"
+                "/status - Check current status & active show count\n"
+                "/help - Show this command list",
+            )
+            print("[COMMAND] /help received. Sent help message.")
+
+    return state_changed
+
+def prune_old_sessions(known_sessions: dict) -> bool:
     today = datetime.date.today()
     cutoff_date = (today - datetime.timedelta(days=2)).strftime("%Y-%m-%d")
     to_delete = []
@@ -78,6 +208,8 @@ def prune_old_sessions(known_sessions: dict):
         del known_sessions[sid]
     if to_delete:
         print(f"Pruned {len(to_delete)} expired session(s) older than {cutoff_date}.")
+        return True
+    return False
 
 def fetch_api(event_code: str, date_code: str = "") -> dict:
     params = urllib.parse.urlencode({
@@ -210,16 +342,36 @@ def check_shows_once(known_sessions: dict):
     return all_active_shows, new_shows, len(total_dates_checked)
 
 def main():
-    print(f"[{datetime.datetime.now()}] Starting BookMyShow monitor for new shows of '{MOVIE_NAME}' (PCX 3D) at {VENUE}...")
+    print(f"[{datetime.datetime.now()}] Starting BookMyShow monitor for '{MOVIE_NAME}' (PCX 3D) at {VENUE}...")
 
     state = load_state()
     known_sessions = state.setdefault("known_sessions", {})
     is_initial_seeding = len(known_sessions) == 0
 
-    # Default to 1 fast check per trigger (ideal for 5-minute external cron jobs)
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+
+    # Step 1: Check Telegram for user commands (/stop, /start, /status, /help)
+    if token and chat_id:
+        cmd_changed = process_telegram_commands(state, token, chat_id, len(known_sessions))
+        if cmd_changed:
+            save_state(state)
+            commit_and_push_state("chore: update bot state from Telegram command [skip ci]")
+
+    # Step 2: Check if monitoring is paused
+    if state.get("is_paused", False):
+        print(f"\n⏸️ Monitoring is currently PAUSED via Telegram command.")
+        print("Send /start in your Telegram bot chat to resume monitoring.")
+        with open("matches.txt", "w", encoding="utf-8") as out:
+            out.write("")
+        set_output("available", "false")
+        set_output("new_shows_found", "false")
+        set_output("check_failed", "false")
+        return
+
+    # Step 3: Run showtimes check
     total_checks = int(os.getenv("POLL_CHECKS", "1"))
     poll_interval_seconds = 60
-
     new_shows_found = False
 
     for attempt in range(1, total_checks + 1):
@@ -248,6 +400,7 @@ def main():
                     "first_seen": datetime.datetime.now().isoformat(),
                 }
             save_state(state)
+            commit_and_push_state("chore: seed initial shows baseline [skip ci]")
             print(f"\nInitial baseline seeded with {len(all_active_shows)} currently active shows.")
             print("Future runs will only alert when a brand-new show is added.")
             with open("matches.txt", "w", encoding="utf-8") as out:
@@ -261,7 +414,6 @@ def main():
             print(f"\n🚨 ALERT: {len(new_shows)} NEW SHOW(S) ADDED!")
             print("-" * 50)
             
-            # Sort new shows chronologically
             new_shows.sort(key=lambda m: (m["date"], m["time"]))
 
             with open("matches.txt", "w", encoding="utf-8") as out:
@@ -277,7 +429,6 @@ def main():
                     print(block.strip() + "\n")
             print("-" * 50)
 
-            # Record newly found shows into state
             for item in new_shows:
                 known_sessions[item["sessionId"]] = {
                     "date": item["date"],
@@ -293,7 +444,7 @@ def main():
             set_output("new_shows_found", "true")
             set_output("check_failed", "false")
             new_shows_found = True
-            break  # Break out immediately so alert can be dispatched without waiting
+            break
 
         print(f"Check {attempt}/{total_checks}: No new shows. ({len(all_active_shows)} active shows currently running).")
 
@@ -301,8 +452,9 @@ def main():
             time.sleep(poll_interval_seconds)
 
     if not new_shows_found:
-        prune_old_sessions(known_sessions)
-        save_state(state)
+        if prune_old_sessions(known_sessions):
+            save_state(state)
+            commit_and_push_state("chore: prune expired shows from state [skip ci]")
         with open("matches.txt", "w", encoding="utf-8") as out:
             out.write("")
         set_output("available", "true" if all_active_shows else "false")
