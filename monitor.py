@@ -374,15 +374,216 @@ def check_shows_once(known_sessions: dict):
 
     return all_active_shows, new_shows, len(total_dates_checked)
 
+def get_dynamic_trackers(token: str) -> list:
+    url = f"https://movie-track-bot.mustardshrek.workers.dev/api/trackers?token={token}"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        print(f"[DYNAMIC] Notice: Could not fetch dynamic trackers ({e})")
+        return []
+
+def sync_dynamic_tracker(token: str, tracker_id: str, known_sessions: list):
+    url = f"https://movie-track-bot.mustardshrek.workers.dev/api/trackers/sync?token={token}"
+    data = json.dumps({"trackerId": tracker_id, "knownSessions": known_sessions}).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=data,
+        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return True
+    except Exception as e:
+        print(f"[DYNAMIC] Failed to sync tracker {tracker_id}: {e}")
+        return False
+
+def sync_city_movies_to_cloudflare(token: str, city_code: str = "HYD"):
+    url = f"https://movie-track-bot.mustardshrek.workers.dev/api/movies/sync?token={token}"
+    try:
+        res = cffi_requests.get(
+            "https://in.bookmyshow.com/serv/getData?cmd=QUICKBOOK&type=MT",
+            headers={"x-region-code": city_code, "Cookie": f"Rgn=|Code={city_code}|"},
+            timeout=10,
+            impersonate="chrome120"
+        )
+        if res.status_code == 200:
+            events = res.json().get("moviesData", {}).get("BookMyShow", {}).get("arrEvents", [])
+            movies = [{"code": e["EventCode"], "title": e["EventTitle"]} for e in events if e.get("EventCode") and e.get("EventTitle")]
+            if movies:
+                data = json.dumps({"cityCode": city_code, "movies": movies}).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}, method="POST")
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    print(f"[DYNAMIC] Synced {len(movies)} latest movies for {city_code} to Cloudflare KV.")
+    except Exception as e:
+        print(f"[DYNAMIC] Movie sync notice: {e}")
+
+def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
+    if tracker.get("isPaused", False):
+        print(f"[DYNAMIC] Tracker {tracker.get('id')} ({tracker.get('movieTitle')}) is paused.")
+        return False
+
+    chat_id = tracker.get("chatId")
+    if not chat_id:
+        return False
+
+    city_code = tracker.get("cityCode", "HYD")
+    city_slug = tracker.get("citySlug", "hyderabad")
+    venue_code = tracker.get("venueCode", "ALL")
+    venue_name = tracker.get("venueName", "All Theatres")
+    event_code = tracker.get("eventCode")
+    movie_title = tracker.get("movieTitle", "Movie")
+    screen_filter = tracker.get("filter", "ANY")
+    known_sessions = set(str(sid) for sid in tracker.get("knownSessions", []))
+
+    print(f"\n[DYNAMIC] 🔍 Checking tracker: {movie_title} in {city_code} ({venue_name}) | Filter: {screen_filter}")
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/131.0.0.0 Safari/537.36"
+        ),
+        "Accept": "application/json, text/plain, */*",
+        "x-app-code": "WEB",
+        "x-region-code": city_code,
+        "x-region-slug": city_slug,
+        "Referer": "https://in.bookmyshow.com/",
+        "Cookie": f"Rgn=|Code={city_code}|",
+    }
+
+    url = f"{API_URL}?eventCode={event_code}&isDesktop=true&regionCode={city_code}&lat=17.385&lon=78.487"
+
+    try:
+        res = cffi_requests.get(url, headers=headers, timeout=20, impersonate="chrome124")
+        if res.status_code != 200:
+            print(f"[DYNAMIC] HTTP {res.status_code} for {event_code}")
+            return False
+        initial_data = res.json()
+    except Exception as e:
+        print(f"[DYNAMIC] Error fetching event {event_code}: {e}")
+        return False
+
+    active_dates = extract_dates(initial_data)
+    if not active_dates:
+        print(f"[DYNAMIC] No dates found for {movie_title}.")
+        return False
+
+    new_shows = []
+    current_seen_sessions = set()
+
+    for date_code in active_dates:
+        date_url = f"{url}&dateCode={date_code}"
+        try:
+            d_res = cffi_requests.get(date_url, headers=headers, timeout=20, impersonate="chrome124")
+            if d_res.status_code != 200:
+                continue
+            date_data = d_res.json()
+        except Exception:
+            continue
+
+        for widget in date_data.get("data", {}).get("showtimeWidgets", []):
+            if widget.get("type") != "groupList":
+                continue
+            for group in widget.get("data", []):
+                for item in group.get("data", []):
+                    item_vcode = item.get("additionalData", {}).get("venueCode", "")
+                    if venue_code != "ALL" and item_vcode != venue_code:
+                        continue
+
+                    v_name = item.get("additionalData", {}).get("venueName") or venue_name
+
+                    for show in item.get("showtimes", []):
+                        show_add = show.get("additionalData", {})
+                        session_id = str(show_add.get("sessionId", "")).strip()
+                        if not session_id:
+                            continue
+
+                        current_seen_sessions.add(session_id)
+
+                        screen_attr = str(show.get("screenAttr") or show_add.get("attributes") or "").lower()
+                        screen_name = str(show_add.get("screenName", "")).lower()
+
+                        if screen_filter == "PCX":
+                            is_pcx = (
+                                "pcx" in screen_attr
+                                or "infinity" in screen_attr
+                                or "screen 1" in screen_name
+                                or "imax" in screen_attr
+                            )
+                            if not is_pcx:
+                                continue
+                        elif screen_filter == "3D":
+                            if "3d" not in screen_attr and "3d" not in screen_name:
+                                continue
+
+                        if session_id not in known_sessions:
+                            show_time = str(show.get("title") or show_add.get("showTime", "Detected")).strip()
+                            d_str = f"{date_code[:4]}-{date_code[4:6]}-{date_code[6:8]}" if len(date_code) == 8 else date_code
+                            booking_url = f"https://in.bookmyshow.com/cinemas/{city_slug}/{item_vcode}/buytickets/{item_vcode}/{date_code}"
+                            new_shows.append({
+                                "sessionId": session_id,
+                                "date": d_str,
+                                "time": show_time,
+                                "screen": show.get("screenAttr") or show_add.get("screenName") or "Standard",
+                                "venue": v_name,
+                                "url": booking_url
+                            })
+
+    if len(known_sessions) == 0:
+        print(f"[DYNAMIC] Baseline seeded with {len(current_seen_sessions)} shows for {movie_title}.")
+        sync_dynamic_tracker(token, tracker["id"], list(current_seen_sessions))
+        return False
+
+    if new_shows:
+        print(f"[DYNAMIC] 🚨 Found {len(new_shows)} NEW SHOW(S) for {movie_title}!")
+        alert_lines = []
+        for s in new_shows[:10]:
+            alert_lines.append(f"• *{s['date']}* at *{s['time']}* ({s['screen']})\n  📍 {s['venue']}")
+
+        alert_text = (
+            f"🚨 *NEW SHOWS ADDED ON BOOKMYSHOW!* 🚨\n\n"
+            f"🎬 *{movie_title}*\n\n"
+            + "\n\n".join(alert_lines) + "\n\n"
+            f"🎟️ [Book Instantly on BookMyShow]({new_shows[0]['url']})\n\n"
+            f"⚡ _Alert sent autonomously by your 24/7 Movie Tracker_"
+        )
+
+        send_telegram_msg(token, chat_id, alert_text)
+        updated_known = list(known_sessions.union({s["sessionId"] for s in new_shows}))
+        sync_dynamic_tracker(token, tracker["id"], updated_known)
+        return True
+
+    print(f"[DYNAMIC] No new shows for {movie_title} ({len(current_seen_sessions)} active).")
+    return False
+
 def main():
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+
+    # Step 0: Scan Dynamic Trackers configured via Telegram in Cloudflare KV
+    dynamic_new_found = False
+    if token:
+        dynamic_trackers = get_dynamic_trackers(token)
+        if dynamic_trackers:
+            print(f"[{datetime.datetime.now()}] Found {len(dynamic_trackers)} dynamic tracker(s) in Cloudflare KV.")
+            active_cities = set()
+            for trk in dynamic_trackers:
+                active_cities.add(trk.get("cityCode", "HYD"))
+                if check_single_dynamic_tracker(trk, token):
+                    dynamic_new_found = True
+            for c in active_cities:
+                sync_city_movies_to_cloudflare(token, c)
+        else:
+            sync_city_movies_to_cloudflare(token, "HYD")
+
     print(f"[{datetime.datetime.now()}] Starting BookMyShow monitor for '{MOVIE_NAME}' (PCX 3D) at {VENUE}...")
 
     state = load_state()
     known_sessions = state.setdefault("known_sessions", {})
     is_initial_seeding = len(known_sessions) == 0
-
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
     # Step 1: Check Telegram for user commands (/stop, /start, /status, /help)
     if token and chat_id:
@@ -398,7 +599,7 @@ def main():
         with open("matches.txt", "w", encoding="utf-8") as out:
             out.write("")
         set_output("available", "false")
-        set_output("new_shows_found", "false")
+        set_output("new_shows_found", "true" if dynamic_new_found else "false")
         set_output("check_failed", "false")
         return
 

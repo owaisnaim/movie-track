@@ -5,3 +5,8 @@ matches.txt
 .env
 venv/
 .venv/
+.wrangler/
+scratch/
+.cursor/
+.vscode/
+wrangler.toml

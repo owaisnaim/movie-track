@@ -1,0 +1,1490 @@
+/**
+ * Dynamic BookMyShow Ticket Tracker Telegram Bot
+ * Pre-loaded with 87 Indian Cities & 1,397 Cinemas across India
+ * 100% Free & Autonomous on Cloudflare Workers + KV
+ * Flow: City (Top / Search) -> Theatre (All / Paginated / Search) -> Movie (Live / Custom) -> Screen Format -> 24/7 Monitor
+ */
+
+const SHOWTIMES_API = "https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-dynamic";
+const VENUES_API = "https://in.bookmyshow.com/api/v2/mobile/venues";
+const QUICKBOOK_API = "https://in.bookmyshow.com/serv/getData?cmd=QUICKBOOK&type=MT";
+const REGIONS_API = "https://in.bookmyshow.com/serv/getData?cmd=GETREGIONS";
+
+// Quick-pick popular cities for Step 1
+const POPULAR_CITIES = [
+  { code: "HYD", name: "Hyderabad" },
+  { code: "MUMBAI", name: "Mumbai" },
+  { code: "NCR", name: "Delhi-NCR" },
+  { code: "BANG", name: "Bengaluru" },
+  { code: "CHEN", name: "Chennai" },
+  { code: "PUNE", name: "Pune" },
+  { code: "KOLK", name: "Kolkata" },
+  { code: "AHD", name: "Ahmedabad" },
+];
+
+// Preloaded database of 87 major Indian cities
+const TOP_CITIES = {
+  "MUMBAI": { code: "MUMBAI", name: "Mumbai", slug: "mumbai", lat: "19.076", lon: "72.8777" },
+  "NCR": { code: "NCR", name: "Delhi-NCR", slug: "national-capital-region-ncr", lat: "28.6139", lon: "77.209" },
+  "BANG": { code: "BANG", name: "Bengaluru", slug: "bengaluru", lat: "12.9715987", lon: "77.5945627" },
+  "HYD": { code: "HYD", name: "Hyderabad", slug: "hyderabad", lat: "17.385044", lon: "78.486671" },
+  "CHD": { code: "CHD", name: "Chandigarh", slug: "chandigarh", lat: "30.7333148", lon: "76.7794179" },
+  "AHD": { code: "AHD", name: "Ahmedabad", slug: "ahmedabad", lat: "23.0395677", lon: "72.5660045" },
+  "PUNE": { code: "PUNE", name: "Pune", slug: "pune", lat: "18.5204303", lon: "73.8567437" },
+  "CHEN": { code: "CHEN", name: "Chennai", slug: "chennai", lat: "13.056", lon: "80.206" },
+  "KOLK": { code: "KOLK", name: "Kolkata", slug: "kolkata", lat: "22.641", lon: "88.411" },
+  "KOCH": { code: "KOCH", name: "Kochi", slug: "kochi", lat: "9.9312328", lon: "76.2673041" },
+  "AGRA": { code: "AGRA", name: "Agra", slug: "agra", lat: "27.1766701", lon: "78.0080745" },
+  "AJMER": { code: "AJMER", name: "Ajmer", slug: "ajmer", lat: "26.45", lon: "74.64" },
+  "AMRI": { code: "AMRI", name: "Amritsar", slug: "amritsar", lat: "31.6339793", lon: "74.8722642" },
+  "ATKK": { code: "ATKK", name: "Atmakur (Kurnool)", slug: "atmakur-kurnool", lat: "15.8791", lon: "78.5837" },
+  "ATMK": { code: "ATMK", name: "Atmakur (Nellore)", slug: "atmakur-nellore", lat: "14.6167", lon: "79.6245" },
+  "AUBI": { code: "AUBI", name: "Aurangabad (Bihar)", slug: "aurangabad-bihar", lat: "24.7033", lon: "84.3542" },
+  "AURW": { code: "AURW", name: "Aurangabad (West Bengal)", slug: "aurangabad-west-bengal", lat: "24.5976", lon: "88.0339" },
+  "BKOT": { code: "BKOT", name: "B. Kothakota", slug: "b-kothakota", lat: "13.65674", lon: "78.265857" },
+  "BELG": { code: "BELG", name: "Belagavi (Belgaum)", slug: "belagavi-belgaum", lat: "15.85036", lon: "74.504669" },
+  "BHAW": { code: "BHAW", name: "Bhawanipatna", slug: "bhawanipatna", lat: "19.9074", lon: "83.1642" },
+  "BHOP": { code: "BHOP", name: "Bhopal", slug: "bhopal", lat: "23.2599333", lon: "77.412615" },
+  "BHUB": { code: "BHUB", name: "Bhubaneswar", slug: "bhubaneswar", lat: "20.2960587", lon: "85.8245398" },
+  "CPTN": { code: "CPTN", name: "Channapatna", slug: "channapatna", lat: "12.6510995", lon: "77.1946192" },
+  "CHNN": { code: "CHNN", name: "Channarayapatna", slug: "channarayapatna", lat: "12.9", lon: "76.3899" },
+  "AURA": { code: "AURA", name: "Chhatrapati Sambhajinagar (Aurangabad)", slug: "chhatrapati-sambhajinagar-aurangabad", lat: "19.876", lon: "75.349" },
+  "COIM": { code: "COIM", name: "Coimbatore", slug: "coimbatore", lat: "11.0168445", lon: "76.9558321" },
+  "DEH": { code: "DEH", name: "Dehradun", slug: "dehradun", lat: "30.3164945", lon: "78.0321918" },
+  "GOA": { code: "GOA", name: "Goa", slug: "goa", lat: "15.378", lon: "74.019" },
+  "GOAL": { code: "GOAL", name: "Goalpara", slug: "goalpara", lat: "26.1641", lon: "90.6252" },
+  "GUNT": { code: "GUNT", name: "Guntur", slug: "guntur", lat: "16.3008", lon: "80.4428" },
+  "GUW": { code: "GUW", name: "Guwahati", slug: "guwahati", lat: "26.144435", lon: "91.733179" },
+  "HUBL": { code: "HUBL", name: "Hubballi (Hubli)", slug: "hubballi-hubli", lat: "15.3647", lon: "75.124" },
+  "IND": { code: "IND", name: "Indore", slug: "indore", lat: "22.7287", lon: "75.8654" },
+  "JGRO": { code: "JGRO", name: "Jagraon", slug: "jagraon", lat: "30.7916", lon: "75.4694" },
+  "JAIJ": { code: "JAIJ", name: "Jaijaipur", slug: "jaijaipur", lat: "21.8313", lon: "82.8164" },
+  "JAIP": { code: "JAIP", name: "Jaipur", slug: "jaipur", lat: "26.9124165", lon: "75.7872879" },
+  "JALA": { code: "JALA", name: "Jalandhar", slug: "jalandhar", lat: "31.3260152", lon: "75.5761829" },
+  "JAMM": { code: "JAMM", name: "Jammu", slug: "jammu", lat: "34.024288", lon: "76.092468" },
+  "JMDP": { code: "JMDP", name: "Jamshedpur", slug: "jamshedpur", lat: "22.805235", lon: "86.207356" },
+  "JODH": { code: "JODH", name: "Jodhpur", slug: "jodhpur", lat: "26.2389469", lon: "73.0243094" },
+  "KAKI": { code: "KAKI", name: "Kakinada", slug: "kakinada", lat: "16.945181", lon: "82.238647" },
+  "KPKT": { code: "KPKT", name: "Kamavarapukota", slug: "kamavarapukota", lat: "17.0098", lon: "81.1939" },
+  "KANP": { code: "KANP", name: "Kanpur", slug: "kanpur", lat: "26.4634", lon: "80.3229" },
+  "KOTA": { code: "KOTA", name: "Kota", slug: "kota", lat: "25.1695114", lon: "75.8539898" },
+  "KOAN": { code: "KOAN", name: "Kota (AP)", slug: "kota-ap", lat: "14.0352", lon: "80.0465" },
+  "KTAB": { code: "KTAB", name: "Kotabommali", slug: "kotabommali", lat: "18.5184", lon: "84.1514" },
+  "KTND": { code: "KTND", name: "Kotananduru", slug: "kotananduru", lat: "17.482865", lon: "82.488968" },
+  "KOTL": { code: "KOTL", name: "Kothakota", slug: "kothakota", lat: "16.3787", lon: "77.941" },
+  "KOVR": { code: "KOVR", name: "Kovur (Nellore)", slug: "kovur-nellore", lat: "14.5012", lon: "79.9881" },
+  "KURN": { code: "KURN", name: "Kurnool", slug: "kurnool", lat: "15.8281", lon: "78.0373" },
+  "LUCK": { code: "LUCK", name: "Lucknow", slug: "lucknow", lat: "26.8465108", lon: "80.9466832" },
+  "LUDH": { code: "LUDH", name: "Ludhiana", slug: "ludhiana", lat: "30.900965", lon: "75.8572758" },
+  "MAPM": { code: "MAPM", name: "Machilipatnam", slug: "machilipatnam", lat: "16.1905", lon: "81.1362" },
+  "MADU": { code: "MADU", name: "Madurai", slug: "madurai", lat: "9.9252007", lon: "78.1197754" },
+  "MNMI": { code: "MNMI", name: "Manamadurai", slug: "manamadurai", lat: "9.689", lon: "78.4581" },
+  "MLR": { code: "MLR", name: "Mangaluru (Mangalore)", slug: "mangaluru-mangalore", lat: "12.91379", lon: "74.853977" },
+  "MERT": { code: "MERT", name: "Meerut", slug: "meerut", lat: "28.9844618", lon: "77.7064137" },
+  "MYS": { code: "MYS", name: "Mysuru (Mysore)", slug: "mysuru-mysore", lat: "12.2958104", lon: "76.6393805" },
+  "NGKL": { code: "NGKL", name: "Nagarkurnool", slug: "nagarkurnool", lat: "16.4939", lon: "78.3102" },
+  "NAGP": { code: "NAGP", name: "Nagpur", slug: "nagpur", lat: "21.1458004", lon: "79.0881546" },
+  "NARS": { code: "NARS", name: "Narsipatnam", slug: "narsipatnam", lat: "17.6664", lon: "82.6105" },
+  "NASK": { code: "NASK", name: "Nashik", slug: "nashik", lat: "20.0014", lon: "73.7869" },
+  "NELL": { code: "NELL", name: "Nellore", slug: "nellore", lat: "14.4426", lon: "79.9865" },
+  "NZPT": { code: "NZPT", name: "Nizampatnam", slug: "nizampatnam", lat: "15.9069", lon: "80.6691" },
+  "PTPT": { code: "PTPT", name: "Pathapatnam", slug: "pathapatnam", lat: "18.7505", lon: "84.0916" },
+  "PATN": { code: "PATN", name: "Patna", slug: "patna", lat: "25.61046", lon: "85.141667" },
+  "PERI": { code: "PERI", name: "Periyapatna", slug: "periyapatna", lat: "12.3374", lon: "76.0987" },
+  "ALLH": { code: "ALLH", name: "Prayagraj (Allahabad)", slug: "prayagraj-allahabad", lat: "25.4022472", lon: "81.7315448" },
+  "RAIPUR": { code: "RAIPUR", name: "Raipur", slug: "raipur", lat: "21.2513844", lon: "81.6296413" },
+  "YAYA": { code: "YAYA", name: "Raipuriya", slug: "raipuriya", lat: "23.744812", lon: "76.658272" },
+  "RJMU": { code: "RJMU", name: "Rajamahendravaram (Rajahmundry)", slug: "rajamahendravaram-rajahmundry", lat: "17.0005", lon: "81.804" },
+  "RANC": { code: "RANC", name: "Ranchi", slug: "ranchi", lat: "23.3440997", lon: "85.309562" },
+  "SAMA": { code: "SAMA", name: "Samalkota", slug: "samalkota", lat: "17.0504", lon: "82.1659" },
+  "SOLA": { code: "SOLA", name: "Solapur", slug: "solapur", lat: "17.659834", lon: "75.906601" },
+  "SRNG": { code: "SRNG", name: "Srinagar", slug: "srinagar", lat: "34.0837", lon: "74.7973" },
+  "SRIR": { code: "SRIR", name: "Srirangapatna", slug: "srirangapatna", lat: "12.4216", lon: "76.6931" },
+  "SURT": { code: "SURT", name: "Surat", slug: "surat", lat: "21.195", lon: "72.819444" },
+  "SRTK": { code: "SRTK", name: "Surathkal", slug: "surathkal", lat: "12.9951", lon: "74.8094" },
+  "TRIV": { code: "TRIV", name: "Thiruvananthapuram (Trivandrum)", slug: "thiruvananthapuram-trivandrum", lat: "8.4875", lon: "76.9525" },
+  "TIRU": { code: "TIRU", name: "Tirupati", slug: "tirupati", lat: "13.6288", lon: "79.4192" },
+  "UDAI": { code: "UDAI", name: "Udaipur", slug: "udaipur", lat: "24.58", lon: "73.68" },
+  "VAD": { code: "VAD", name: "Vadodara", slug: "vadodara", lat: "22.3073095", lon: "73.1810976" },
+  "VAR": { code: "VAR", name: "Varanasi", slug: "varanasi", lat: "25.3176452", lon: "82.9739144" },
+  "VIJP": { code: "VIJP", name: "Vijayapura (Bengaluru Rural)", slug: "vijayapura-bengaluru-rural", lat: "13.2955", lon: "77.801" },
+  "VIJA": { code: "VIJA", name: "Vijayawada", slug: "vijayawada", lat: "16.519", lon: "80.6215" },
+  "VIZA": { code: "VIZA", name: "Vizag (Visakhapatnam)", slug: "vizag-visakhapatnam", lat: "17.6868159", lon: "83.2184815" },
+  "WAR": { code: "WAR", name: "Warangal", slug: "warangal", lat: "18.000055", lon: "79.588167" },
+};
+
+// Preloaded database of 1,397 cinemas across all Indian cities
+const ALL_VENUES = {"MUMBAI": [{"code": "CSWO", "name": "Cinepolis: Nexus Seawoods, Nerul, Navi Mumbai", "subRegion": ""}, {"code": "IMOB", "name": "INOX Megaplex: Sky City Mall, Borivali", "subRegion": ""}, {"code": "CPVM", "name": "Cinepolis: Lake Shore, Thane (EX Viviana Mall)", "subRegion": ""}, {"code": "FMMA", "name": "INOX: Megaplex, Inorbit Mall, Malad", "subRegion": ""}, {"code": "INRC", "name": "INOX: R-City, Ghatkopar", "subRegion": ""}, {"code": "PIPP", "name": "PVR ICON: Phoenix Palladium, Lower Parel Mumbai", "subRegion": ""}, {"code": "POVI", "name": "HDFC Millennia PVR ICON: Oberoi Mall, Goregaon (E)", "subRegion": ""}, {"code": "BMXC", "name": "BMX Cinemas(BalajiMovieplex): Littleworld Kharghar", "subRegion": ""}, {"code": "PCMM", "name": "PVR: The Capital Mall, Nalasopara (E)", "subRegion": ""}, {"code": "PMKM", "name": "PVR: Market City, Kurla (Premiere)", "subRegion": ""}, {"code": "IMCM", "name": "Metro INOX Cinemas: Marine Lines", "subRegion": ""}, {"code": "MCIW", "name": "Miraj Cinemas: IMAX, Wadala", "subRegion": ""}, {"code": "POPE", "name": "PVR: Orion Mall, Panvel", "subRegion": ""}, {"code": "PVAE", "name": "PVR:C&B Square Chakala Andheri E(Formerly Sangam)", "subRegion": ""}, {"code": "MXBY", "name": "Maxus Cinemas: Bhayander", "subRegion": ""}, {"code": "MTHB", "name": "MOVIETIME: HUB, Goregaon (E)", "subRegion": ""}, {"code": "FMKY", "name": "INOX:Metro Mall Junction,Kalyan(Newly Renovated)", "subRegion": ""}, {"code": "KKMB", "name": "BMX Cinemas (Balaji Movieplex): Koparkhairane", "subRegion": ""}, {"code": "PLXP", "name": "PVR: Lodha Xperia, Palava", "subRegion": ""}, {"code": "CAGL", "name": "Cinepolis: Aurum, Ghansoli, Navi Mumbai", "subRegion": ""}, {"code": "PDDV", "name": "PVR: Dynamix, Juhu", "subRegion": ""}, {"code": "PRCW", "name": "PVR ICON: Infiniti Andheri (W)", "subRegion": ""}, {"code": "CPNM", "name": "Cinepolis: Magnet Mall, Bhandup (W)", "subRegion": ""}, {"code": "MIFU", "name": "Funcity Big Cinema:UNR (OPEN 4 NEW RECLINER SCRNS)", "subRegion": ""}, {"code": "PVMI", "name": "PVR: Infiniti, Malad Mumbai", "subRegion": ""}, {"code": "STER", "name": "Sterling Cineplex: Fort", "subRegion": ""}, {"code": "MCRM", "name": "Miraj Cinemas: R Mall, Mulund", "subRegion": ""}, {"code": "FMDA", "name": "INOX: Thakur Mall, Dahisar", "subRegion": ""}, {"code": "MTCR", "name": "MOVIETIME Cubic Mall: Chembur", "subRegion": ""}, {"code": "INKO", "name": "INOX: Korum Mall, Eastern Express Highway, Thane", "subRegion": ""}, {"code": "MCFF", "name": "Miraj Cinemas: Funfiesta, Nalasopara (W)", "subRegion": ""}, {"code": "PITI", "name": "PVR: Citi Mall, Andheri (W)", "subRegion": ""}, {"code": "IPBG", "name": "INOX: Palm Beach Galleria Mall, Navi Mumbai", "subRegion": ""}, {"code": "MMHA", "name": "MovieMax: Huma, Kanjurmarg (Seats Renovated)", "subRegion": ""}, {"code": "POLM", "name": "PVR: Odeon Mall, Ghatkopar", "subRegion": ""}, {"code": "PVWJ", "name": "Maison PVR: Jio World Drive, Mumbai", "subRegion": ""}, {"code": "FNAN", "name": "Cinepolis: Fun Republic Mall, Andheri (W)", "subRegion": ""}, {"code": "DCTW", "name": "Devgn CineX: The Walk, Thane", "subRegion": ""}, {"code": "FMRL", "name": "INOX: Raghuleela Mall, Kandivali (W)", "subRegion": ""}, {"code": "IMJW", "name": "Maison INOX: Jio World Plaza, BKC", "subRegion": ""}, {"code": "THAB", "name": "Cinepolis: High Street Mall, Thane (EX Cinemastar)", "subRegion": ""}, {"code": "MXBO", "name": "Maxus Cinemas: Borivali (W)", "subRegion": ""}, {"code": "SMFV", "name": "MovieMax: SM5 Kalyan, Newly Renovated", "subRegion": ""}, {"code": "MMMR", "name": "MovieMax: Mira Road (Seats Renovated)", "subRegion": ""}, {"code": "MDVA", "name": "Miraj Cinemas: Dattani Mall, Vasai (W)", "subRegion": ""}, {"code": "FNCM", "name": "Fun Cinemas: K Star Mall, Chembur", "subRegion": ""}, {"code": "INNP", "name": "INOX Laserplex: CR2, Nariman Point", "subRegion": ""}, {"code": "BMXA", "name": "BMX Cinemas: Ambernath (New)", "subRegion": ""}, {"code": "MMET", "name": "MovieMax: Eternity Mall, Thane (Newly Renovated)", "subRegion": ""}, {"code": "HPVR", "name": "PVR: Haseen, Bhiwandi", "subRegion": ""}, {"code": "MIDO", "name": "Miraj Cinemas: Dombivali (E)", "subRegion": ""}, {"code": "MMWM", "name": "MovieMax: Wonder Mall, Thane", "subRegion": ""}, {"code": "MUCK", "name": "Mukta A2 Cinemas: Triveni Grande, Kalyan (West)", "subRegion": ""}, {"code": "MMSZ", "name": "MovieMax: Sion", "subRegion": ""}, {"code": "PLUS", "name": "PVR: Lido, Juhu Mumbai", "subRegion": ""}, {"code": "CTRR", "name": "Chitra Cinema: Dadar (Newly Renovated)", "subRegion": ""}, {"code": "AETE", "name": "Anand Cinema: Thane", "subRegion": ""}, {"code": "MCTG", "name": "Topiwala Mukta A2 Cinemas, Goregaon", "subRegion": ""}, {"code": "EMNC", "name": "EROS INOX IMAX Cinema: Churchgate", "subRegion": ""}, {"code": "MAJB", "name": "Mukta A2 Cinemas: Jai Hind, Lalbaugh", "subRegion": ""}, {"code": "MACE", "name": "Miraj Cinemas: Anupam Mall Goregaon (E)", "subRegion": ""}, {"code": "MCAA", "name": "Miraj Cinemas: Ashok Anil Multiplex, Ulhasnagar", "subRegion": ""}, {"code": "MTMA", "name": "MOVIETIME: MALAD (WEST)", "subRegion": ""}, {"code": "CPVV", "name": "Cinepolis: VIP Lake Shore, Thane (EX Viviana Mall)", "subRegion": ""}, {"code": "PMPK", "name": "PVR: Milap, Kandivali (W)", "subRegion": ""}, {"code": "MCNE", "name": "Mukta A2 Cinemas: New Excelsior, Fort", "subRegion": ""}, {"code": "AAAS", "name": "Ajanta Cinema Cinex: Borivali (W) Newly Renovated", "subRegion": ""}, {"code": "RCHG", "name": "Rajhans Cinemas: Helix 3, Ghatkopar (W)", "subRegion": ""}, {"code": "MXSN", "name": "Maxus Cinemas: Saki Naka", "subRegion": ""}, {"code": "GCMG", "name": "Gold Cinema: Malad Malvani", "subRegion": ""}, {"code": "RSMI", "name": "Rassaz Multiplex: Mira Road", "subRegion": ""}, {"code": "GOCS", "name": "Gold Cinema: Santacruz (W)", "subRegion": ""}, {"code": "MTSC", "name": "MOVIETIME Star City: Matunga (W)", "subRegion": ""}, {"code": "WAML", "name": "INOX: Insignia at Atria Mall, Worli", "subRegion": ""}, {"code": "FMDR", "name": "INOX: Nakshatra Mall, Dadar (W) (Newly Renovated)", "subRegion": ""}, {"code": "LEPV", "name": "PVR: Le Reve-Globus Mall, Bandra West, Mumbai", "subRegion": ""}, {"code": "CCMP", "name": "Miraj Cinemas: Cineraj, Panvel (Newly Renovated)", "subRegion": ""}, {"code": "TCDM", "name": "Tilak Cineplex (Pooja Newly Renovated): Dombivali", "subRegion": ""}, {"code": "IRGT", "name": "INOX: Insignia at R Mall, Thane", "subRegion": ""}, {"code": "MCAN", "name": "Miraj Cinemas: Star, Ambernath (Newly Renovated)", "subRegion": ""}, {"code": "MTGD", "name": "MOVIETIME: Dahisar (E)", "subRegion": ""}, {"code": "RGCM", "name": "Regal Cinema: Colaba", "subRegion": ""}, {"code": "OMCS", "name": "Mukta A2 Cinemas Orion: Santacruz", "subRegion": ""}, {"code": "PZCD", "name": "Plaza Cinema: Dadar", "subRegion": ""}, {"code": "KCMA", "name": "Kasturba Cinema (Newly Renovated): Malad", "subRegion": ""}, {"code": "MXCK", "name": "Maxus Cinemas: Kandivali (E) Newly Opened", "subRegion": ""}, {"code": "SNGL", "name": "Gold Cinema: Sona Borivali (E)", "subRegion": ""}, {"code": "MTSU", "name": "MOVIETIME Suburbia: Bandra (W)", "subRegion": ""}, {"code": "KTMV", "name": "KT Vision Cinema: Vasai (Screens)", "subRegion": ""}, {"code": "MMMC", "name": "Maratha Mandir", "subRegion": ""}, {"code": "GCDM", "name": "Gopi Cinema: Dombivali", "subRegion": ""}, {"code": "NYMD", "name": "Devgn Cinex: Mulund", "subRegion": ""}, {"code": "GDTH", "name": "Gold  Cinema: Shivaji Road, Thane (W)", "subRegion": ""}, {"code": "MMAA", "name": "MovieMax: Andheri (E)", "subRegion": ""}, {"code": "ONEB", "name": "1 Cinema by Mukta A2: Bharatmata (Newly Renovated)", "subRegion": ""}, {"code": "CNTX", "name": "ICONIX CINEMAS: (OLD AARADHANA TALKIES) THANE", "subRegion": ""}, {"code": "FQSA", "name": "Fun Square Cinema: Sanpada", "subRegion": ""}, {"code": "BRVP", "name": "Bahar Cinema: Vile Parle (E)", "subRegion": ""}, {"code": "KURL", "name": "Bharat Cineplex: Kurla (W)", "subRegion": ""}, {"code": "KMMV", "name": "K Movie Star Multiplex: Vasai (W)", "subRegion": ""}, {"code": "KKUI", "name": "KT Vision Cinema: Vasai(Screen 1)", "subRegion": ""}, {"code": "PJDW", "name": "Maison PVR: Jio World Drive-IN, Mumbai", "subRegion": ""}, {"code": "MMCV", "name": "Movie Max V Cinema: Virar (E)", "subRegion": ""}, {"code": "NHCG", "name": "Nishat Cinema: Grant Road", "subRegion": ""}, {"code": "NNNX", "name": "Nazrana Cinema: Bhiwandi", "subRegion": ""}, {"code": "VVVM", "name": "Vaishali Cinema: Badlapur", "subRegion": ""}, {"code": "VECU", "name": "Venus Cinema: Ulhasnagar", "subRegion": ""}, {"code": "WCVR", "name": "Woodland Cinemas: Virar (W)", "subRegion": ""}], "NCR": [{"code": "PVVW", "name": "PVR: Vegas Dwarka", "subRegion": ""}, {"code": "CPNS", "name": "Cinepolis: Pacific NSP2, Delhi", "subRegion": ""}, {"code": "DTYN", "name": "PVR: Superplex Mall Of India, Noida", "subRegion": ""}, {"code": "PVLE", "name": "PVR: Superplex Logix, Noida", "subRegion": ""}, {"code": "PAEG", "name": "Gurugram Pepsi PVR Ambience", "subRegion": ""}, {"code": "PTCW", "name": "PVR: Select City Walk, Delhi", "subRegion": ""}, {"code": "PGND", "name": "PVR: Gaur City, Greater Noida", "subRegion": ""}, {"code": "USEB", "name": "US CINEMAS: Galaxy Blue Sapphire, Noida Ext", "subRegion": ""}, {"code": "PPGV", "name": "PVR: Promenade, Vasant Kunj", "subRegion": ""}, {"code": "G3SR", "name": "G3S Cinema: Rohini (Newly Renovated)", "subRegion": ""}, {"code": "IPMJ", "name": "INOX: Pacific Mall, Jasola", "subRegion": ""}, {"code": "CIPS", "name": "Cinepolis: DLF Avenue, Saket", "subRegion": ""}, {"code": "INVM", "name": "INOX: Vishal Mall, Rajouri Garden", "subRegion": ""}, {"code": "DVDC", "name": "Delite Cinema: Asaf Ali Road", "subRegion": ""}, {"code": "PCSN", "name": "PVR: Pacific, Subhash Nagar, Delhi", "subRegion": ""}, {"code": "PCEL", "name": "PVR: Cinemagic, Unity One Elegante, NSP, Pitampura", "subRegion": ""}, {"code": "SPIA", "name": "Cinepolis: Modi Mall (Formerly Spice Mall)", "subRegion": ""}, {"code": "PGGM", "name": "HDFC Millennia PVR: MGF, Gurugram", "subRegion": ""}, {"code": "MXGN", "name": "MovieMax Laserplex: Gulshan One 29 Mall, Noida", "subRegion": ""}, {"code": "LBDL", "name": "Liberty Cinema: Karol Bagh", "subRegion": ""}, {"code": "SCJN", "name": "INOX: Janak Place", "subRegion": ""}, {"code": "FNLN", "name": "Cinepolis: V3S Mall, Laxmi Nagar", "subRegion": ""}, {"code": "PMMS", "name": "PVR: Shalimar Bagh", "subRegion": ""}, {"code": "CRGM", "name": "Cinepolis: Airia Mall, Sohna Road, Gurgaon", "subRegion": ""}, {"code": "CNEV", "name": "1 Cinemas: Spectrum Metro Mall, Noida", "subRegion": ""}, {"code": "PPDA", "name": "PVR: Pacific, Dwarka", "subRegion": ""}, {"code": "PVKS", "name": "PVR: Anupam Saket, Delhi", "subRegion": ""}, {"code": "PBLL", "name": "PVR: Pebble Downtown Sec-12, Faridabad", "subRegion": ""}, {"code": "WVRN", "name": "Wave Cinemas: Gaur Central Mall, RDC", "subRegion": ""}, {"code": "M2PP", "name": "M2K: Pitampura", "subRegion": ""}, {"code": "SCPT", "name": "INOX: Patel Nagar", "subRegion": ""}, {"code": "M2RH", "name": "M2K: Rohini", "subRegion": ""}, {"code": "CPUM", "name": "Cinepolis: Unity One Mall Rohini, Delhi", "subRegion": ""}, {"code": "SCND", "name": "INOX: Nehru Place", "subRegion": ""}, {"code": "INWM", "name": "INOX: World Mark, Gurugram", "subRegion": ""}, {"code": "PPMF", "name": "PVR: Pacific Mall (The Mall of Faridabad NIT)", "subRegion": ""}, {"code": "FNSD", "name": "Cinepolis: Cross River Mall, Shahdara", "subRegion": ""}, {"code": "WVND", "name": "Wave: Noida", "subRegion": ""}, {"code": "CUNT", "name": "Cinepolis: City Centre Dwarka,Delhi (Newly Opened)", "subRegion": ""}, {"code": "ISMG", "name": "INOX: Shipra Mall, Ghaziabad", "subRegion": ""}, {"code": "CPGV", "name": "Cinepolis: Grand Venice Mall, Greater Noida", "subRegion": ""}, {"code": "IOMG", "name": "INOX: Omaxe Connaught Place Mall, Greater Noida", "subRegion": ""}, {"code": "IAJS", "name": "INOX: AIPL Joy Street, Gurgaon", "subRegion": ""}, {"code": "MCTI", "name": "Miraj Cinemas: TGIP, Noida", "subRegion": ""}, {"code": "EMPS", "name": "PVR: Elan Miracle, Sec 84, Gurugram", "subRegion": ""}, {"code": "CTEE", "name": "Cinepolis: The Esplanade, Gurugram", "subRegion": ""}, {"code": "CEST", "name": "Cinepolis: V3S East Centre (New)", "subRegion": ""}, {"code": "PECD", "name": "PVR: ECX Chanakyapuri, Delhi", "subRegion": ""}, {"code": "CIJA", "name": "Cinepolis: Janak Cinema, New Delhi", "subRegion": ""}, {"code": "WVRG", "name": "Wave: Raja Garden", "subRegion": ""}, {"code": "CPMF", "name": "Cinepolis: Pacific Mall, Faridabad", "subRegion": ""}, {"code": "MHNU", "name": "PVR: Mahagun, Ghaziabad", "subRegion": ""}, {"code": "PVPU", "name": "PVR IMAX with Laser, Priya: Delhi", "subRegion": ""}, {"code": "PDIV", "name": "PVR: Vikaspuri, Delhi", "subRegion": ""}, {"code": "DPDC", "name": "Delhi: PVR Director`s Cut, Ambience Mall", "subRegion": ""}, {"code": "WVKS", "name": "Wave: The Wave Mall, Kaushambi", "subRegion": ""}, {"code": "INFR", "name": "INOX: Crown Interiorz Mall, Delhi Mathura Road", "subRegion": ""}, {"code": "NYCG", "name": "Devgn CineX: Elan Epic, Gurugram", "subRegion": ""}, {"code": "USCO", "name": "US CINEMAS: Aditya Mall, Indirapuram", "subRegion": ""}, {"code": "MTPP", "name": "Movietime Cinemas: Pitampura", "subRegion": ""}, {"code": "USCG", "name": "US CINEMAS: Eros Mall, Indirapuram", "subRegion": ""}, {"code": "MDDC", "name": "Miraj Cinemas: Vikas Cinemall, Shahdara", "subRegion": ""}, {"code": "BCWG", "name": "B18 Cinemas (Bhutani Cineplex) City Center GZB", "subRegion": ""}, {"code": "IOCP", "name": "INOX: Odeon, Connaught Place", "subRegion": ""}, {"code": "WUPG", "name": "Wave: Urbana Premium, Sector 67 Gurugram", "subRegion": ""}, {"code": "RONC", "name": "Rajhans Cinemas:Galaxy Diamond Plaza,Greater Noida", "subRegion": ""}, {"code": "IOTG", "name": "PVR: Opulent, Ghaziabad", "subRegion": ""}, {"code": "PVPD", "name": "PVR: Prashant Vihar, Delhi", "subRegion": ""}, {"code": "PNAD", "name": "PVR: Naraina, Delhi", "subRegion": ""}, {"code": "DCMV", "name": "PVR Directors Cut, DLF Mall Of India: Noida", "subRegion": ""}, {"code": "MCVM", "name": "Miraj Cinemas: Chand, Mayur Vihar Phase 1", "subRegion": ""}, {"code": "NYDU", "name": "Devgn CineX: Ghaziabad", "subRegion": ""}, {"code": "EDMP", "name": "PVR: EDM, Ghaziabad", "subRegion": ""}, {"code": "RRJM", "name": "RR Cinema: Jaipuria Mall, Indirapuram", "subRegion": ""}, {"code": "GPDC", "name": "Gurugram: PVR Director`s Cut, Ambience Mall", "subRegion": ""}, {"code": "MMAP", "name": "MovieMax: Ansal Plaza, Gurgaon", "subRegion": ""}, {"code": "VVGZ", "name": "PVR: VVIP, Ghaziabad", "subRegion": ""}, {"code": "AMCD", "name": "Amba Cinema: Delhi 4K Laser Projector Dolby Atmos", "subRegion": ""}, {"code": "PCCF", "name": "Pristine Mall: Sec-31, Faridabad", "subRegion": ""}, {"code": "IEFM", "name": "INOX: EF3 Mall, Faridabad", "subRegion": ""}, {"code": "CNVG", "name": "Cinepolis: Grand View High Street, Gurugram", "subRegion": ""}, {"code": "CCPZ", "name": "PVR: City Centre, Gurgaon", "subRegion": ""}, {"code": "PMTN", "name": "PVR: Midtown, Moti Nagar, Delhi", "subRegion": ""}, {"code": "IZOP", "name": "INOX: COCA-COLA IMAX Paras, Nehru Place, Delhi", "subRegion": ""}, {"code": "MCEF", "name": "Miraj Cinemas: Eldeco mall, Faridabad", "subRegion": ""}, {"code": "INRD", "name": "INOX: RCube, Monad Mall: Delhi", "subRegion": ""}, {"code": "PMGU", "name": "PVR: Mega Mall, Gurgaon", "subRegion": ""}, {"code": "WATG", "name": "Wave Cinema: iThum Galleria Mall, Greater Noida", "subRegion": ""}, {"code": "INSG", "name": "INOX Sapphire 90 Mall: Gurugram", "subRegion": ""}, {"code": "RNMT", "name": "MSX Silvercity, Haldiram Citymall Sec12: Faridabad", "subRegion": ""}, {"code": "PSDD", "name": "PVR: Sangam, Delhi", "subRegion": ""}, {"code": "MCAZ", "name": "Miraj Cinemas: Aakash, Azadpur", "subRegion": ""}, {"code": "MCDE", "name": "Miraj Cinemas: Ivory Tower, Subhash Nagar", "subRegion": ""}, {"code": "LSCM", "name": "Legend Cinema Lounges: Mall Fifty One, Gurgaon", "subRegion": ""}, {"code": "PETA", "name": "PVR: Elan Town Centre, Sec 67, Gurugram", "subRegion": ""}, {"code": "MERM", "name": "MovieMax Edition (Luxe): Rcube Monad Mall, Noida", "subRegion": ""}, {"code": "MIMU", "name": "Miraj Cinemas: M4U, Sahibabad", "subRegion": ""}, {"code": "PVMS", "name": "PVR: Elan Mercado, Sec 80, Gurugram", "subRegion": ""}, {"code": "MTND", "name": "Movietime Cinemas: Sector 18, Noida", "subRegion": ""}, {"code": "SLCU", "name": "Skylit Cinemas: Sahara Mall, Gurugram (Gurgaon)", "subRegion": ""}, {"code": "PCPL", "name": "PVR: Plaza-CP, Delhi", "subRegion": ""}, {"code": "RCGD", "name": "ROONGTA CINEMAS: SHOPPRIX Mall, Ghaziabad", "subRegion": ""}, {"code": "MDCD", "name": "Madhuban Cinema: Dasna", "subRegion": ""}, {"code": "MENL", "name": "Meenakshi Multiplex Cinema: Loni", "subRegion": ""}, {"code": "IDEN", "name": "INOX: Insignia At Epicuria, Nehru Place", "subRegion": ""}, {"code": "IBYG", "name": "INOX: IRIS Broadway Gurugram", "subRegion": ""}, {"code": "ISML", "name": "INOX: Gurgaon Sapphire 83", "subRegion": ""}, {"code": "ATSM", "name": "Miraj Cinemas: ATS Khyber Range Mall, Ghaziabad", "subRegion": ""}, {"code": "MJMM", "name": "Miraj Maximum: Metropollis Mall, Gurgaon", "subRegion": ""}, {"code": "PFDN", "name": "PVR: DLF Summit Plaza, Gurugram", "subRegion": ""}, {"code": "IGAM", "name": "INOX: Ardee Mall, Gurugram", "subRegion": ""}, {"code": "PDEI", "name": "PVR: 3CS Lajpat Nagar, Delhi", "subRegion": ""}, {"code": "MCIX", "name": "Miraj Cinemas: India Expo Plaza (Newly Opened)", "subRegion": ""}, {"code": "ONEG", "name": "1 Cinema Powered by Mukta A2, Star Mall: Gurugram", "subRegion": ""}, {"code": "GRNG", "name": "Grand Cinemaz@Choudhry Mall", "subRegion": ""}, {"code": "GMGX", "name": "Galaxie Multiplex: Ghaziabad", "subRegion": ""}, {"code": "MKLJ", "name": "Miraj Cinemas: KLJ Square, Gurugram", "subRegion": ""}, {"code": "GAGC", "name": "Gagan Theatre: Nand Nagri, Delhi", "subRegion": ""}, {"code": "PMPM", "name": "Fun Cinemas: PM Cinemas, Parsvnath Mall, Manhattan", "subRegion": ""}, {"code": "MCGN", "name": "Movietime Cinemas: Celebration Mall, Gurgaon", "subRegion": ""}, {"code": "QLAC", "name": "QLA Cinemas: Dremz Mall, Gurugram", "subRegion": ""}, {"code": "MXCS", "name": "MSX Cinemas: Greater Noida", "subRegion": ""}, {"code": "HVCD", "name": "Cineport Cinemas: SVH Metro Street, Sector 83", "subRegion": ""}, {"code": "RRCO", "name": "RR Cinema: Omaxe Gurgaon Mall, Gurgaon", "subRegion": ""}, {"code": "RVCV", "name": "Rajhans Cinemas: Ocus Medley, Sec-99, Gurugram", "subRegion": ""}, {"code": "CIGK", "name": "Cinepolis: Savitri Complex GK2", "subRegion": ""}, {"code": "STWA", "name": "Satyam VS Cinema: Pilkhuwa", "subRegion": ""}, {"code": "SCGZ", "name": "Silvercity Multiplex: Ghaziabad", "subRegion": ""}, {"code": "MTCV", "name": "Movietime Cinema: VSR 114 Avenue Sec 114 Gurgaon", "subRegion": ""}, {"code": "MWMG", "name": "Moviemax: Sector 56, Metro World Mall, Gurugram", "subRegion": ""}, {"code": "BTFD", "name": "Batra Reels Cinemas: New Friends Colony", "subRegion": ""}, {"code": "MMZG", "name": "MovieMax: Pacific Mall Ghaziabad", "subRegion": ""}, {"code": "MWSS", "name": "US Cinemas, Movie World, Ghaziabad (All New)", "subRegion": ""}, {"code": "VBOR", "name": "Vibhor Chitralok: Pilkhuwa", "subRegion": ""}, {"code": "MMOC", "name": "Movie Magic Cinema: Ghaziabad", "subRegion": ""}, {"code": "AKRF", "name": "AKR Cinemas: SLF Mall, Faridabad", "subRegion": ""}, {"code": "AKRC", "name": "AKR Cinemas,TDI Mall: Kundli", "subRegion": ""}, {"code": "MIDA", "name": "7D Masti: The Grand Venice Mall, Greater Noida", "subRegion": ""}, {"code": "MAGX", "name": "7D Masti: Shipra Mall, Ghaziabad", "subRegion": ""}, {"code": "MEDM", "name": "7D Masti: EDM Mall, Ghaziabad", "subRegion": ""}, {"code": "EEBC", "name": "eBox Cinema: Ansal Plaza Mall, Greater Noida", "subRegion": ""}, {"code": "EBCA", "name": "eBox Cinema: Parker Mall, Kundli", "subRegion": ""}, {"code": "SCUR", "name": "eBox Cinema: Sonic World Mall, Surajpur", "subRegion": ""}], "BANG": [{"code": "IMMO", "name": "INOX: Megaplex Mall of Asia Bangalore", "subRegion": ""}, {"code": "PVFF", "name": "PVR: Nexus (Formerly Forum), Koramangala", "subRegion": ""}, {"code": "PSPR", "name": "PVR: Superplex Forum Mall, Kanakapura Road", "subRegion": ""}, {"code": "PVOO", "name": "PVR: Orion Mall, Dr Rajkumar Road", "subRegion": ""}, {"code": "CFBS", "name": "Cinepolis: Nexus Shantiniketan, Bengaluru", "subRegion": ""}, {"code": "PVER", "name": "PVR: Vega City, Bannerghatta Road", "subRegion": ""}, {"code": "IMCB", "name": "INOX: M5 Ecity, Bengaluru", "subRegion": ""}, {"code": "ACKB", "name": "AMB Cinemas Kapali", "subRegion": ""}, {"code": "PVWW", "name": "PVR: VR Bengaluru, Whitefield Road", "subRegion": ""}, {"code": "CEHR", "name": "Cinephile HSR Layout: PNR Felicity Mall Haralur Rd", "subRegion": ""}, {"code": "PBMM", "name": "PVR: Bhartiya Mall of Bengaluru", "subRegion": ""}, {"code": "PPNX", "name": "PVR: Phoenix Marketcity Mall, Whitefield Road", "subRegion": ""}, {"code": "CLGM", "name": "Cinepolis: Lulu Mall, Bengaluru", "subRegion": ""}, {"code": "INRZ", "name": "INOX: Galleria Mall, Yelahanka", "subRegion": ""}, {"code": "CNRM", "name": "Cinepolis: Royal Meenakshi Mall", "subRegion": ""}, {"code": "PSLC", "name": "PVR: Soul Spirit Central Mall, Bellandur", "subRegion": ""}, {"code": "CPOE", "name": "Cinepolis: Orion Avenue Mall, Banaswadi", "subRegion": ""}, {"code": "INMB", "name": "INOX: Mantri Square, Malleshwaram", "subRegion": ""}, {"code": "PMSR", "name": "PVR: MSR Elements Mall, Tanisandhra Main Road", "subRegion": ""}, {"code": "PGFD", "name": "PVR: Global Mall, Mysore Road, Bengaluru", "subRegion": ""}, {"code": "SATB", "name": "Sandhya Cinema", "subRegion": ""}, {"code": "GPGM", "name": "Gopalan Grand Mall: Old Madras Road", "subRegion": ""}, {"code": "CPJR", "name": "Cinepolis: SJR (Central Mall) Arekere, Bannergatta", "subRegion": ""}, {"code": "PMBR", "name": "PVR: Orion Uptown, Old Madras Road, Bengaluru", "subRegion": ""}, {"code": "FMFB", "name": "INOX: Nexus, Whitefield", "subRegion": ""}, {"code": "SKMM", "name": "Sri Krishna Lazer Projection 4K: Bomanahalli", "subRegion": ""}, {"code": "MSMD", "name": "MIRAJ CINEMAS: TGN Lotus Elite, Sunkadakatte", "subRegion": ""}, {"code": "FMLB", "name": "INOX Lido: Off MG Road, Ulsoor", "subRegion": ""}, {"code": "PZVK", "name": "PVR: Vaishnavi Sapphire Mall, Yeshwanthpur", "subRegion": ""}, {"code": "VTGB", "name": "V Cinema (Vijayalakshmi Theatre): Garudacharpalya", "subRegion": ""}, {"code": "TDCA", "name": "Sri Thirumala 4K A/C Dolby Atmos: Agara", "subRegion": ""}, {"code": "LKTH", "name": "Lakshmi Cinema 4K Dolby Atmos RGB Laser Tavarekere", "subRegion": ""}, {"code": "PGWB", "name": "PVR: GT World Mall, Magadi Road", "subRegion": ""}, {"code": "BKDV", "name": "Brundha RGB Laser 4K Projection: Hongasandra DMart", "subRegion": ""}, {"code": "INBC", "name": "INOX: Central, JP Nagar, Mantri Junction", "subRegion": ""}, {"code": "PAAS", "name": "PVR: Aura Park Square, Whitefield", "subRegion": ""}, {"code": "SLTR", "name": "Sri Lakshmi A/C 4K Projection: Rammurthy Nagar", "subRegion": ""}, {"code": "SVTB", "name": "Venkateshwara A/c 4K Dolby Atmos: K.R.Puram", "subRegion": ""}, {"code": "INBG", "name": "INOX: Garuda Mall, Magrath Road", "subRegion": ""}, {"code": "GYBU", "name": "INOX: Garuda Yelahanka, Bengaluru", "subRegion": ""}, {"code": "NSBR", "name": "INOX:SBR Horizon, Seegehalli Whitefield-Hoskote Rd", "subRegion": ""}, {"code": "CPEB", "name": "Cinepolis: Binnypet Mall", "subRegion": ""}, {"code": "GPBR", "name": "Gopalan Cinemas: Bannerghatta Road", "subRegion": ""}, {"code": "VCTP", "name": "V Cinemas: T.C Palya Main Road, Ramamurthy Nagar", "subRegion": ""}, {"code": "VNKA", "name": "Venkateshwara Theatre - Konappana Agrahara (E.City", "subRegion": ""}, {"code": "SSNR", "name": "Swagath ShankarNag (ONYX) LED Cinema: MG Road", "subRegion": ""}, {"code": "KINO", "name": "Kino Cinemas: Seegehalli Kadugodi, Bengaluru", "subRegion": ""}, {"code": "MKBG", "name": "Mukunda 4K Dolby Atmos: M.S.Nagar", "subRegion": ""}, {"code": "GPAM", "name": "Gopalan Cinemas: Arcade Mall, Mysore Road", "subRegion": ""}, {"code": "PMMC", "name": "Movietime Cinemas: YGR Signature Mall, RR Nagar", "subRegion": ""}, {"code": "VTBR", "name": "Sri Venkateshwara Digital 4K Cinema: Girinagar", "subRegion": ""}, {"code": "RKCL", "name": "Rockline Cinemas: Jalahalli Cross", "subRegion": ""}, {"code": "INBJ", "name": "INOX: Garuda Swagath Mall, Jayanagar", "subRegion": ""}, {"code": "BALT", "name": "Balaji Theatre:Tavarekere(Next to Lakshmi Theatre)", "subRegion": ""}, {"code": "VRBL", "name": "Veeresh Cinemas: Magadi Road", "subRegion": ""}, {"code": "PTBK", "name": "Pushpanjali B N Pura: A/C 2K Dolby 7.1", "subRegion": ""}, {"code": "PDWR", "name": "PVR: Directors Cut, Forum Rex Walk Bengaluru", "subRegion": ""}, {"code": "VTSK", "name": "Vaibhav Digital 4k Dolby 7.1: Sanjaynagar", "subRegion": ""}, {"code": "SDJH", "name": "Sri Vinayaka 2K Digital 7.1 D J Halli", "subRegion": ""}, {"code": "ANBL", "name": "AANJANA Chitrra Mandira 4K A/C: Magadi Road", "subRegion": ""}, {"code": "SDCS", "name": "Srinivasa Cinema 4K Dolby Atmos SG Palya:Screen1", "subRegion": ""}, {"code": "MRGB", "name": "Manasa RGB Laser ATMOS: Konanakunte", "subRegion": ""}, {"code": "VOIB", "name": "Vaishnavi and Vaibhavi Cinema: Uttarahalli", "subRegion": ""}, {"code": "SAMP", "name": "Sampige Digital 2k Cinema: Malleshwaram", "subRegion": ""}, {"code": "GPMY", "name": "Gopalan Mall: Sirsi Circle", "subRegion": ""}, {"code": "AMNH", "name": "INOX: Arcadia, Brigade Utopia, Bengaluru", "subRegion": ""}, {"code": "NRBL", "name": "Navrang Theatre: Rajaji Nagar", "subRegion": ""}, {"code": "SDSD", "name": "Siddeshwara 4K Dolby Atmos 3D 7.1 Cinema: JP Nagar", "subRegion": ""}, {"code": "GPSM", "name": "Gopalan Miniplex: Signature Mall, Old Madras Road", "subRegion": ""}, {"code": "RKTB", "name": "Sri Radhakrishna Theatre, 4K Dolby Atmos: RT Nagar", "subRegion": ""}, {"code": "BHAC", "name": "Bharathi Theatre (Peenya) A/C 4K 7.1 Dolby Digital", "subRegion": ""}, {"code": "SBCR", "name": "Sri Balaji 4K A/C Dolby Atmos: Dommasandra", "subRegion": ""}, {"code": "ROON", "name": "Roopa Cinema 4K Dolby Atmos 3D A/C: Nelamangala", "subRegion": ""}, {"code": "ASTB", "name": "Ashoka Cinemas - Dolby Laser: Chikkabanavara", "subRegion": ""}, {"code": "RTHT", "name": "Sri Raghavendra Cinemas: Hoskote", "subRegion": ""}, {"code": "VTBE", "name": "Sri Vajreshwari Cinemas AC 4K Dolby ATMOS: Ullal", "subRegion": ""}, {"code": "PDRD", "name": "Prasanna Digital 4K Cinema: Magadi Road", "subRegion": ""}, {"code": "KCBI", "name": "Kamakya 4K Dolby Atmos 3D A/C Cinema: Banashankari", "subRegion": ""}, {"code": "PTBC", "name": "Swagath Poornima 4K Dolby Atmos: JC Road (New)", "subRegion": ""}, {"code": "RATK", "name": "Robin Theater 4K Dolby Atmos: Kengeri Upanagara", "subRegion": ""}, {"code": "SLTB", "name": "Sri Lakshmi A/C 4k Dolby 7.1: Gottigere", "subRegion": ""}, {"code": "SAED", "name": "Srinivasa Theater A/C 4K Dolby Atmos: Kadugudi", "subRegion": ""}, {"code": "MDKI", "name": "Mahadeshwara Cinema 4K Dolby ATMOS AC Banashankari", "subRegion": ""}, {"code": "CVLG", "name": "Cinepolis VIP: Lulu Mall, Bengaluru", "subRegion": ""}, {"code": "SRPJ", "name": "Sri Renuka Prasanna Theatre: J P Nagar", "subRegion": ""}, {"code": "AMRT", "name": "Amruth Digital 2K A/C Cinema: Lingarajapuram", "subRegion": ""}, {"code": "PDYA", "name": "Pushpanjali Sultanpalya:AC 2K LASER 3D Dolby Atmos", "subRegion": ""}, {"code": "SVYK", "name": "Sri Vinayaka Cinemas 4K Dolby 7.1 (A/C): Varthur", "subRegion": ""}, {"code": "SMRN", "name": "Maruthi Cinemas 4K AC Dolby 7.1: RajgopalNagar", "subRegion": ""}, {"code": "MLDT", "name": "Mohan Cinema Barco 4K A/C 7.1: Sunkadakatte", "subRegion": ""}, {"code": "VBWT", "name": "Veerabhadreshwara Theatre 4KDOLBY 7.1 Kamala Nagar", "subRegion": ""}, {"code": "SIDA", "name": "Siddalingeshwara A/C 4K 3D Dolby Digital:J.P.Nagar", "subRegion": ""}, {"code": "GDTY", "name": "Goverdhan Theatre: Yeshwantpur", "subRegion": ""}, {"code": "VCCB", "name": "Victory Cinema Barco-4K RGB-Laser: Kamakshipalya", "subRegion": ""}, {"code": "GDAK", "name": "Gowrishankar DOLBY 7.1 RGB Laser: Attibele", "subRegion": ""}, {"code": "VYCH", "name": "Vinayaka Cinemas 4K Dolby 11.5 A/C 3D: Harinagar", "subRegion": ""}, {"code": "STSV", "name": "Savitha Theatre:2K Dolby A/C Malleshwaram", "subRegion": ""}, {"code": "ARTS", "name": "Aruna Theatre A/C 4K 7.1 Dolby 3D: Srirampuram", "subRegion": ""}, {"code": "NFGD", "name": "Newfangled Miniplex (TWIN SEATED): MG Road", "subRegion": ""}, {"code": "SMHP", "name": "KRG Soundarya Mahal A/C 4K Dolby Doddaballapura", "subRegion": ""}, {"code": "SPAY", "name": "Srinivasa Cinema 4K Dolby Atmos SG Palya:Screen2", "subRegion": ""}, {"code": "TRIG", "name": "Triveni Theatre A/C 3D 4K Dolby: Gandhinagar", "subRegion": ""}, {"code": "SCPR", "name": "Sharada Cinemas A/C Laser Projector DTS Sound", "subRegion": ""}, {"code": "SSPA", "name": "Sri Srinivasa 4K Dolby Digital 7.1 Padmanabanagara", "subRegion": ""}, {"code": "ADCR", "name": "Akash Cinemas: Laggere", "subRegion": ""}, {"code": "PTYK", "name": "Prakash Theatre: Yelahanka", "subRegion": ""}, {"code": "RTEA", "name": "Ravi Digital 2K Dolby 7.1 HD Screen: Ejipura", "subRegion": ""}, {"code": "BDCG", "name": "Bhumika Digital 2K Cinema: Gandhinagar", "subRegion": ""}, {"code": "SKDD", "name": "Sapna 2K Dolby 5.1 Digital S R: Gandhi Nagar", "subRegion": ""}, {"code": "HASV", "name": "Sri Vinayaka Theatre: Harohalli", "subRegion": ""}, {"code": "CHTH", "name": "Chandrodaya Cinemas 4K Dolby A/C:Vidyapeeta Circle", "subRegion": ""}, {"code": "RKDO", "name": "Rajkamal Theatre 2K LASER Dolby 7.1:Doddaballapura", "subRegion": ""}, {"code": "STGR", "name": "Santosh 4K Dolby Theatre: Gandhinagar", "subRegion": ""}, {"code": "MUTB", "name": "Murali Cinemas(Gokula)4K Dolby7.1 A/C 3D:Mathikere", "subRegion": ""}, {"code": "DKTI", "name": "Deepak Talkies: Bidadi", "subRegion": ""}, {"code": "SRHK", "name": "Sri Rajmurali Theatre: Sahakar Nagar, Kodigehalli", "subRegion": ""}, {"code": "ATGN", "name": "Abhinay Theatre 4K A/C: Gandhinagar", "subRegion": ""}, {"code": "SNDC", "name": "Sri Narayan Theatre 4K lazer Atoms: Kolar", "subRegion": ""}, {"code": "SRRT", "name": "VR Cinemas 4K A/C 7.1 Dolby Atmos: Mallathalli", "subRegion": ""}, {"code": "SLND", "name": "SLN Theatre RGB Laser Projector: Hesaraghatta", "subRegion": ""}, {"code": "VACD", "name": "VaibhavCinemas RGBLaser4K Projection:Doddaballapur", "subRegion": ""}, {"code": "VDCS", "name": "Vainidhi Cinemas Dolby Lazer: Singapura", "subRegion": ""}, {"code": "GPTB", "name": "Galaxy Paradise (Miniplex): Begur Road", "subRegion": ""}, {"code": "ANTE", "name": "Anupama Theatre A/C 4K Dolby: Gandhinagar", "subRegion": ""}, {"code": "SNNN", "name": "Sri Nandeeshwara Theatre: Jigani", "subRegion": ""}, {"code": "GTYT", "name": "Ganesh Theatre: Yelahanka", "subRegion": ""}, {"code": "VECI", "name": "Venkateshwara Cinemas 2K, A/C Screen2: Gollarahati", "subRegion": ""}, {"code": "VECG", "name": "Venkateshwara Cinemas 4K, A/C Screen1: Gollarahati", "subRegion": ""}, {"code": "SVKT", "name": "Venkateshwara Digital 4K Dolby Atmos A/C: Kengeri", "subRegion": ""}, {"code": "SNGN", "name": "Narthaki 4K Dolby 7.1 Digital S R: Gandhi Nagar", "subRegion": ""}, {"code": "SKHK", "name": "Sri Lakshmi Narasimha Theatre: Anekal", "subRegion": ""}, {"code": "BALJ", "name": "Sri Balaji 2K Dolby Atmos 7.1: Viveknagar", "subRegion": ""}], "HYD": [{"code": "PRHN", "name": "Prasads Multiplex", "subRegion": ""}, {"code": "AMBH", "name": "AMB Cinemas: Gachibowli", "subRegion": ""}, {"code": "ALUC", "name": "ALLU Cinemas: Kokapet", "subRegion": ""}, {"code": "ACPM", "name": "Asian Lakshmikala Cinepride: Moosapet", "subRegion": ""}, {"code": "ACEV", "name": "ART CINEMAS: Vanasthalipuram", "subRegion": ""}, {"code": "PVFS", "name": "PVR: Nexus Mall Kukatpally, Hyderabad", "subRegion": ""}, {"code": "ACAS", "name": "AAA Cinemas: Ameerpet", "subRegion": ""}, {"code": "AACN", "name": "Aparna Cinemas: Nallagandla", "subRegion": ""}, {"code": "CTNR", "name": "Cinepolis: TNR North City, Suchitra, Hyderabad", "subRegion": ""}, {"code": "ILKS", "name": "PVR Lakeshore PXL 4K Laser ATMOS DTS-X Y Junction", "subRegion": ""}, {"code": "SRMO", "name": "Sree Ramulu 70mm 4K Laser: Moosapet", "subRegion": ""}, {"code": "IGMH", "name": "INOX: GSM Mall, Hyderabad", "subRegion": ""}, {"code": "MMAH", "name": "MovieMax: AMR, ECIL Secunderabad", "subRegion": ""}, {"code": "GPRH", "name": "GPR Multiplex: Nizampet, Hyderabad", "subRegion": ""}, {"code": "CPMH", "name": "Cinepolis: Lulu Mall, Hyderabad", "subRegion": ""}, {"code": "CVMU", "name": "Cineverse Multiplex: Uppal", "subRegion": ""}, {"code": "MMCA", "name": "Miraj Cinemas: CineTown, Miyapur", "subRegion": ""}, {"code": "ASHN", "name": "Asian Cinemart: RC Puram", "subRegion": ""}, {"code": "MAHM", "name": "Mallikarjuna 70mm A/C DTS: Kukatpally", "subRegion": ""}, {"code": "AMCA", "name": "Asian M Cube Mall: Attapur", "subRegion": ""}, {"code": "SRCM", "name": "Sai Ranga70MM 4KLaser Dolby7.1 AirCooled: Miyapur", "subRegion": ""}, {"code": "ABCS", "name": "Cinepolis: DSL Virtue Mall Uppal, Hyderabad", "subRegion": ""}, {"code": "BRKH", "name": "Bhramaramba 70MM A/C 4K Dolby: Kukatpally", "subRegion": ""}, {"code": "CPHY", "name": "Asian Cineplanet Multiplex: Kompally", "subRegion": ""}, {"code": "PNNG", "name": "PVR: Next Galleria Mall, Panjagutta", "subRegion": ""}, {"code": "CMMA", "name": "Cinepolis: Mantra Mall, Attapur", "subRegion": ""}, {"code": "ISTN", "name": "INOX: Sattva Necklace Mall, Kavadiguda", "subRegion": ""}, {"code": "GOKU", "name": "Gokul 70MM 4K DTS: Erragadda", "subRegion": ""}, {"code": "PVTS", "name": "PVR: Atrium Gachibowli, Hyderabad", "subRegion": ""}, {"code": "JJPP", "name": "JP Cinemas: Chandanagar", "subRegion": ""}, {"code": "AKYJ", "name": "INOX: Ashoka One, 4K LASER Dolby ATMOS: Kukatpally", "subRegion": ""}, {"code": "SSRM", "name": "Sri Sai Ram 70mm A/C 4k Laser Dolby 7.1:Malkajgiri", "subRegion": ""}, {"code": "SMMR", "name": "Sandhya 70MM 4K Dolby Atmos: RTC X Roads", "subRegion": ""}, {"code": "HMHD", "name": "BR Hitech 70mm: Madhapur", "subRegion": ""}, {"code": "ARJU", "name": "Arjun 70MM: Kukatpally", "subRegion": ""}, {"code": "PIMH", "name": "PVR: Irrum Manzil, Hyderabad", "subRegion": ""}, {"code": "PVTP", "name": "PVR: Preston, Gachibowli Hyderabad", "subRegion": ""}, {"code": "PIIC", "name": "PVR Superplex Inorbit: LUXE, PXL, 4DX: Cyberabad", "subRegion": ""}, {"code": "IOMH", "name": "INOX: Odeon 4K, LASER, ATMOS, DTS-X: RTC X Roads", "subRegion": ""}, {"code": "APNS", "name": "Aparna Cinemas: Shamshabad", "subRegion": ""}, {"code": "ARMH", "name": "Asian Radhika Multiplex: ECIL", "subRegion": ""}, {"code": "PVHM", "name": "PVR ICON: Hitech, Madhapur, Hyderabad", "subRegion": ""}, {"code": "INKM", "name": "Cine Town Indra Nagendra: Karmanghat", "subRegion": ""}, {"code": "ACHI", "name": "Asian Sha & Shahensha: Chintal", "subRegion": ""}, {"code": "PVUM", "name": "PVR: Musarambagh, Hyderabad", "subRegion": ""}, {"code": "IPRS", "name": "INOX: Prism Mall, Hyderabad", "subRegion": ""}, {"code": "MRAD", "name": "Miraj Cinemas: Anand Mall and Movies, Narsingi", "subRegion": ""}, {"code": "SNKH", "name": "Asian Mukta A2 Sensation Cinema: Kairathabad", "subRegion": ""}, {"code": "MCSS", "name": "Miraj Cinemas: Shalini Shivani, Kothapet", "subRegion": ""}, {"code": "SNDY", "name": "Sandhya 35mm 2k Dolby Atmos: RTC X Roads", "subRegion": ""}, {"code": "DVRR", "name": "Devi 70MM 4K Laser & Dolby Atmos: RTC X Roads", "subRegion": ""}, {"code": "PVYH", "name": "PVR: Central Mall, Panjagutta", "subRegion": ""}, {"code": "ASJY", "name": "Asian Jyothi: RC Puram", "subRegion": ""}, {"code": "MCKT", "name": "Mahalaxmi Complex: Kothapet", "subRegion": ""}, {"code": "ARYH", "name": "Asian Rajya Lakshmi: Uppal", "subRegion": ""}, {"code": "MRAA", "name": "Miraj Cinemas: A2A Central Mall, Balanagar", "subRegion": ""}, {"code": "INHY", "name": "INOX GVK One, Banjara Hills", "subRegion": ""}, {"code": "INMH", "name": "INOX: Maheshwari Parmeshwari Mall, Kachiguda", "subRegion": ""}, {"code": "VRKC", "name": "Indra Venkataramana Padmavati Cinema: Kachiguda", "subRegion": ""}, {"code": "VTRB", "name": "Vijetha 70MM 4k Atmos: Borabanda", "subRegion": ""}, {"code": "SPCB", "name": "Asian Super Cinema: Balapur", "subRegion": ""}, {"code": "TVHY", "name": "Tivoli Cinemas: Secunderabad", "subRegion": ""}, {"code": "SUDA", "name": "Sudarshan 35MM 4k Laser & Dolby Atmos: RTC X Roads", "subRegion": ""}, {"code": "IVNM", "name": "INOX: SMR Vinay Metro Mall, Dolby ATMOS: Miyapur", "subRegion": ""}, {"code": "PRCX", "name": "PVR: RK Cineplex, Hyderabad", "subRegion": ""}, {"code": "MRGT", "name": "Miraj Cinemas: Geeta, Chandanagar", "subRegion": ""}, {"code": "STHD", "name": "Cinepolis: Sudha Cinemas, Hyderabad", "subRegion": ""}, {"code": "MRRG", "name": "Miraj Cinemas: Raghavendra, Malkajgiri", "subRegion": ""}, {"code": "SCHC", "name": "VLS Sridevi 2K A/C Dts: Chilakalguda", "subRegion": ""}, {"code": "UKCC", "name": "UK Cineplex: Nacharam, Hyderabad", "subRegion": ""}, {"code": "CPCL", "name": "Cinepolis: CCPL Mall Malkajgiri, Hyderabad", "subRegion": ""}, {"code": "AMCM", "name": "Asian Mukund Cinema: Medchal", "subRegion": ""}, {"code": "PSMJ", "name": "Movietime Cinemas: SKY Mall, Erragadda X Road", "subRegion": ""}, {"code": "MTHY", "name": "Platinum Movietime Cinema: Gachibowli SLN Terminus", "subRegion": ""}, {"code": "VAJA", "name": "Vyjayanthi Cinema A/C 2K: Nacharam", "subRegion": ""}, {"code": "PRCS", "name": "Prashant Cinema: Secunderabad (Newly Renovated)", "subRegion": ""}, {"code": "TRHY", "name": "Asian Tarakarama Cineplex: Kachiguda", "subRegion": ""}, {"code": "RKMH", "name": "Rama Krishna 70mm: Abids", "subRegion": ""}, {"code": "PTTH", "name": "Alankar (Pratap Theatre): Langer House", "subRegion": ""}, {"code": "SCVM", "name": "Sushma 2K Dolby Digital Cinema: Vanasthalipuram", "subRegion": ""}, {"code": "CPLK", "name": "CONNPLEX Luxuriance Cinemas: Mpm Mall, Banjara Hil", "subRegion": ""}, {"code": "BJNG", "name": "Bhujanga 70MM: Jeedimetla", "subRegion": ""}, {"code": "ARTH", "name": "Aradhana Theatre", "subRegion": ""}, {"code": "SRCA", "name": "Sree Ramana 70MM 4K Laser & Dolby 7.1: Amberpet", "subRegion": ""}, {"code": "SRKR", "name": "Sri Krishna 70MM: Uppal", "subRegion": ""}, {"code": "RMKN", "name": "Ramakrishna 35mm: Abids", "subRegion": ""}, {"code": "RCNH", "name": "ROONGTA CINEMAS: NOVUM, NAMPALLY", "subRegion": ""}, {"code": "SRCH", "name": "Sree Ramana Gold 4K & Dolby 7.1: Amberpet", "subRegion": ""}, {"code": "SSRJ", "name": "Sree Sai Raja Theatre: Musheerabad", "subRegion": ""}, {"code": "KTKT", "name": "Kumar Theatre: Kachiguda", "subRegion": ""}, {"code": "SNIB", "name": "Santosh Theatre: Ibrahimpatnam", "subRegion": ""}, {"code": "SLRT", "name": "Laxmi 70MM A/C LASER DOLBY 7.1: Shamshabad", "subRegion": ""}, {"code": "MCBH", "name": "Metro Cinema: Bahadurpura", "subRegion": ""}, {"code": "LKMT", "name": "Lakshmi Kala Mandir: Alwal", "subRegion": ""}, {"code": "SART", "name": "Saptagiri 70MM 4K & Dolby Digital: RTC X Roads", "subRegion": ""}, {"code": "SKTA", "name": "Sri Krishna Theatre: Aliabad (Shameerpet)", "subRegion": ""}, {"code": "YAKT", "name": "Yakut Mahal Theater: Yakutpura", "subRegion": ""}], "CHD": [{"code": "PECP", "name": "PVR: Elante, Chandigarh", "subRegion": ""}, {"code": "PMMI", "name": "PVR: CP67 Mall, Mohali", "subRegion": ""}, {"code": "PVKL", "name": "PVR: MOHALI WALK", "subRegion": ""}, {"code": "CBSM", "name": "Cinepolis: Bestech Square, Mohali", "subRegion": ""}, {"code": "PCCH", "name": "Piccadily Square", "subRegion": ""}, {"code": "PVCZ", "name": "PVR Cosmo: Zirakpur", "subRegion": ""}, {"code": "PCVV", "name": "PVR: Centra, Chandigarh", "subRegion": ""}, {"code": "CTMJ", "name": "Cinepolis: Jagat Mall, Chandigarh", "subRegion": ""}, {"code": "RCPS", "name": "Rajhans Cinemas: Panchkula", "subRegion": ""}, {"code": "INZD", "name": "INOX: Dhillon Plaza (Zirakpur)", "subRegion": ""}, {"code": "PCIT", "name": "PVR: City Centre IT Park, Chandigarh", "subRegion": ""}, {"code": "FNCH", "name": "Fun Cinemas: Republic Mall, Chandigarh", "subRegion": ""}, {"code": "INPC", "name": "INOX: NH22 Mall, Amravati Enclave, Panchkula", "subRegion": ""}, {"code": "LCZP", "name": "Legend Cinemas: Paras Downtown Square, Zirakpur", "subRegion": ""}], "AHD": [{"code": "PPAM", "name": "PVR: Palladium Mall, Ahmedabad", "subRegion": ""}, {"code": "CPAO", "name": "Cinepolis: Nexus Ahmedabad One", "subRegion": ""}, {"code": "PVAA", "name": "PVR: Acropolis, Ahmedabad", "subRegion": ""}, {"code": "RCCA", "name": "Rajhans Cinemas: The CBD Mall, Zundal Circle", "subRegion": ""}, {"code": "ARED", "name": "PVR: Arved Transcube, Ahmedabad", "subRegion": ""}, {"code": "HAMD", "name": "INOX: Himalaya Mall, Drive In Road, Ahmedabad", "subRegion": ""}, {"code": "NYST", "name": "Devgn CineX: Swagat Mall, Gandhinagar", "subRegion": ""}, {"code": "RRCV", "name": "Rajhans Cinemas: Vastral", "subRegion": ""}, {"code": "CKUA", "name": "Cinepolis: Kankubag, Vastral, Ahmedabad", "subRegion": ""}, {"code": "MPCH", "name": "Mango Plus Cinemas: Nikol", "subRegion": ""}, {"code": "CLKN", "name": "Classic Cinema, Kudasan: Gandhinagar", "subRegion": ""}, {"code": "MTRB", "name": "Mukta A2 Cinemas: The Retail Park (TRP) Bopal", "subRegion": ""}, {"code": "WAGA", "name": "Wide Angle", "subRegion": ""}, {"code": "METH", "name": "PVR: Motera, Ahmedabad", "subRegion": ""}, {"code": "NYAG", "name": "Devgn CineX: Chandkheda, Ahmedabad", "subRegion": ""}, {"code": "ABMP", "name": "AB Miniplex: Shivranjini Cross Road, Satellite", "subRegion": ""}, {"code": "CPLC", "name": "Cineprime Cinema: Luxuriance, Hanspura", "subRegion": ""}, {"code": "PSTM", "name": "PVR: Satyamev Emporio Odhav, Ahmedabad", "subRegion": ""}, {"code": "CGAR", "name": "City Gold: Ashram Road", "subRegion": ""}, {"code": "MCMA", "name": "Miraj Cinemas: City Pulse, Ahmedabad", "subRegion": ""}, {"code": "COPG", "name": "CONNPLEX Signature Cinemas: Gandhinagar", "subRegion": ""}, {"code": "CPEC", "name": "Cineprime Cinema: Nikol", "subRegion": ""}, {"code": "SBMT", "name": "Sanelite Cinemas (SB Multiplex): Agora Mall", "subRegion": ""}, {"code": "CSEP", "name": "CONNPLEX Signature Cinemas: Parimal", "subRegion": ""}, {"code": "WSIC", "name": "White Screen Cinema (Five 11): Gandhinagar", "subRegion": ""}, {"code": "RCNK", "name": "Rajhans Cinemas: Nikol", "subRegion": ""}, {"code": "INGA", "name": "INOX: Gandhinagar, Adalaj", "subRegion": ""}, {"code": "CONS", "name": "CONNPLEX Luxuriance Cinemas: SBR", "subRegion": ""}, {"code": "CSST", "name": "CONNPLEX Signature Cinemas: Shilaj", "subRegion": ""}, {"code": "APPX", "name": "Apple Multiplex: Maninagar, Ahmedabad", "subRegion": ""}, {"code": "CSTE", "name": "CONNPLEX Signature Cinemas: Gota", "subRegion": ""}, {"code": "CXST", "name": "CONNPLEX Signature Cinemas: South Bopal", "subRegion": ""}, {"code": "CSMP", "name": "CONNPLEX Luxuriance Cinemas: Prahladnagar", "subRegion": ""}, {"code": "CNLP", "name": "CONNPLEX Luxuriance Cinemas: Vaishnodevi", "subRegion": ""}, {"code": "SCSS", "name": "Sanelite Cinemas: Science City", "subRegion": ""}, {"code": "AMGD", "name": "Apple Multiplex: Gota, Ahmedabad", "subRegion": ""}, {"code": "MASA", "name": "Mukta A2 Shiv Cinema", "subRegion": ""}, {"code": "MACZ", "name": "Mukta A2 Cinemas: Rajyash, South Vasna, Ahmedabad", "subRegion": ""}, {"code": "MATN", "name": "Mukta A2 Cinemas: Ratnanjali Square Satellite", "subRegion": ""}, {"code": "MABC", "name": "Mukta A2 Cinemas: Chandkheda", "subRegion": ""}, {"code": "MVSK", "name": "Miraj Cinemas: Vardhman Square, Sanand", "subRegion": ""}, {"code": "MBSX", "name": "Miraj Cinemas: Shalin Square, Hathijan", "subRegion": ""}, {"code": "CGOS", "name": "City Gold Satellite", "subRegion": ""}, {"code": "CNAD", "name": "CONNPLEX Luxuriance Cinemas: Adani Shantigram", "subRegion": ""}, {"code": "APCL", "name": "Apple Cinema: Bapunagar", "subRegion": ""}, {"code": "BSSO", "name": "Sanelite Cinemas (Banana Smartplex): SBR, Thaltej", "subRegion": ""}, {"code": "MCCP", "name": "Miraj Cinemas: Cinepride, Krishna Nagar", "subRegion": ""}, {"code": "SCSV", "name": "Sanelite Cinemas: South Bopal", "subRegion": ""}, {"code": "HVCA", "name": "Havelock Cineflix Cinemas: Maninagar, Ahmedabad", "subRegion": ""}, {"code": "SJKA", "name": "SK Cinemas: Hathijan", "subRegion": ""}, {"code": "DEVI", "name": "Devi Multiplex: Naroda", "subRegion": ""}, {"code": "CSAN", "name": "CONNPLEX Signature Cinemas: Narol", "subRegion": ""}, {"code": "YMCY", "name": "Magic Cinema: YMCA Club", "subRegion": ""}, {"code": "TCZA", "name": "The Cinestar Miniplex: Bhat Circle, SP Ring Road", "subRegion": ""}, {"code": "NAMD", "name": "1,Newfangled Miniplex (Twin Seat): Mondeal Park", "subRegion": ""}, {"code": "CLDJ", "name": "City Gold: Jivraj Park", "subRegion": ""}, {"code": "MCNA", "name": "Miraj Cinemas: Vitthal Plaza, New Naroda", "subRegion": ""}, {"code": "CIXH", "name": "CINELUX Cinema:Sola SG Highway (Newly Premium JBL)", "subRegion": ""}, {"code": "CGBO", "name": "City Gold: Bopal", "subRegion": ""}, {"code": "VJMB", "name": "Vijay Cinema: Bavla", "subRegion": ""}, {"code": "CGMO", "name": "City Gold: Motera", "subRegion": ""}, {"code": "REMA", "name": "Revolution Multiplex, CTM", "subRegion": ""}, {"code": "NMAD", "name": "2,Newfangled Miniplex (Twin Seat): Motera", "subRegion": ""}, {"code": "PSMA", "name": "P Square Movieplex, Gota", "subRegion": ""}, {"code": "CPMU", "name": "City Pulse Miniplex: Iscon Circle S.G Highway", "subRegion": ""}, {"code": "OCBN", "name": "Orange Cinemas: Bapunagar", "subRegion": ""}, {"code": "CPEM", "name": "City Pulse: Orient Miniplex, Ellisbridge", "subRegion": ""}, {"code": "RCAD", "name": "Rupam Multiplex", "subRegion": ""}, {"code": "DICD", "name": "Drive In Cinema", "subRegion": ""}, {"code": "CPSM", "name": "Savvy Swaraaj Miniplex: Gota, Ahmedabad", "subRegion": ""}, {"code": "MAAM", "name": "Mira Cinema", "subRegion": ""}, {"code": "RACD", "name": "Rupam Arth Cineplex: Sanand", "subRegion": ""}], "PUNE": [{"code": "PMPW", "name": "INOX Megaplex Phoenix Mall of the Millennium Wakad", "subRegion": ""}, {"code": "PCMZ", "name": "PVR: Phoenix Market City, Pune", "subRegion": ""}, {"code": "PUNB", "name": "Cinepolis: Seasons Mall, Pune", "subRegion": ""}, {"code": "CPKT", "name": "City Pride: Kothrud", "subRegion": ""}, {"code": "ESEM", "name": "E-SQUARE: Xion Mall, Hinjawadi", "subRegion": ""}, {"code": "CNWE", "name": "Cinepolis: Nexus WESTEND Mall Aundh, Pune", "subRegion": ""}, {"code": "CYKR", "name": "City Pride, Nyati Plaza: Kharadi", "subRegion": ""}, {"code": "ECPP", "name": "INOX: Elpro City Square, Chinchwad", "subRegion": ""}, {"code": "PIPO", "name": "PVR: Icon, The Pavillion Pune", "subRegion": ""}, {"code": "MATK", "name": "MovieMax: Amanora Town Centre, Pune(Now Renovated)", "subRegion": ""}, {"code": "CPAR", "name": "Abhiruchi City Pride: Sinhagad Road", "subRegion": ""}, {"code": "VJHS", "name": "E-SQUARE: VJ Happiness Street, Hinjawadi", "subRegion": ""}, {"code": "PGHM", "name": "PVR: Grand Highstreet Mall, Hinjawadi", "subRegion": ""}, {"code": "VCPM", "name": "Vishal Cinemaas: Pimpri", "subRegion": ""}, {"code": "MSCM", "name": "Miraj Cinemas: Spine City Mall, Pune", "subRegion": ""}, {"code": "NPSE", "name": "E-SQUARE: University Road, Pune (Newly Renovated)", "subRegion": ""}, {"code": "PKPU", "name": "PVR: Kumar Pacific, Pune", "subRegion": ""}, {"code": "CTSR", "name": "City Pride: Satara Road", "subRegion": ""}, {"code": "ESBW", "name": "Bollywood Multiplex: Kharadi", "subRegion": ""}, {"code": "RHMN", "name": "INOX: Royal Heritage Mall, NIBM Ext", "subRegion": ""}, {"code": "CPRP", "name": "City Pride Royal Cinemas: Rahatani", "subRegion": ""}, {"code": "FMJP", "name": "INOX: Jai Ganesh, Akurdi", "subRegion": ""}, {"code": "PDCP", "name": "PVR: Directors Cut, KOPA, Pune", "subRegion": ""}, {"code": "MKML", "name": "MovieMax Gold: Mariplex Mall, Kalyani Nagar", "subRegion": ""}, {"code": "INPN", "name": "INOX: Bund Garden Road", "subRegion": ""}, {"code": "RFNP", "name": "Rajhans Cinemas: 93 Avenue Mall,Fatima Nagar, Pune", "subRegion": ""}, {"code": "STTG", "name": "Shri Shivaji Talkies: Talegaon", "subRegion": ""}, {"code": "CTMP", "name": "City Pride: Mangala Cinema", "subRegion": ""}, {"code": "RAHU", "name": "Rahul 70 MM: Shivajinagar, Pune", "subRegion": ""}, {"code": "CLTP", "name": "CONNPLEX Luxuriance Cinemas: Tribeca Highstreet", "subRegion": ""}, {"code": "CKPP", "name": "Cinemark 24 Proxima: Indryani Nagar, Bhosari-Pune", "subRegion": ""}, {"code": "PUVB", "name": "Cinepolis: VIP Seasons Mall, Pune", "subRegion": ""}, {"code": "DCCP", "name": "Dharmatma Cinemark: Chakan, Pune", "subRegion": ""}, {"code": "CTRD", "name": "City Pride: R Deccan", "subRegion": ""}, {"code": "ESVP", "name": "Victory Theatre: Camp, Pune", "subRegion": ""}, {"code": "LCPC", "name": "Laxmi Cineplex: Narayangaon", "subRegion": ""}, {"code": "CPFT", "name": "Fun Time Multiplex: Sinhagad Road", "subRegion": ""}, {"code": "VBCT", "name": "Vaibhav Chitramandir: Hadapsar", "subRegion": ""}, {"code": "FTDP", "name": "Funtime Deluxe: Pimpri, Pune", "subRegion": ""}, {"code": "VCMP", "name": "Vikas Cinema: Manchar", "subRegion": ""}, {"code": "FSCW", "name": "Funsquare Cinema: Ghotawade Phata", "subRegion": ""}, {"code": "CEPO", "name": "CinePRO: Vasant Cinema, Pune", "subRegion": ""}, {"code": "ASHC", "name": "Ashok Theatre: Pimpri", "subRegion": ""}, {"code": "VLCX", "name": "Vilux Talkies: Khadki", "subRegion": ""}, {"code": "SHEV", "name": "Shevanta Cinema: Junnar", "subRegion": ""}], "CHEN": [{"code": "RAKK", "name": "Rakki Cinemas: OMR, Kelambakkam", "subRegion": ""}, {"code": "TVHP", "name": "The Vijay Park Multiplex: Injambakkam ECR 4K Atmos", "subRegion": ""}, {"code": "RRGB", "name": "Rakki RGB Laser 4K: Thiruvallur", "subRegion": ""}, {"code": "KVCS", "name": "KC(KrishnaveniCinemas) RG3 LASER DOLBYATMOS TNAGAR", "subRegion": ""}, {"code": "MCXF", "name": "Meenakshi Cinemas (Rakki) 4K Dolby Atmos: Avadi", "subRegion": ""}, {"code": "CBMC", "name": "Cinepolis: BSR Mall, OMR, Thoraipakkam", "subRegion": ""}, {"code": "MAYJ", "name": "MAYAJAAL Multiplex: ECR, Chennai", "subRegion": ""}, {"code": "AGSM", "name": "AGS Cinemas: Maduravoyal", "subRegion": ""}, {"code": "ACVM", "name": "AGS Cinemas: Villivakkam", "subRegion": ""}, {"code": "ACTN", "name": "AGS Cinemas: T. Nagar", "subRegion": ""}, {"code": "RSSC", "name": "Rohini Silver Screens: Koyambedu", "subRegion": ""}, {"code": "PVPZ", "name": "PVR: Palazzo, The Nexus Vijaya Mall", "subRegion": ""}, {"code": "PVHR", "name": "PVR: Heritage RSL ECR, Chennai", "subRegion": ""}, {"code": "PCAN", "name": "PVR: VR Chennai, Anna Nagar", "subRegion": ""}, {"code": "MCSK", "name": "Miraj Cinemas: Sekaran Mall, Perrumbakkam", "subRegion": ""}, {"code": "INTO", "name": "INOX: The Marina Mall, OMR", "subRegion": ""}, {"code": "INPR", "name": "INOX: LUXE Phoenix Market City, Velachery", "subRegion": ""}, {"code": "VVGT", "name": "Vels Theatres", "subRegion": ""}, {"code": "PVES", "name": "HDFC Millennia PVR: Escape-Express Avenue Mall", "subRegion": ""}, {"code": "ACON", "name": "AGS Cinemas OMR: Navlur", "subRegion": ""}, {"code": "PVHC", "name": "PVR: Ampa Mall, Nelson Manickam Road", "subRegion": ""}, {"code": "PVSR", "name": "PVR: Sathyam, Royapettah", "subRegion": ""}, {"code": "MMPR", "name": "MovieMax: PR Mall, Wall Tax Road, Chennai", "subRegion": ""}, {"code": "PSKL", "name": "PVR: SKLS Galaxy Mall, Red Hills Chennai", "subRegion": ""}, {"code": "PABC", "name": "PVR: Aerohub, Chennai", "subRegion": ""}, {"code": "FMCN", "name": "INOX National: Arcot Road", "subRegion": ""}, {"code": "PBRM", "name": "PVR: Perambur, Spectrum Mall", "subRegion": ""}, {"code": "RDMP", "name": "Shree Radha Movie Park 4K Dolby Atmos: Redhills", "subRegion": ""}, {"code": "WSTC", "name": "Woodlands Theatre", "subRegion": ""}, {"code": "PGRA", "name": "PVR: Grand Galada, Pallavaram", "subRegion": ""}, {"code": "PGMV", "name": "PVR: Grand Mall, Velachery", "subRegion": ""}, {"code": "VVTN", "name": "VETRIVEL RGB DOLBY:NANGANALLUR (NEWLY RENOVATED)", "subRegion": ""}, {"code": "KSTK", "name": "Kasi Talkies Dolby Atmos: Ashok Nagar", "subRegion": ""}, {"code": "INCH", "name": "INOX", "subRegion": ""}, {"code": "MLMT", "name": "Marvel Movie Max 4K Laser Dolby Atmos: Tiruvallur", "subRegion": ""}, {"code": "KMRM", "name": "Kumaran Theatre PROVA 4K DOLBY ATMOS: Madipakkam", "subRegion": ""}, {"code": "MMKC", "name": "Medavakkam Kumaran Cinemas RGB LASER Dolby Atmos", "subRegion": ""}, {"code": "JOTG", "name": "Jothi Theatre 4K A/c DTS: ST Thomas Mount", "subRegion": ""}, {"code": "SLMP", "name": "SLB (LakshmiBala) Movie Park 4K Dolby Atmos: Padi", "subRegion": ""}, {"code": "GAHC", "name": "Gopalakrishna A/C 2K DOLBY 7.1-Karanodai(Redhills)", "subRegion": ""}, {"code": "JTPL", "name": "Janatha Theatre 4K AC DTS (JBL AUDIO): Pallavaram", "subRegion": ""}, {"code": "ASGG", "name": "Alankar Theatre: Maduranthakam", "subRegion": ""}, {"code": "HRSR", "name": "Sri Hari Theatre Dolby Atmos: Pattabiram", "subRegion": ""}, {"code": "GKGM", "name": "Gayathiri Cinemas A/C Dolby Atmos: Maduranthakam", "subRegion": ""}, {"code": "ATMG", "name": "Anand Theatre Madhuranthagam RGB LASER 4k", "subRegion": ""}, {"code": "JTMV", "name": "VVM Cinemas 3D 2K AC Dts, Ponneri", "subRegion": ""}, {"code": "AVMT", "name": "AVM Cinemas: Uthukkottai", "subRegion": ""}, {"code": "GRTC", "name": "GanapathyRam Theatre 4K Dolby 7.1", "subRegion": ""}, {"code": "AMTT", "name": "Arul Muruga Theatre 4K: Thiruporur", "subRegion": ""}, {"code": "GCRP", "name": "Green Cinemas 4K Atmos, PLF: Padi", "subRegion": ""}, {"code": "GKCP", "name": "GK Cinemas RGB + Laser SRL 4D: Porur", "subRegion": ""}, {"code": "LKOP", "name": "Lathaa Cinemas A/C Atmos 2K 3D: Chengalpattu", "subRegion": ""}, {"code": "SSCC", "name": "Sivasakthi Cinemas RGB 4K Laser: Padi", "subRegion": ""}, {"code": "VECT", "name": "Vela Cinemas RGB 4KLaser DolbyAtmos: Thiruninravur", "subRegion": ""}, {"code": "SUTC", "name": "Gokulam Cinemas 4K Dolby Atmos: Poonamalle", "subRegion": ""}, {"code": "REMC", "name": "Remy Cinemas A/C DTS 2K 3D Laser: Avadi", "subRegion": ""}, {"code": "SBTR", "name": "SB Cinemas (Sri Bhagavathi) 4K Atmos: Poonamallee", "subRegion": ""}, {"code": "NLTC", "name": "National Theatre 4K Dolby Atmos: Tambaram", "subRegion": ""}, {"code": "SVWT", "name": "Vigneshwara Theatre RGB Laser: Poonamallee", "subRegion": ""}, {"code": "VCDK", "name": "Venkateswara Cinemas DOLBY ATMOS: Kundrathur", "subRegion": ""}, {"code": "VRCP", "name": "VR Cinemas RGB 4K LASER DOLBY ATMOS: Pattabiram", "subRegion": ""}, {"code": "MTLM", "name": "Mani Talkies 2K RGB Laser ATMOS: Minjur", "subRegion": ""}, {"code": "OMTT", "name": "Odiyan Mani Theatre 2k A/c Dolby: Thiruvottiyur", "subRegion": ""}], "KOLK": [{"code": "FSCK", "name": "INOX: South City, Kolkata", "subRegion": ""}, {"code": "NNKA", "name": "Nandan", "subRegion": ""}, {"code": "INQM", "name": "INOX: Quest Mall", "subRegion": ""}, {"code": "DMPZ", "name": "PVR: Diamond Plaza, Jessore Kolkata", "subRegion": ""}, {"code": "CLMK", "name": "Cinepolis: Lake Mall, Kolkata", "subRegion": ""}, {"code": "MSMA", "name": "PVR: Mani Square Mall, Kolkata", "subRegion": ""}, {"code": "INRK", "name": "INOX: City Centre II, Rajarhat", "subRegion": ""}, {"code": "CAML", "name": "Cinepolis: Acropolis Mall, Kolkata", "subRegion": ""}, {"code": "INSL", "name": "INOX: City Center, Salt Lake", "subRegion": ""}, {"code": "MCKK", "name": "Miraj Cinemas: The Terminus, New Town", "subRegion": ""}, {"code": "IMKN", "name": "INOX: Star Mall, Madhyamgram", "subRegion": ""}, {"code": "PVAK", "name": "PVR: Avani, Kolkata", "subRegion": ""}, {"code": "RDBK", "name": "RDB Cinemas: Salt Lake, Kolkata", "subRegion": ""}, {"code": "INER", "name": "INOX: Forum Mall, Elgin Road", "subRegion": ""}, {"code": "ATCK", "name": "Atindra Cinema: Barrackpore", "subRegion": ""}, {"code": "IFRM", "name": "INOX: Forum Rangoli Mall, Belur", "subRegion": ""}, {"code": "NACK", "name": "Navina Cinema: Tollygunge", "subRegion": ""}, {"code": "ASKO", "name": "Asoka Cinema: Behala", "subRegion": ""}, {"code": "IMJN", "name": "INOX: Metro, Jawaharlal Nehru Road", "subRegion": ""}, {"code": "SVNR", "name": "SVF Cinemas: Wood Square Mall, Narendrapur", "subRegion": ""}, {"code": "ATJA", "name": "SSR Ajanta Cinema: Behala", "subRegion": ""}, {"code": "INKS", "name": "INOX: Swabhumi, Maulana Azad Sarani", "subRegion": ""}, {"code": "RTOY", "name": "Radha Studio: Tollygunge", "subRegion": ""}, {"code": "FCHP", "name": "INOX: Hiland Park", "subRegion": ""}, {"code": "PCRA", "name": "Priya Cinema: Rashbehari Avenue", "subRegion": ""}, {"code": "STKT", "name": "Binodini Theatre (Star Theatre)", "subRegion": ""}, {"code": "MCSL", "name": "Miraj Cinemas: Downtown Mall, Salt Lake", "subRegion": ""}, {"code": "BARA", "name": "Bioscope: Axis Mall, Rajarhat", "subRegion": ""}, {"code": "SSGK", "name": "SSR Globe Cinemas: New Market, Kolkata", "subRegion": ""}, {"code": "SFCR", "name": "SVF Cinemas: Platina Mall, Howrah", "subRegion": ""}, {"code": "INHD", "name": "Hind INOX", "subRegion": ""}, {"code": "RTHK", "name": "Rathindra Multiplex: Sodepur", "subRegion": ""}, {"code": "SVFN", "name": "Nazrultirtha Cinema", "subRegion": ""}, {"code": "EMCI", "name": "Elora Multiplex: Champahati", "subRegion": ""}, {"code": "ACNB", "name": "SSR Cinemas, Suncity Mall: Barasat", "subRegion": ""}, {"code": "SSRL", "name": "SSR Cinemas: Maheshtala", "subRegion": ""}, {"code": "MENO", "name": "Menoka Cinema", "subRegion": ""}, {"code": "PRCN", "name": "Prachi Cinema", "subRegion": ""}, {"code": "SVFB", "name": "SVF Cinemas: Baruipur Show House, Baruipur", "subRegion": ""}, {"code": "MRJH", "name": "Miraj Cinemas: Aurbindo Mall, Howrah", "subRegion": ""}, {"code": "JYKL", "name": "Jayanti Cinema: Barrackpore", "subRegion": ""}, {"code": "JMJR", "name": "Jaya Cinemas: City Mall, Barasat", "subRegion": ""}, {"code": "NECA", "name": "New Empire Cinema", "subRegion": ""}, {"code": "SONP", "name": "Sonali Cinema: Dunlop", "subRegion": ""}, {"code": "BJLC", "name": "Bijoli Cinema", "subRegion": ""}, {"code": "BASU", "name": "Basusree Cinema", "subRegion": ""}, {"code": "RDCQ", "name": "Rupmandir Cinema: Belghoria", "subRegion": ""}, {"code": "UDMM", "name": "Utpal Dutta Mancha: Maheshtala", "subRegion": ""}, {"code": "AMLC", "name": "Amala Cinema: Barrackpore (AC Dolby Atmos)", "subRegion": ""}, {"code": "LCBK", "name": "Lali Cinema: Barasat", "subRegion": ""}, {"code": "LICL", "name": "Lila Cinema: Baruipur", "subRegion": ""}, {"code": "PMAC", "name": "Padma Cinema", "subRegion": ""}, {"code": "STBZ", "name": "Sobha Talkies: Betberia", "subRegion": ""}, {"code": "UUBT", "name": "Uma Talkies: Bakhrahat", "subRegion": ""}], "KOCH": [{"code": "PVLC", "name": "PVR: Lulu, Kochi", "subRegion": ""}, {"code": "PVMF", "name": "PVR: Forum Mall, Kochi", "subRegion": ""}, {"code": "CPCK", "name": "Cinepolis: Centre Square, Kochi", "subRegion": ""}, {"code": "PMNK", "name": "PVR: Mymoon, Kochi", "subRegion": ""}, {"code": "SNYK", "name": "Shenoys", "subRegion": ""}, {"code": "PCVB", "name": "PVR: Oberon Mall, Kochi", "subRegion": ""}, {"code": "MYCA", "name": "MY Cinemas, KSRT Complex, Angamaly: Kerala", "subRegion": ""}, {"code": "EVMP", "name": "EVM Cinema A/C 4K RGB Laser 3D: Perumbavoor", "subRegion": ""}, {"code": "CPSK", "name": "Cinepolis: VIP Centre Square Mall, Kochi", "subRegion": ""}, {"code": "VMHE", "name": "Vanitha Cineplex RGB Laser 4K 3D ATMOS: Edappally", "subRegion": ""}, {"code": "PMCE", "name": "Padma Cinema", "subRegion": ""}, {"code": "ACPV", "name": "Aashirvad Cineplexx: Piravom", "subRegion": ""}, {"code": "KTEK", "name": "Kavitha Theatre 4K 3D Dolby 7.1: Ernakulam", "subRegion": ""}, {"code": "NTTR", "name": "New Central Talkies RGB Laser 4K 3D Dolby Atmos", "subRegion": ""}, {"code": "MAJT", "name": "Majestic Multiplex 4K RGB Laser: Narakkal", "subRegion": ""}, {"code": "JMMA", "name": "JM Movies Josh Mall: Mookkannoor Angamaly", "subRegion": ""}, {"code": "MYCR", "name": "MY Cinemas RedCarpet: Kariyad", "subRegion": ""}, {"code": "GCFK", "name": "G Cinemas Fort Kochi: 4K Dolby ATMOS", "subRegion": ""}, {"code": "PCNM", "name": "PAN Cinemas Nucleus Mall 4K ATMOS", "subRegion": ""}, {"code": "CETA", "name": "Central Talkies RGB Laser 4K  3D Dolby Atmos", "subRegion": ""}, {"code": "MCIK", "name": "M Cinemas 4K 3D Dolby ATMOS: Varapuzha", "subRegion": ""}, {"code": "FSMA", "name": "Four Star Movies: Manjapra, Angamaly", "subRegion": ""}, {"code": "MMTA", "name": "Matha Madhurya RGB Laser 3D Dolby Atmos: Aluva", "subRegion": ""}, {"code": "KCTK", "name": "K Cinemas 4K Dolby Atmos Tripplebeam 3D: Cherai", "subRegion": ""}, {"code": "ACPK", "name": "Aashirvad Cineplexx: Perumbavoor", "subRegion": ""}, {"code": "ZTKC", "name": "Zeenath Theatre A/c Real Laser Dolby 7.1: Aluva", "subRegion": ""}, {"code": "KSNP", "name": "Kairali Sree Theater: North Parvur", "subRegion": ""}, {"code": "CAIS", "name": "Casino Talkies A/C Real Laser 3D DOLBY 7.1: Aluva", "subRegion": ""}, {"code": "JMAX", "name": "J MAX  2K 3D Dolby 7.1: PATTIMATTOM", "subRegion": ""}, {"code": "SSGT", "name": "Shafaz Laser & Grand 4K Theatre North Paravoor", "subRegion": ""}, {"code": "SCKI", "name": "Savita Cinema", "subRegion": ""}, {"code": "SCKO", "name": "Sarita Cinema RGB Laser 4K 3D ATMOS", "subRegion": ""}, {"code": "SETK", "name": "Sangeeta Cinema", "subRegion": ""}], "AGRA": [{"code": "SARV", "name": "SARV Cinemas", "subRegion": ""}, {"code": "PAJA", "name": "PVR: Anjana Mall, Agra", "subRegion": ""}, {"code": "SEEG", "name": "Shree Cinema, Dolby Atmos, 4k Laser", "subRegion": ""}, {"code": "CCPF", "name": "Cineworld Multiplex: Paras Pearls Mall, Agra", "subRegion": ""}, {"code": "APAS", "name": "Meher Theatre", "subRegion": ""}, {"code": "GLCA", "name": "Gold Cinema", "subRegion": ""}, {"code": "SJTA", "name": "Sanjay Talkies", "subRegion": ""}, {"code": "VCIA", "name": "Vimal Cineplex", "subRegion": ""}, {"code": "PPAG", "name": "Panna Palace", "subRegion": ""}, {"code": "SABM", "name": "Bharat Starworld Cinema", "subRegion": ""}, {"code": "RVCA", "name": "Rajeev Cinema", "subRegion": ""}, {"code": "CCIA", "name": "Chitra Cinema", "subRegion": ""}], "AJMER": [{"code": "PJRR", "name": "PVR: Mittal Mall, Ajmer", "subRegion": ""}, {"code": "INAC", "name": "INOX: City Square Mall, Ajmer", "subRegion": ""}, {"code": "MMMX", "name": "MayaMandir Multiplex (Dolby Atmos Sound)", "subRegion": ""}], "AMRI": [{"code": "FNAS", "name": "Cinepolis: Nexus Amritsar", "subRegion": ""}, {"code": "SCAR", "name": "INOX: VR Ambarsar, Amritsar", "subRegion": ""}, {"code": "MTCA", "name": "Movietime Cinemas: Omaxe Novelty Mall, Amritsar", "subRegion": ""}, {"code": "SCTS", "name": "PVR: SCT, Amritsar", "subRegion": ""}], "ATKK": [{"code": "LRTA", "name": "Lakshmi Ranga Theater: Atmakur", "subRegion": ""}, {"code": "RMHK", "name": "Ranga Mahal Theater: Atmakur", "subRegion": ""}], "ATMK": [], "AUBI": [{"code": "NYTO", "name": "Narendra Talkies: Aurangabad", "subRegion": ""}], "AURW": [{"code": "SHAY", "name": "Shyamal Talkies: Aurangabad (W.B)", "subRegion": ""}], "BKOT": [{"code": "KTKO", "name": "Sri Venkateswara Theater Dolby Digital", "subRegion": ""}, {"code": "SDBK", "name": "Sri Dwarakanatha Talkies: B Kothakota", "subRegion": ""}], "BELG": [{"code": "INBL", "name": "INOX: Camp Road, Belagavi", "subRegion": ""}, {"code": "BIKB", "name": "Kapeel Cinema Nucleus Mall", "subRegion": ""}, {"code": "SNTB", "name": "Swaroop Nartaki Talkies", "subRegion": ""}, {"code": "NTBB", "name": "Nirmal Theatre: Belagavi", "subRegion": ""}, {"code": "CHGV", "name": "Chitra Talkies: Belagavi", "subRegion": ""}, {"code": "GLOB", "name": "Globe Cinemas: Camp Area", "subRegion": ""}, {"code": "PRDB", "name": "Prakash Digital 4K Cinema: Belagavi", "subRegion": ""}, {"code": "SSBZ", "name": "Santosh Theatre: Belagavi", "subRegion": ""}], "BHAW": [{"code": "BMBK", "name": "Bhagirathi Multiplex", "subRegion": ""}, {"code": "NEWS", "name": "New Star Cineplex", "subRegion": ""}], "BHOP": [{"code": "FNBP", "name": "Cinepolis: DB Mall, Bhopal", "subRegion": ""}, {"code": "CBPB", "name": "Cinepolis: Bansal Plaza, Bhopal", "subRegion": ""}, {"code": "CPAS", "name": "Cinepolis: Aashima Mall, Bhopal", "subRegion": ""}, {"code": "MAPM", "name": "Mukta A2 Cinemas: Peoples Mall, Bhopal", "subRegion": ""}, {"code": "PASD", "name": "PVR: Aura Mall, Bhopal", "subRegion": ""}, {"code": "JCMN", "name": "Jyoti Cineplex (New Seats)", "subRegion": ""}, {"code": "SACG", "name": "Sangam Cineplex", "subRegion": ""}, {"code": "MALB", "name": "Miraj Cinemas: Alark Square, Bhopal", "subRegion": ""}, {"code": "DDXB", "name": "DDX Cinema Kolar", "subRegion": ""}, {"code": "DDRX", "name": "DDX Regal Cinema Awadhpuri", "subRegion": ""}, {"code": "RAMC", "name": "Rangmahal Cineplex", "subRegion": ""}, {"code": "SANC", "name": "Sangeet Cineplex", "subRegion": ""}, {"code": "BCBP", "name": "Bharat Cineplex", "subRegion": ""}, {"code": "RBAC", "name": "Raj Big 2 Cinema", "subRegion": ""}, {"code": "ALPC", "name": "Alpana Air-Cooled Cineplex", "subRegion": ""}, {"code": "BPKC", "name": "British Park Cineplex", "subRegion": ""}, {"code": "RAJL", "name": "Raj Cinema", "subRegion": ""}], "BHUB": [{"code": "MPDB", "name": "Maharaja (Christie 4K, DOLBY ATMOS 64 CHANNEL)", "subRegion": ""}, {"code": "CNED", "name": "Cinepolis: Nexus Esplanade, Bhubaneswar", "subRegion": ""}, {"code": "SWBH", "name": "Sriya Swati Stutee Cineplexx (4K, DOLBY ATMOS)", "subRegion": ""}, {"code": "KTBH", "name": "Keshari Talkies (BARCO 4K LASER DOLBY ATMOS)", "subRegion": ""}, {"code": "PUGB", "name": "PVR: Utkal Kanika Galleria, Bhubaneswar", "subRegion": ""}, {"code": "IDRM", "name": "INOX: DN Regalia Mall", "subRegion": ""}, {"code": "INBB", "name": "INOX: BMC Bhawani Mall", "subRegion": ""}, {"code": "INNS", "name": "INOX: Symphony Mall", "subRegion": ""}, {"code": "PJJT", "name": "PJ Movies (Veena Theatre): Jatni", "subRegion": ""}], "CPTN": [{"code": "BBTC", "name": "Sri Balaji Talkies", "subRegion": ""}, {"code": "SLSM", "name": "Sri Lakshmi Theatre", "subRegion": ""}], "CHNN": [], "AURA": [{"code": "SCAU", "name": "INOX: Prozone Mall, Chhatrapati Sambhaji Nagar", "subRegion": ""}, {"code": "RMIA", "name": "INOX: Reliance Mall, Chhatrapati Sambhaji Nagar", "subRegion": ""}, {"code": "ARDC", "name": "Anjali Ratnadeep Cinema:Chhatrapati SambhajiNagar", "subRegion": ""}, {"code": "NCCI", "name": "Nupur Cinema: Chh.Sambhajinagar (Newly Renovated)", "subRegion": ""}, {"code": "GLDA", "name": "Goldie Cinemark: Chhatrapati Sambhaji Nagar", "subRegion": ""}, {"code": "KVSW", "name": "Khinvasara Cineplex: Waluj", "subRegion": ""}, {"code": "ANES", "name": "Abhinay: Chhatrapati Sambhaji Nagar", "subRegion": ""}, {"code": "AAAD", "name": "Khinvasara Cineplex: Chhatrapati SambhajiNagar", "subRegion": ""}, {"code": "MNCA", "name": "MohanNova Cinemaz: Chhatrapati SambhajiNagar", "subRegion": ""}], "COIM": [{"code": "CCCB", "name": "Cosmo Cinemas PEELAMEDU AC 4K RGB Laser:Coimbatore", "subRegion": ""}, {"code": "MCTC", "name": "Murugan Cinemas A/C 4K Atmos: Thudiyalur", "subRegion": ""}, {"code": "CCAT", "name": "Cosmo Cinemas: NARASIMANAIKEN PALAYAM, AC 4k ATMOS", "subRegion": ""}, {"code": "JTPC", "name": "Jayanthi Cinemas A/C 4K LASER ATMOS: P.N Palayam", "subRegion": ""}, {"code": "FNCO", "name": "Cinepolis: Fun Republic Mall, Coimbatore", "subRegion": ""}, {"code": "KGCM", "name": "KG Cinemas", "subRegion": ""}, {"code": "BWCB", "name": "Broadway Cinemas", "subRegion": ""}, {"code": "INPT", "name": "INOX: Prozone Mall, Coimbatore", "subRegion": ""}, {"code": "KOVI", "name": "Kovai Shanti Complex 4K 3D", "subRegion": ""}, {"code": "PFSC", "name": "PVR: Alveal Fun Savvy Mall, Coimbatore", "subRegion": ""}, {"code": "SRMJ", "name": "Miraj Cinemas: SRK Mall, Coimbatore", "subRegion": ""}, {"code": "PBMC", "name": "PVR: Brookefields Mall, Coimbatore", "subRegion": ""}, {"code": "SETC", "name": "Sangeetha Multiplex: Somanur", "subRegion": ""}, {"code": "GKCC", "name": "Gokulam Cinemas A/C 2K", "subRegion": ""}, {"code": "KARP", "name": "Karpagam Theatres 4K Dolby Atmos", "subRegion": ""}, {"code": "SDKT", "name": "Sri Sakthi Kalpana Cinemas: Kavundampalayam", "subRegion": ""}, {"code": "KRCC", "name": "Krithika Cinemas A/C 4K Dolby", "subRegion": ""}, {"code": "MEEN", "name": "Meenambiga Cinemas A/C 2K DOLBY ATMOS: Somanur", "subRegion": ""}, {"code": "ASCC", "name": "Arasan Cinemas A/C 4K Dolby", "subRegion": ""}, {"code": "KACC", "name": "Kavitha Cinemas 4K Dolby Atmos: K.G. Chavadi", "subRegion": ""}, {"code": "KAVE", "name": "Kaveri Cinema", "subRegion": ""}], "DEH": [{"code": "PMOD", "name": "PVR: Mall Of Dehradun", "subRegion": ""}, {"code": "PVCN", "name": "PVR: Centrio, Dehradun", "subRegion": ""}, {"code": "SCRZ", "name": "Silver City Multiplex: Rajpur Road", "subRegion": ""}, {"code": "PVPC", "name": "PVR: Pacific, Dehradun", "subRegion": ""}, {"code": "STID", "name": "Starworld IPS Multiplex Euphoria (Vikas Mall)", "subRegion": ""}, {"code": "MLDP", "name": "Microcineplex Cinema", "subRegion": ""}, {"code": "BNBA", "name": "Movie Lounge: Crossroads Mall, Dehradun", "subRegion": ""}, {"code": "NTCD", "name": "Natraj Cinema", "subRegion": ""}, {"code": "NEDD", "name": "FUN Cinemas New Empire", "subRegion": ""}, {"code": "OCDE", "name": "Orient Cinema", "subRegion": ""}, {"code": "KBPK", "name": "KB Cinema: Rani Pokhari", "subRegion": ""}], "GOA": [{"code": "INGO", "name": "INOX: Old GMC, DB Road, Panaji", "subRegion": ""}, {"code": "INPO", "name": "INOX: Porvorim, Goa", "subRegion": ""}, {"code": "INMG", "name": "INOX: Osia G Wing Margao, Goa", "subRegion": ""}, {"code": "INOA", "name": "INOX: Osia A Wing Margao, Goa", "subRegion": ""}, {"code": "HFSV", "name": "Z Square Cine Shivam: Vasco Da Gama", "subRegion": ""}, {"code": "HFSQ", "name": "Z Square Hira Talkies: Bicholim", "subRegion": ""}, {"code": "NYCP", "name": "Novelty Laserplex: Ponda, Goa (Newly Renovated)", "subRegion": ""}, {"code": "KSES", "name": "1930 Vasco", "subRegion": ""}, {"code": "HFSA", "name": "Z Square Cine Samrat Ashok: Panaji", "subRegion": ""}, {"code": "MMZP", "name": "Magic Moviez: Ponda", "subRegion": ""}, {"code": "HFLM", "name": "Z Square Cine Vishant: Margao", "subRegion": ""}], "GOAL": [{"code": "DGGC", "name": "Diamond Cinema", "subRegion": ""}, {"code": "KCCA", "name": "Kalpana Cinema", "subRegion": ""}], "GUNT": [{"code": "STTY", "name": "Studio 81 Cinemas: 4K Laser Dolby Atmos, Guntur", "subRegion": ""}, {"code": "HLWD", "name": "Hollywood Bollywood Theaters", "subRegion": ""}, {"code": "HHCG", "name": "Harihar Cinemas", "subRegion": ""}, {"code": "CNPR", "name": "Cine Prime", "subRegion": ""}, {"code": "SCAG", "name": "Siva Cinemas 4K Dolby Atmos", "subRegion": ""}, {"code": "CSER", "name": "Cine Square Dolby Atmos A/C", "subRegion": ""}, {"code": "SRMH", "name": "Sreemanth Mahal: Chebrolu", "subRegion": ""}], "GUW": [{"code": "CCGW", "name": "PVR: City Centre, Guwahati", "subRegion": ""}, {"code": "NCSQ", "name": "INOX: NCS Square, Guwahati", "subRegion": ""}, {"code": "CCMG", "name": "Cinepolis: Central Mall, Guwahati", "subRegion": ""}, {"code": "TCTS", "name": "TS Cinemas: Times Square Mall", "subRegion": ""}, {"code": "GRCG", "name": "Grande Cines: Paltan bazar, Guwahati", "subRegion": ""}, {"code": "NYRG", "name": "Devgn CineX: Roodraksh Mall, Guwahati", "subRegion": ""}, {"code": "CCBT", "name": "Matrix Cinemas: Matrix Mall, Beltola, Guwahati", "subRegion": ""}, {"code": "INAG", "name": "INOX: Aurus, Guwahati", "subRegion": ""}, {"code": "GRGA", "name": "Grand Royal Cines, Sixmile", "subRegion": ""}, {"code": "ACGA", "name": "Anuradha Cineplex", "subRegion": ""}, {"code": "KDCG", "name": "Kelvin Gold Cinema", "subRegion": ""}, {"code": "AICF", "name": "Aideo Cinema Hall: ASFFDC, Panjabari, Guwahati", "subRegion": ""}, {"code": "FUCG", "name": "Galleria Cinema: HUB Mall, Guwahati", "subRegion": ""}, {"code": "RRCG", "name": "RR Cinemas", "subRegion": ""}, {"code": "GDCN", "name": "Gold Cinema: Narengi", "subRegion": ""}, {"code": "SDCH", "name": "Silver Screen (AC Dolby 7.1): Bijoynagar", "subRegion": ""}], "HUBL": [{"code": "PVHB", "name": "PVR: Inorbit Mall, Hubli", "subRegion": ""}, {"code": "LPCH", "name": "Laxmi Citypride Multiplex: Laxmi Mall, Hubli", "subRegion": ""}, {"code": "CPUO", "name": "Cinepolis: Urban Oasis Mall, Hubli", "subRegion": ""}, {"code": "APSU", "name": "Apsara & Sudha Cinemas: Hubli", "subRegion": ""}, {"code": "RTHC", "name": "Rupam Talkies: Hubbali", "subRegion": ""}], "IND": [{"code": "SCIN", "name": "INOX: C-21 Mall", "subRegion": ""}, {"code": "PTIN", "name": "PVR: Treasure Island Mall, Indore", "subRegion": ""}, {"code": "PCMX", "name": "INOX: Phoenix Pride of India, Indore", "subRegion": ""}, {"code": "INIC", "name": "INOX: Nexus Indore Central Mall, Regal Square", "subRegion": ""}, {"code": "SSLP", "name": "Sapna Sangeeta Lumiere", "subRegion": ""}, {"code": "RCMM", "name": "Rajhans Cinemas: Malhar Mega Mall, Indore", "subRegion": ""}, {"code": "DTDT", "name": "Drama Factory Cinema, Zodiac Mall", "subRegion": ""}, {"code": "KYID", "name": "Kalyan Cinemas: Rajendra Nagar, Indore", "subRegion": ""}, {"code": "MCTY", "name": "Miraj Cinemas: Velocity III, Indore", "subRegion": ""}, {"code": "ODEN", "name": "Odeon Cinemas: Rajendra Nagar, Indore", "subRegion": ""}, {"code": "FFCX", "name": "Fundore Cinemas, Rau", "subRegion": ""}, {"code": "CSCI", "name": "Cine Square Cinemas: Airport Road, Indore", "subRegion": ""}, {"code": "MMZM", "name": "Mangal Multiplex", "subRegion": ""}, {"code": "FCMC", "name": "Fortune Cinemas: Mhow, Indore", "subRegion": ""}, {"code": "MMXI", "name": "Manmandir Miniplex", "subRegion": ""}, {"code": "PRFI", "name": "Prafull RK Deluxe Cinema", "subRegion": ""}, {"code": "CMRA", "name": "Chhotu Maharaj Cine Cafe: Treasure Fantasy, Rau", "subRegion": ""}, {"code": "ASTC", "name": "Aasttha Cinema", "subRegion": ""}, {"code": "DICI", "name": "Cine Wheels Drive in by Windasa", "subRegion": ""}, {"code": "KDIN", "name": "Kastur Deluxe Theatre", "subRegion": ""}], "JGRO": [{"code": "LALC", "name": "Lal Palace Cineplex", "subRegion": ""}, {"code": "SOCN", "name": "Star Omjee Cinema", "subRegion": ""}], "JAIJ": [{"code": "GCJR", "name": "Gravity Cinemax", "subRegion": ""}, {"code": "RAME", "name": "Rama Metro Cinema (Dolby 7.1 Sound): Sheorinarayan", "subRegion": ""}], "JAIP": [{"code": "CPJI", "name": "Cinepolis: Jewel of India, Jaipur (Newly Opened)", "subRegion": ""}, {"code": "PVJM", "name": "PVR: Mall of Jaipur", "subRegion": ""}, {"code": "EPJM", "name": "Miraj Cinemas: Entertainment Paradise, Jaipur", "subRegion": ""}, {"code": "RMCJ", "name": "Rajmandir Cinema (Dolby Atmos)", "subRegion": ""}, {"code": "CNWJ", "name": "Cinepolis: World Trade Park Mall, Jaipur", "subRegion": ""}, {"code": "FNJJ", "name": "Cinepolis: Triton Mega Mall, Jaipur", "subRegion": ""}, {"code": "GCMJ", "name": "INOX: GT Central Mall, Jaipur", "subRegion": ""}, {"code": "INPS", "name": "INOX: Pink Square Mall, Adarsh Nagar", "subRegion": ""}, {"code": "ISTJ", "name": "INOX: Sunny Trade Center, Jaipur", "subRegion": ""}, {"code": "INEM", "name": "INOX: Elements Mall, Ajmer Road", "subRegion": ""}, {"code": "GLXJ", "name": "Galaxy Cinema Mansarovar", "subRegion": ""}, {"code": "DDJP", "name": "DD Cinemas: Vivacity Mall, Jaipur", "subRegion": ""}, {"code": "BICJ", "name": "Cinestar Multiplex: Vidhyadhar Nagar", "subRegion": ""}, {"code": "JTMN", "name": "INOX: JTM Mall, Malviya Nagar", "subRegion": ""}, {"code": "GDCP", "name": "Gold Cinema: City Plaza, Bani Park (Newly Opened)", "subRegion": ""}, {"code": "FRCJ", "name": "First Cinema", "subRegion": ""}, {"code": "INJV", "name": "INOX: Vaibhav, Amarapali Circle", "subRegion": ""}, {"code": "FSTD", "name": "Funstar Cinemas: Vidhyadhar Nagar, Jaipur", "subRegion": ""}, {"code": "KOCI", "name": "Kohinoor Cinema (Laser Dolby Atmos): Sanganer", "subRegion": ""}, {"code": "PACJ", "name": "Paras Cinema: Amer Road", "subRegion": ""}, {"code": "GMCN", "name": "GEM Cinema", "subRegion": ""}, {"code": "MMDJ", "name": "7D Masti: Gaurav Tower Central", "subRegion": ""}], "JALA": [{"code": "PMMH", "name": "PVR: MBD, Jalandhar", "subRegion": ""}, {"code": "INRJ", "name": "INOX: Reliance Mall, Jalandhar", "subRegion": ""}, {"code": "PCJL", "name": "PVR: Curo, Jalandhar", "subRegion": ""}, {"code": "PFJJ", "name": "PVR: Friends, Jalandhar", "subRegion": ""}, {"code": "SARB", "name": "Sarb Multiplex", "subRegion": ""}, {"code": "ANCJ", "name": "Ayaan Cinemas", "subRegion": ""}], "JAMM": [{"code": "WVJM", "name": "Wave: One Movies, Jammu", "subRegion": ""}, {"code": "MTJA", "name": "Movietime Cinemas", "subRegion": ""}, {"code": "PMSJ", "name": "Platinum Movietime SPA: Palm Island Mall, Jammu", "subRegion": ""}, {"code": "PKKJ", "name": "PVR: KC Jammu", "subRegion": ""}, {"code": "JMJU", "name": "Apsra Hospitality & Entertainment(Apsra Multiplex)", "subRegion": ""}], "JMDP": [{"code": "CPSH", "name": "PJP Cinepolis", "subRegion": ""}, {"code": "MCCD", "name": "Miraj Cinemas: Chandra Pacific Mall, Golmuri", "subRegion": ""}, {"code": "ECGH", "name": "Eylex Cinemas", "subRegion": ""}, {"code": "CNJD", "name": "CONNPLEX Signature Cinemas", "subRegion": ""}], "JODH": [{"code": "IXIM", "name": "INOX: Indiabulls Mall, Jodhpur", "subRegion": ""}, {"code": "MBCR", "name": "Miraj Cinemas: Blue City Mall, Jodhpur", "subRegion": ""}, {"code": "BMCJ", "name": "Miraj Cinemas: Bioscope, Jodhpur", "subRegion": ""}, {"code": "NICJ", "name": "Nasrani Cinema", "subRegion": ""}, {"code": "NKCP", "name": "New Kohinoor Cinema", "subRegion": ""}], "KAKI": [{"code": "INMT", "name": "INOX: SRMT Mall, Kakinada", "subRegion": ""}, {"code": "GEPL", "name": "GEPL Padmapriya Sripriya", "subRegion": ""}, {"code": "SGDK", "name": "Satyagouri A/C 2K Digital Dolby Ex", "subRegion": ""}, {"code": "SRYK", "name": "Surya Cinemax", "subRegion": ""}, {"code": "LXTK", "name": "Laxmi  A/C  Dts 2K", "subRegion": ""}, {"code": "CCAZ", "name": "Chandra Guptha Complex", "subRegion": ""}], "KPKT": [{"code": "SDMA", "name": "Sri Durga Mahal A/c Dts", "subRegion": ""}], "KANP": [{"code": "INZS", "name": "INOX: Z Square, Bada Chauraha", "subRegion": ""}, {"code": "RAVE", "name": "Rave 3 AV Cinemas", "subRegion": ""}, {"code": "RMIK", "name": "Rave Moti Cinemas", "subRegion": ""}, {"code": "PSXM", "name": "PVR: South X Mall, Kanpur", "subRegion": ""}, {"code": "PDDK", "name": "PVR: Deep, Kanpur", "subRegion": ""}, {"code": "NYCH", "name": "Devgn CineX: Heer Palace, Kanpur", "subRegion": ""}, {"code": "MCGP", "name": "Miraj Cinemas: Gurudev Pammi(Newly Renovated)", "subRegion": ""}, {"code": "SDPO", "name": "Shyam Palace Cinema", "subRegion": ""}, {"code": "MCRL", "name": "Movietime Cinemas: Ratan Elegance, Kanpur", "subRegion": ""}, {"code": "MHKT", "name": "Movietime Cinemas: Ratan Himachal Mall, Kanpur", "subRegion": ""}, {"code": "PCSK", "name": "PP Cinemall: Mandhana, Kanpur", "subRegion": ""}, {"code": "ANRR", "name": "Navrang Cineplex", "subRegion": ""}, {"code": "SAPK", "name": "Sapna Palace Cinema", "subRegion": ""}, {"code": "NCUK", "name": "Novelty Cinema", "subRegion": ""}, {"code": "GUCK", "name": "Gunjan Cinema", "subRegion": ""}, {"code": "DBSC", "name": "Delite Big Screen Cinema", "subRegion": ""}, {"code": "JUGA", "name": "Jugul Palace Cinema", "subRegion": ""}, {"code": "LALK", "name": "Lal Palace", "subRegion": ""}], "KOTA": [{"code": "INAM", "name": "INOX: Ahluwalias Great Mall, Kota", "subRegion": ""}, {"code": "PCCK", "name": "PVR: Cinemall, Kota", "subRegion": ""}, {"code": "FNKT", "name": "Fun Cinemas: City Mall, Kota", "subRegion": ""}, {"code": "GDKA", "name": "Gold Cinema", "subRegion": ""}], "KOAN": [], "KTAB": [], "KTND": [{"code": "SLTK", "name": "Sri Lakshmi Theater A/c DTS", "subRegion": ""}], "KOTL": [], "KOVR": [{"code": "JTST", "name": "Srinivas Theatre: Kovur", "subRegion": ""}, {"code": "MYTH", "name": "Mythili Theatre: Kovur", "subRegion": ""}], "KURN": [], "LUCK": [{"code": "PSLX", "name": "PVR: SUPERPLEX Lulu, Lucknow", "subRegion": ""}, {"code": "IPPL", "name": "INOX: Megaplex Phoenix Palassio Mall", "subRegion": ""}, {"code": "MMSG", "name": "MovieMax: Shalimar Gateway", "subRegion": ""}, {"code": "INEL", "name": "INOX: Megaplex Emerald, Lucknow", "subRegion": ""}, {"code": "COAC", "name": "Cinepolis: One Awadh Centre, Lucknow", "subRegion": ""}, {"code": "WVLK", "name": "Wave: The Wave Mall, Lucknow", "subRegion": ""}, {"code": "FNLK", "name": "Fun Cinemas: Fun Republic Mall, Lucknow", "subRegion": ""}, {"code": "PPXL", "name": "PVR: Phoenix, Lucknow", "subRegion": ""}, {"code": "ILCM", "name": "INOX: Crown Mall, Lucknow", "subRegion": ""}, {"code": "ILUM", "name": "INOX: Umrao Mall, Mahanagar", "subRegion": ""}, {"code": "PSML", "name": "PVR: Saharaganj Mall, Lucknow", "subRegion": ""}, {"code": "VINB", "name": "Vin Palace Multiplex Dolby Atmos: Vikas Nagar", "subRegion": ""}, {"code": "MSNL", "name": "Novelty Cinema: Dolby Atmos Laser 4K, Aliganj", "subRegion": ""}, {"code": "PCLA", "name": "Prominent Cinemas", "subRegion": ""}, {"code": "NCIL", "name": "Novelty MGS Cinemas Dolby Atmos: Lalbagh", "subRegion": ""}, {"code": "PRTB", "name": "Pratibha Cinema", "subRegion": ""}, {"code": "SALW", "name": "SRS Cinemas: City Mall, Lucknow", "subRegion": ""}, {"code": "PSUL", "name": "PVR: Sahu, Lucknow", "subRegion": ""}, {"code": "ADDC", "name": "Antas DD Cinemas", "subRegion": ""}, {"code": "UCTC", "name": "UVT Krishna Cinema", "subRegion": ""}, {"code": "SCLK", "name": "Shubham Cinema", "subRegion": ""}], "LUDH": [{"code": "PPNL", "name": "PVR: Pavilion, Ludhiana", "subRegion": ""}, {"code": "CPNL", "name": "Cinepolis: Nexus MBD, Ludhiana", "subRegion": ""}, {"code": "PSLV", "name": "PVR: Silver Arc, Ludhiana", "subRegion": ""}, {"code": "WVLD", "name": "Wave: One Movies, Ludhiana", "subRegion": ""}, {"code": "VTTL", "name": "V2V CINEMAS,OMAXE PLAZA MALL {NEWLY RENOVATED}", "subRegion": ""}, {"code": "PVCS", "name": "PVR: Avon City Mall, Ludhiana", "subRegion": ""}, {"code": "NPAD", "name": "Nirmal Cineplex", "subRegion": ""}, {"code": "PPLL", "name": "Preet Palace", "subRegion": ""}, {"code": "MNJL", "name": "Manju Theatre", "subRegion": ""}], "MAPM": [{"code": "VCMR", "name": "PVR: Varam Central, Machilipatnam", "subRegion": ""}, {"code": "MACT", "name": "Siri Complex", "subRegion": ""}], "MADU": [{"code": "VICS", "name": "Vetri Cinemas (Maattuthavani) Dolby Atmos", "subRegion": ""}, {"code": "VCDA", "name": "Vetri Cinemas (Villapuram) Dolby Atmos", "subRegion": ""}, {"code": "KDCT", "name": "Kannan Devi Cinemas, Tirunagar", "subRegion": ""}, {"code": "JACS", "name": "Jazz And Arsh Cinemas A/C Sony 4K", "subRegion": ""}, {"code": "AICM", "name": "Annamalai Cinemas A/C 4K", "subRegion": ""}, {"code": "VCSN", "name": "V Cinemas A/C 2K 3D: Sholavanthan", "subRegion": ""}, {"code": "RSSM", "name": "Radiance Cinema: Koodal Nagar, Madurai", "subRegion": ""}, {"code": "TJCM", "name": "Tamil Jaya Cinemas SONY 4K Dolby Digital", "subRegion": ""}, {"code": "INVS", "name": "INOX: Vishaal De Mall", "subRegion": ""}, {"code": "SHAC", "name": "Shanmuga Cine Complex A/C 7.1", "subRegion": ""}, {"code": "GMMC", "name": "Ganesh Cinemas (Melur) 4K RGB Laser & Dolby Atmos", "subRegion": ""}, {"code": "GCMM", "name": "Gopuram Cinemas ATMOS and Laser Projector", "subRegion": ""}, {"code": "THRM", "name": "Thanga Regal Cinema DOLBY ATMOS LASER", "subRegion": ""}, {"code": "DIKT", "name": "Dhevi Kalaivani Theatre A/C DTS", "subRegion": ""}, {"code": "SCGM", "name": "Ganesh theatre A/C Sony 4K 3D Dolby 7.1", "subRegion": ""}, {"code": "MIDL", "name": "Midlaand Cinemas A/C 4K Dolby Digital 7.1", "subRegion": ""}, {"code": "SKTG", "name": "Sakthi Cinemas Barco Laser Dolby Atmos", "subRegion": ""}, {"code": "MTMT", "name": "MVM MARUDHU MODERN THEATER A/C 2K 3D", "subRegion": ""}, {"code": "SMWC", "name": "Muneeswarar Cinema A/C Barco19B 4K 3D:Alanganallur", "subRegion": ""}, {"code": "PIAT", "name": "Palani Arumuga Cinema A/C Laser Projector", "subRegion": ""}, {"code": "MNKH", "name": "Meenakshi theatre A/C 7.1 Surround: Thirumangalam", "subRegion": ""}, {"code": "PCDA", "name": "Priya Complex Dolby Atmos", "subRegion": ""}, {"code": "LTTP", "name": "Sri Lakshmi Theatre: Thirupparankundram", "subRegion": ""}, {"code": "RZYM", "name": "RITZY SHA Cinemas 4K RGB LASER ATMOS", "subRegion": ""}, {"code": "SSMC", "name": "Solamalai Cinemas A/C Sony 4K", "subRegion": ""}, {"code": "GCTG", "name": "Guru Cinemas A/C RGB Laser 4K 3D", "subRegion": ""}, {"code": "RBCT", "name": "Ritzy Banu Cinemas A/C 4K: Thirumangalam", "subRegion": ""}], "MNMI": [], "MLR": [{"code": "PSMP", "name": "PVR: Nexus Mall, Pandeshwar, Mangalore", "subRegion": ""}, {"code": "ADCM", "name": "Bharath Cinemas: Bharath Mall, Bejai, Mangaluru", "subRegion": ""}, {"code": "CPCM", "name": "Cinepolis: City Centre Mall, Mangaluru", "subRegion": ""}, {"code": "BMYK", "name": "Deralakatte Bharath Cinemas: Bearys Turning Point", "subRegion": ""}, {"code": "CGSM", "name": "Cine Galaxy: Surathkal, Mangalore", "subRegion": ""}, {"code": "SDAL", "name": "Suchitra Prabhat Cinemas: 4K RGB Laser Dolby Atmos", "subRegion": ""}], "MERT": [{"code": "INPM", "name": "INOX: PVS Mall, Meerut", "subRegion": ""}, {"code": "WVMT", "name": "Wave", "subRegion": ""}, {"code": "RCMA", "name": "Rapid Cinema, The Melange Mall", "subRegion": ""}, {"code": "NYSM", "name": "Devgn CineX", "subRegion": ""}, {"code": "SCCG", "name": "GG Cinemas: Sardhana", "subRegion": ""}, {"code": "KCMW", "name": "Kapil Cinema: Mawana", "subRegion": ""}], "MYS": [{"code": "DRMY", "name": "DRC Cinemas: BM Habitat Mall", "subRegion": ""}, {"code": "PNSM", "name": "PVR: Nexus Mall Centre City, Mysuru", "subRegion": ""}, {"code": "SCMY", "name": "INOX: Mall of Mysuru", "subRegion": ""}, {"code": "PVSY", "name": "PVR: Garuda Mall, Albert Victor Road, Mysuru", "subRegion": ""}, {"code": "ICCM", "name": "INOX: Centro, Mysore", "subRegion": ""}, {"code": "CCMU", "name": "Mysuru VISION Cinemas, Behind GRS Fantasy Park", "subRegion": ""}, {"code": "WOTM", "name": "Woodlands Picture House: Mysore", "subRegion": ""}, {"code": "SDLM", "name": "Sangam Digital 2K Theatre Dolby 7.1: Mysuru", "subRegion": ""}, {"code": "GATM", "name": "Gayathri Talkies: Mysuru, Christie Solaria 2K", "subRegion": ""}, {"code": "PYSU", "name": "Prabha Theatre: Mysuru", "subRegion": ""}, {"code": "PMTY", "name": "Padma Talkies: Mysuru", "subRegion": ""}, {"code": "RKTS", "name": "Rajkamal Digital 2K Laser Projection: Mysore", "subRegion": ""}, {"code": "LYMS", "name": "Lido Theatre: Mysuru", "subRegion": ""}, {"code": "TBMY", "name": "Tibbadevi Theatre: Mysuru", "subRegion": ""}], "NGKL": [], "NAGP": [{"code": "CVRN", "name": "Cinepolis: VR Mall, Nagpur", "subRegion": ""}, {"code": "MMEN", "name": "MovieMax: Eternity, Nagpur", "subRegion": ""}, {"code": "INTM", "name": "INOX: Jaswant Tuli Mall, Kamptee Road", "subRegion": ""}, {"code": "SLCZ", "name": "Skylight (Sangam) Cinema", "subRegion": ""}, {"code": "AMNG", "name": "AM Cinema: Manish Nagar, Nagpur", "subRegion": ""}, {"code": "ACJN", "name": "AM Cinema Iconic: Jayanti Nagar VII, Besa, Nagpur", "subRegion": ""}, {"code": "AMJN", "name": "AM Cinema: Jaiprakash Nagar, Nagpur", "subRegion": ""}, {"code": "AMKN", "name": "AM Cinema: Koradi, Nagpur", "subRegion": ""}, {"code": "BTCN", "name": "Buty Cineplex-Sadar", "subRegion": ""}, {"code": "AMBT", "name": "AM Cinema: Bansi Nagar, Nagpur", "subRegion": ""}, {"code": "PPKC", "name": "Kamal Cineplex", "subRegion": ""}, {"code": "LCNS", "name": "Liberty Cinema: Sadar", "subRegion": ""}, {"code": "PACN", "name": "Panchsheel Cinema", "subRegion": ""}, {"code": "JYYN", "name": "Janki Theatre (2K Laser,5.1 Dolby): Sitabuldi", "subRegion": ""}, {"code": "CCKN", "name": "Cine Chourangi: Khapri, Nagpur", "subRegion": ""}, {"code": "JTNR", "name": "Jayshree Cineplex", "subRegion": ""}, {"code": "GTEE", "name": "Goyal Talkies: Kamptee", "subRegion": ""}], "NARS": [{"code": "PVND", "name": "PVR: Sree Kanya, Narsipatnam", "subRegion": ""}, {"code": "BGRJ", "name": "Bangaraju Picture Palace A/C DTS", "subRegion": ""}, {"code": "RJMM", "name": "Raju Movie Max", "subRegion": ""}], "NASK": [{"code": "CTNK", "name": "PVR: City Center, Nashik", "subRegion": ""}, {"code": "MMTZ", "name": "MovieMax: College Road, Nashik (Seats Renovated)", "subRegion": ""}, {"code": "DCCO", "name": "Divya Cinemas", "subRegion": ""}, {"code": "VNMN", "name": "Vijay Mamta Cinema", "subRegion": ""}, {"code": "RLCN", "name": "Regimental, Mukta A2 Cinemas", "subRegion": ""}, {"code": "OCON", "name": "Ozone Cinema: Ojhar, Nashik", "subRegion": ""}, {"code": "RJTE", "name": "Raviraj Theatre: Niphad", "subRegion": ""}], "NELL": [{"code": "RACN", "name": "Rain Cinema", "subRegion": ""}, {"code": "JMBA", "name": "Jameela Mahal: Buchireddypalem", "subRegion": ""}, {"code": "JTSM", "name": "Siri Multiplex", "subRegion": ""}], "NZPT": [{"code": "SSVD", "name": "SSV Cinemas A/c 2K Dolby DTS: Nagaram", "subRegion": ""}], "PTPT": [{"code": "UMTP", "name": "Sree Uma Max 2k Dolby Atmos", "subRegion": ""}, {"code": "JJDA", "name": "J &J Cinemas A/C Dolby Atmos", "subRegion": ""}], "PATN": [{"code": "INBP", "name": "INOX: City Centre Mall, Patna", "subRegion": ""}, {"code": "PATB", "name": "Cinepolis: P&M Mall, Patna", "subRegion": ""}, {"code": "CGPM", "name": "Cinepolis: Gravity Mall, Patna", "subRegion": ""}, {"code": "INTN", "name": "INOX: Ashok, Patna", "subRegion": ""}, {"code": "RGNT", "name": "Fun Cinemas: Regent Theatre", "subRegion": ""}, {"code": "MCMP", "name": "Mona: Christie 4K RGB Laser & Dolby Atmos", "subRegion": ""}, {"code": "SPCP", "name": "Sushil Plaza Cinema Plex: Phulwari, Patna", "subRegion": ""}, {"code": "ASRG", "name": "ASR Cinemas, RPS More", "subRegion": ""}, {"code": "CXJD", "name": "CONNPLEX Smart Cinemas: Sp Verma Road Jd Mall", "subRegion": ""}, {"code": "ESCP", "name": "Elphinstone Cinema", "subRegion": ""}, {"code": "CLKP", "name": "CONNPLEX Luxuriance Cinemas: Kankarbagh, Patna", "subRegion": ""}, {"code": "CSTP", "name": "CONNPLEX Smart Cinemas: Rajabazar", "subRegion": ""}, {"code": "PKVC", "name": "PKV Smart Cinemas, Boring Canal Road", "subRegion": ""}, {"code": "CAEP", "name": "CONNPLEX Smart Cinemas: Phulwari Sharif, Patna", "subRegion": ""}, {"code": "KTPC", "name": "Krishna Talkies", "subRegion": ""}, {"code": "CPLD", "name": "CONNPLEX Smart Cinemas: Khagaul, Patna", "subRegion": ""}, {"code": "CHSX", "name": "CONNPLEX Smart Cinemas: Bihta, Patna", "subRegion": ""}, {"code": "CSBP", "name": "CONNPLEX Signature Cinemas: Bhikhana Pahari,Patna", "subRegion": ""}, {"code": "VEAN", "name": "Veena Theatre (Dolby Digital)", "subRegion": ""}, {"code": "CCSP", "name": "Cinema Cafe Max Western Mall, Opp RPS More", "subRegion": ""}, {"code": "DACA", "name": "Diana Danapur AC with New Full Screen Projection", "subRegion": ""}, {"code": "CCCF", "name": "City Cine Cafe, Karmalichak", "subRegion": ""}], "PERI": [{"code": "MDPY", "name": "Mahadeshwara Theatre", "subRegion": ""}], "ALLH": [{"code": "PVLG", "name": "PVR: Vinayak, Prayagraj", "subRegion": ""}, {"code": "SWBL", "name": "Starworld Cinemas: Mutthiganj, Prayagraj", "subRegion": ""}, {"code": "SCAB", "name": "The Palace Civil Lines: Prayagraj", "subRegion": ""}, {"code": "CDCA", "name": "Chandralok Cineplex: Prayagraj", "subRegion": ""}, {"code": "RDDA", "name": "Rajkaran DD Cinemas: Prayagraj", "subRegion": ""}, {"code": "MNSR", "name": "Mansarovar Palace: Allahabad (New Renovated)", "subRegion": ""}], "RAIPUR": [{"code": "PCRC", "name": "PVR: City Center, Raipur", "subRegion": ""}, {"code": "PMRM", "name": "PVR: Magneto Mall, Raipur", "subRegion": ""}, {"code": "INCR", "name": "INOX: Ambuja City Centre, Raipur", "subRegion": ""}, {"code": "ZTMP", "name": "PVR: Zora The Mall, Raipur", "subRegion": ""}, {"code": "CCRP", "name": "Colors Cinemas: Colors Mall, Raipur", "subRegion": ""}, {"code": "MCNR", "name": "Miraj Cinemas: CBD, Nava Raipur", "subRegion": ""}, {"code": "STRC", "name": "Shyam Talkies (2K Laser, 5.1 Dolby)", "subRegion": ""}, {"code": "RTSR", "name": "Raj Talkies", "subRegion": ""}, {"code": "PBTR", "name": "Prabhat Talkies", "subRegion": ""}], "YAYA": [{"code": "JJMR", "name": "Jai Malhar Cinema", "subRegion": ""}], "RJMU": [{"code": "SCPI", "name": "Sarathi Cinemas(Prasaditya Mall):Rajamahendravaram", "subRegion": ""}, {"code": "SKRJ", "name": "Sri Sai Krishna 2K (Anusri Cinemas): Rajahmundry", "subRegion": ""}, {"code": "SRYR", "name": "Surya Complex Laser RGB 4K Dolby Atmos:Rajahmundry", "subRegion": ""}, {"code": "SYTR", "name": "Swamy Theatre LASER 4K DOLBY: Rajahmundry", "subRegion": ""}, {"code": "GATR", "name": "Apsara Laser R.G.B 4K Dolby Atmos: Rajahmundry", "subRegion": ""}, {"code": "MKSM", "name": "Muralikrishna Cinema A/C 4K 3D: Dowlaiswaram", "subRegion": ""}, {"code": "RROH", "name": "Raja 4K Dolby Anusri Cinemas: Rajahmundry", "subRegion": ""}, {"code": "YSDK", "name": "Yuvaraj Screens Dolby Atmos: Kovvur", "subRegion": ""}, {"code": "URTR", "name": "Urvasi Complex: Rajahmundry", "subRegion": ""}, {"code": "VSMH", "name": "VS Mahal 4k Dolby Atmos 3D: Namavaram", "subRegion": ""}, {"code": "RUCM", "name": "Fortune Four Cinemas A/C 2K 7.1: Rajanagaram", "subRegion": ""}, {"code": "SVSM", "name": "Sri Venkata Surya Palace 4K Dolby Atmos: Kadiam", "subRegion": ""}, {"code": "SSJR", "name": "Sri Sivajyothi 2K Cinema 7.1 Dolby: Rajahmundry", "subRegion": ""}, {"code": "AKSR", "name": "Akshara Cinemas Dolby Atmos: Ravulapalem", "subRegion": ""}], "RANC": [{"code": "PNMR", "name": "PVR: Nucleus Mall, Ranchi", "subRegion": ""}, {"code": "PJCP", "name": "PJP Cinemas: Mall of Ranchi", "subRegion": ""}, {"code": "STMS", "name": "Miraj Cinemas: Sandhya Tower, Ranchi", "subRegion": ""}, {"code": "JDDD", "name": "JD Cinemas: JD HI Street Mall, Ranchi", "subRegion": ""}, {"code": "FLMB", "name": "Fun Cinemas: Springcity, Ranchi", "subRegion": ""}, {"code": "PKCM", "name": "Popkorn Cinemas: Galaxia Mall, Ranchi", "subRegion": ""}, {"code": "EYLH", "name": "Eylex Cinemas: Hinoo", "subRegion": ""}, {"code": "SPPR", "name": "Sujata Picture Palace", "subRegion": ""}, {"code": "MYEP", "name": "Midwaay Cine Cafe: Patratu", "subRegion": ""}], "SAMA": [{"code": "SJMT", "name": "Sree Jayalakshmi Talkies: Samalkot", "subRegion": ""}], "SOLA": [{"code": "ESOS", "name": "E-SQUARE Oasis (A.C)", "subRegion": ""}, {"code": "CLCS", "name": "CONNPLEX Luxuriance Cinemas", "subRegion": ""}, {"code": "LYAS", "name": "Laxminarayan Cinema", "subRegion": ""}, {"code": "BBCL", "name": "Bhagwat Cinemas (A.C)", "subRegion": ""}, {"code": "ACMS", "name": "Asha Cinemark", "subRegion": ""}, {"code": "NRMS", "name": "R Miniplex (A.C)", "subRegion": ""}, {"code": "BHUC", "name": "Bhagwat Uma Mandir", "subRegion": ""}, {"code": "SRIC", "name": "Srinivas Cinematic Cinema", "subRegion": ""}, {"code": "RNTW", "name": "Rangprabha Talkies: Mangalwedha", "subRegion": ""}, {"code": "PDME", "name": "Padma Cinema", "subRegion": ""}], "SRNG": [{"code": "INTS", "name": "INOX", "subRegion": ""}], "SRIR": [], "SURT": [{"code": "RCRP", "name": "Rajhans Cinemas: Rajhans Precia, Surat", "subRegion": ""}, {"code": "RFFG", "name": "Rajhans Cinemas: Rajhans Flamingo, Katargam, Surat", "subRegion": ""}, {"code": "INVR", "name": "INOX: VR, Dumas Road, Surat", "subRegion": ""}, {"code": "RHRJ", "name": "PVR: Rahul Raj, Surat", "subRegion": ""}, {"code": "INXR", "name": "Raj Imperial, INOX: Varachha Road, Surat", "subRegion": ""}, {"code": "LCSH", "name": "Loop Cinemas Homeland City: Vesu", "subRegion": ""}, {"code": "RMAR", "name": "Rajhans Multiplex: Mota Varachha A.R Mall, Surat", "subRegion": ""}, {"code": "RMAS", "name": "Rajhans Multiplex: Adajan, Surat", "subRegion": ""}, {"code": "CNIS", "name": "Cinepolis: Imperial Square Mall, Surat", "subRegion": ""}, {"code": "CMVS", "name": "Cinezza Multiplex: Maharaja Farm, Mota Varachha", "subRegion": ""}, {"code": "CNMS", "name": "Cinezza Multiplex: Jahangirpura, Surat", "subRegion": ""}, {"code": "ISRM", "name": "INOX: Reliance Mall, Surat", "subRegion": ""}, {"code": "VALT", "name": "Valentine Multiplex (Dolby Atmos)", "subRegion": ""}, {"code": "ROOG", "name": "ROONGTA CINEMAS: Shyam Mandir Vesu, Surat", "subRegion": ""}, {"code": "RCRM", "name": "Rajhans Cinemas: Rajmahal AC Mall Sitanagar, Surat", "subRegion": ""}, {"code": "RCVS", "name": "Rajhans Cinemas: Aagam Viviana Mall Vesu, Surat", "subRegion": ""}, {"code": "MKSB", "name": "Miraj Cinemas: KSB Mall, Surat", "subRegion": ""}, {"code": "RKCJ", "name": "Rajhans Cinemas: Kamrej, Surat", "subRegion": ""}, {"code": "PICS", "name": "Pragati Cinemas: Mota Varachha, Surat", "subRegion": ""}, {"code": "ACJA", "name": "Apple Cinema: Jahangirpura, Surat", "subRegion": ""}, {"code": "CPUS", "name": "City Plus Multiplex", "subRegion": ""}, {"code": "TGCS", "name": "Gandhi Cinema", "subRegion": ""}, {"code": "CLLP", "name": "The Friday Cinema: Mota Varaccha, Surat", "subRegion": ""}, {"code": "MAOP", "name": "Mukta A2 Cinemas: Orbit Plaza by Pramukh, Surat", "subRegion": ""}, {"code": "RMGP", "name": "Rajhans Multiplex : Gopi Talav", "subRegion": ""}, {"code": "RSRP", "name": "Rajhans Cinemas: Tulsi Galleria Mall, Vyara", "subRegion": ""}, {"code": "RCMV", "name": "Rajhans Cinemas: MTC Mall, Velanja, Surat", "subRegion": ""}, {"code": "CDWP", "name": "Coconut Cinema DR World Parvat Patiya", "subRegion": ""}, {"code": "CCKS", "name": "Cineverse Cinema: Katargam, Surat", "subRegion": ""}, {"code": "APLP", "name": "Apple Cinema: Pal Bhatha", "subRegion": ""}, {"code": "MMXS", "name": "Madhuram Multiplex", "subRegion": ""}, {"code": "SKLZ", "name": "Sanelite Cinemas: Katargam, Surat", "subRegion": ""}, {"code": "CNVS", "name": "Cineverse Cinema: Vesu", "subRegion": ""}, {"code": "RMVY", "name": "Raj Multiplex: Iris Plaza, Panwadi, Vyara", "subRegion": ""}, {"code": "KLMS", "name": "KD Laxmi Multiplex (Dolby 7.1): Kim, Surat", "subRegion": ""}, {"code": "TCSJ", "name": "Time Cinema: Galaxy Circle Pal, Surat", "subRegion": ""}, {"code": "CGCO", "name": "Cinemagic Cinema: Olpad", "subRegion": ""}, {"code": "BWST", "name": "Bollywood Cinema, Kadodara", "subRegion": ""}, {"code": "BACS", "name": "Bajrang Cinema", "subRegion": ""}, {"code": "RRFH", "name": "Radhey Cineplex: Vyara", "subRegion": ""}, {"code": "RUST", "name": "Rupam Cinema", "subRegion": ""}, {"code": "CMJG", "name": "Chhotu Maharaj: Kosmada, Surat", "subRegion": ""}], "SRTK": [{"code": "CGSM", "name": "Cine Galaxy", "subRegion": ""}, {"code": "BSGB", "name": "Bharath Cinemas: Padubidri", "subRegion": ""}], "TRIV": [{"code": "DSTA", "name": "Dreams: Attingal", "subRegion": ""}, {"code": "TGCA", "name": "Ganga Cine House 4K Dolby Atmos: Attingal", "subRegion": ""}, {"code": "VSTG", "name": "GTracks Screen 1- Sony 4K: Kadinamkulam", "subRegion": ""}, {"code": "GTCK", "name": "GTracks Screen 2 Sony 4K: Kadinamkulam", "subRegion": ""}, {"code": "PLTD", "name": "PVR: Lulu, Trivandrum", "subRegion": ""}, {"code": "ASLC", "name": "Ariesplex SL Cinemas Cinionic Dolby Atmos", "subRegion": ""}, {"code": "CMTT", "name": "Cinepolis: MOT, Trivandrum", "subRegion": ""}, {"code": "ACTC", "name": "Artech Cinemas 4K Laser Dolby Atmos: Trivandrum", "subRegion": ""}, {"code": "SKMK", "name": "Sri Kalidas M Plex 4K RGB Laser Atmos: Kattakkada", "subRegion": ""}, {"code": "SSST", "name": "Sree Kaleeswary Sree Saraswathy 2K-3D: Kaliyikkav", "subRegion": ""}, {"code": "HKCP", "name": "HK Cinemas 4K 3D Dolby Atmos: Pothencode", "subRegion": ""}, {"code": "SWLC", "name": "Swaram Layam Cinemas: Kattakada", "subRegion": ""}, {"code": "TGNT", "name": "New Theatre 4K RGB LASER Dolby Atmos: Trivandrum", "subRegion": ""}, {"code": "CNGE", "name": "Greenfield Moviemax Cinemas: Trivandrum", "subRegion": ""}, {"code": "KBTT", "name": "Kalabhavan Theatre Triple Beam 3D: Trivandrum", "subRegion": ""}, {"code": "SCMV", "name": "Empire SR Cinemas 4K Laser Dolby Atmos: Varkala", "subRegion": ""}, {"code": "CHTI", "name": "Chhotu Maharaj Cine Cafe: Poovar, Kerala", "subRegion": ""}, {"code": "PKKT", "name": "PVR: Kripa, Thampanoor Trivandrum", "subRegion": ""}, {"code": "RFGO", "name": "Rocky`s: Kilimanoor", "subRegion": ""}, {"code": "SPCT", "name": "SP Cinemas 2K AURO 11.1: Peyad", "subRegion": ""}, {"code": "RTND", "name": "Rani Talkies 4K DOLBY ATMOS Nedumangadu", "subRegion": ""}, {"code": "ACXN", "name": "Anu Cinemax 4K Atmos: Neyyattinkara, Nellimoodu", "subRegion": ""}, {"code": "MCPR", "name": "Mridhanga Cineplex 4K Dolby Atmos: Poovar", "subRegion": ""}, {"code": "SMXP", "name": "SA Multiplex 4K 3D Dolby Atmos: Pulluvila", "subRegion": ""}, {"code": "SCMX", "name": "Surya Multiplex 4K Dolby Atmos: Nedumangad", "subRegion": ""}, {"code": "VVVL", "name": "Vimala Cinemas 4K Atmos: Varkala", "subRegion": ""}, {"code": "LCTM", "name": "Lenin Cinemas 4K 3D Dolby Atmos KSFDC: Trivandrum", "subRegion": ""}, {"code": "IMPM", "name": "IMP Big Screen RGB Laser 3D ATMOS: Padanthalumoodu", "subRegion": ""}, {"code": "SICS", "name": "Sri Murugan(Yamuna)Full AC 4K 3D: Panachamoodu", "subRegion": ""}, {"code": "SPTT", "name": "Sree Padmanabha Theatre 4K: East Fort", "subRegion": ""}, {"code": "ATTR", "name": "Ajanta Theatre 4K-Wide: Trivandrum", "subRegion": ""}, {"code": "ASWT", "name": "Aswathy Cineplus: Peringamala", "subRegion": ""}, {"code": "SCVL", "name": "Rocky`s: Varkala", "subRegion": ""}, {"code": "HSTK", "name": "Harisree Theatre 4K 3D Dolby 7.1: Kazhakkoottam", "subRegion": ""}, {"code": "SCVT", "name": "Sindhu Cinema: Venjaramoodu AC 2K, 3D Dolby 7.1", "subRegion": ""}, {"code": "SPMT", "name": "Sree Padmanabha Theatre (Screen 2): East Fort", "subRegion": ""}, {"code": "MCTD", "name": "MT Cineplex 4K DOLBY ATMOS: Pothencode", "subRegion": ""}, {"code": "JBCA", "name": "Thapasya Cine House: Attingal", "subRegion": ""}, {"code": "VCHA", "name": "Vaishaka Cine House: Attingal", "subRegion": ""}, {"code": "KRTA", "name": "Krishna Theatre: Kazhakkoottam", "subRegion": ""}], "TIRU": [{"code": "PGRC", "name": "PGR Cinemas A/C 4K Dolby Atmos", "subRegion": ""}, {"code": "JAYD", "name": "NVR Jaysyam A/C 4K Dolby Atmos", "subRegion": ""}, {"code": "CSCT", "name": "CS Cinemas (Devendra Theater) A/C 4K Dolby Atmos", "subRegion": ""}, {"code": "STDA", "name": "NVR Sandhya Theater 4K Dolby Atmos", "subRegion": ""}, {"code": "PPPD", "name": "Padma Picture Palace A/C 4K Dolby Atmos: Renigunta", "subRegion": ""}, {"code": "PTDT", "name": "Pratap Theater A/c 4K Dolby Atmos", "subRegion": ""}, {"code": "PTTI", "name": "Palani Cinemas A/C 7.1 Dolby Digital", "subRegion": ""}, {"code": "KRTT", "name": "KrishnaTeja A/C 4K Dolby(Newly Renovated):Tirupati", "subRegion": ""}, {"code": "TRSV", "name": "SV Cinemas(Ambica) A/C 4K Dolby Atmos: Chandragiri", "subRegion": ""}, {"code": "VELR", "name": "NVR Velrams A/c 4K Dolby Surround", "subRegion": ""}, {"code": "MPTT", "name": "Pratap Delux A/c 2k Dolby Atmos", "subRegion": ""}, {"code": "STDT", "name": "Srinivas Teja A/C DTS", "subRegion": ""}], "UDAI": [{"code": "CBMU", "name": "PVR: Celebration Mall, Udaipur", "subRegion": ""}, {"code": "IUBS", "name": "INOX: Urban Square Mall, Udaipur", "subRegion": ""}, {"code": "INAP", "name": "INOX: Lake City Mall", "subRegion": ""}], "VAD": [{"code": "PVNL", "name": "PVR: Nilamber Triumph, Vadodara", "subRegion": ""}, {"code": "CPIV", "name": "Cinepolis: Inorbit Vadodara Mall", "subRegion": ""}, {"code": "TAKA", "name": "INOX Taksh Galaxy Mall: Waghodia", "subRegion": ""}, {"code": "COLV", "name": "CONNPLEX Luxuriance Cinemas", "subRegion": ""}, {"code": "PEVM", "name": "PVR: EVA Mall, Vadodara", "subRegion": ""}, {"code": "PTCV", "name": "PVR: TransCube, Vadodara", "subRegion": ""}, {"code": "INSE", "name": "Infinity 7 Seas Cinema: Fatehganj", "subRegion": ""}, {"code": "CNPE", "name": "Cineprime Cinema: Cinemall, Vadodara", "subRegion": ""}, {"code": "BTMV", "name": "Bansal Movieplex: Tarsali, Vadodara", "subRegion": ""}, {"code": "INVD", "name": "INOX: Race Course Circle", "subRegion": ""}, {"code": "MCSO", "name": "Mukta A2 Cinemas (Opulence): The Emperor Mall", "subRegion": ""}, {"code": "CEIM", "name": "Cinemarc: New VIP Road", "subRegion": ""}, {"code": "BLMX", "name": "Bansal Movieplex Gotri-Vasna Road", "subRegion": ""}, {"code": "IRMM", "name": "INOX: Reliance Mega Mall, Vadodara", "subRegion": ""}, {"code": "CMAR", "name": "Cinemarc: Akota, Vadodara", "subRegion": ""}, {"code": "CMVA", "name": "Cinemera Multiplex", "subRegion": ""}, {"code": "DNNV", "name": "Deep Cinemas: Nizampura, Chhani Road", "subRegion": ""}, {"code": "MCVD", "name": "Movietime: S-Square Mall, Subhanpura, Vadodara", "subRegion": ""}, {"code": "FVPN", "name": "Cinemarc Vihar: Pratapnagar", "subRegion": ""}, {"code": "HCAD", "name": "Havelock Cineflix: Tarsali, Vadodara", "subRegion": ""}, {"code": "RCVA", "name": "Rajhans Cinemas", "subRegion": ""}, {"code": "ALCI", "name": "Alpana Cinema", "subRegion": ""}, {"code": "SWCF", "name": "Bansal Movieplex: SWC Mall", "subRegion": ""}], "VAR": [{"code": "IPSG", "name": "IP Cinemas: IP Sigra Mall, Varanasi", "subRegion": ""}, {"code": "JHVN", "name": "JHV Cinemas", "subRegion": ""}, {"code": "IPCM", "name": "IP Cinemas: IP Vijaya Mall, Varanasi", "subRegion": ""}, {"code": "PDRS", "name": "PDR Cinemas", "subRegion": ""}, {"code": "CMVV", "name": "Chhotu Maharaj Cine Cafe", "subRegion": ""}, {"code": "PCBV", "name": "Pari Cineplex: Babatpur, Varanasi", "subRegion": ""}, {"code": "SIPA", "name": "IP Sigra Mall: 7D Cinema, Varanasi", "subRegion": ""}], "VIJP": [{"code": "SGWT", "name": "Sri Gowrishankar Theatre: Vijayapura", "subRegion": ""}, {"code": "SRII", "name": "Sri Sangameshwara Chitramandira: Vijayapura", "subRegion": ""}], "VIJA": [{"code": "CPVJ", "name": "Cinepolis: PVP Square Mall, Vijayawada", "subRegion": ""}, {"code": "ABCR", "name": "ABR Cinemas Neo Screen X:  Kanuru, Vijayawada", "subRegion": ""}, {"code": "INVP", "name": "INOX: LEPL Icon, Patamata", "subRegion": ""}, {"code": "LAIM", "name": "INOX: Laila Mall, 4K LASER, DOLBY ATMOS, M.G Road", "subRegion": ""}, {"code": "CPOV", "name": "Cinepolis: Power One Mall, Vijayawada", "subRegion": ""}, {"code": "RMTV", "name": "Ram Cinemas: Gunadala A/C 4K Digital DOLBY ATMOS", "subRegion": ""}, {"code": "MGGG", "name": "G3 Theatres: Raj Yuvraj, Vijayawada", "subRegion": ""}, {"code": "INVJ", "name": "INOX: Urvasi Complex, Gandhi Nagar", "subRegion": ""}, {"code": "JTSC", "name": "Swarna Multiplex", "subRegion": ""}, {"code": "SVLJ", "name": "Sailaja Theatre", "subRegion": ""}, {"code": "PRSV", "name": "PVR: Ripples, Vijayawada", "subRegion": ""}, {"code": "RCVD", "name": "Ravindra Cinemas", "subRegion": ""}, {"code": "SWRN", "name": "Swarna Cinemax 2K Laser 7.1 Surround:Ibrahimpatnam", "subRegion": ""}, {"code": "STHV", "name": "Sairam Screens A/C Dolby 7.1 Surround", "subRegion": ""}, {"code": "SWTH", "name": "Swathi Theater: Bhavanipuram (Newly Renovated)", "subRegion": ""}, {"code": "ATVJ", "name": "Alankar A/C 4K Dolby Surround", "subRegion": ""}, {"code": "VIJK", "name": "Vijayalakshmi Theater A/C 4K Dolby: Kanuru", "subRegion": ""}, {"code": "ACHV", "name": "Apsara Cinema House", "subRegion": ""}, {"code": "BLJI", "name": "Balaji Cine Villa", "subRegion": ""}, {"code": "JATV", "name": "Jayram Theatre A/c 2K Dolby Digital", "subRegion": ""}, {"code": "TVRA", "name": "Tara Screens 2K A/C, Payakapuram", "subRegion": ""}, {"code": "NVRN", "name": "Navarang Theatre", "subRegion": ""}, {"code": "SWOT", "name": "Sowmya Theater (Newly Renovated)", "subRegion": ""}, {"code": "SIKC", "name": "Sivakrishna Cinemas A/C 2K DTS: Kondapalli", "subRegion": ""}, {"code": "VAKR", "name": "Venkata Krishna Luxury Cinemas: Poranki", "subRegion": ""}, {"code": "BDMA", "name": "Balaji Iconia A/C 2K Laser Dolby 7.1:Ibrahimpatnam", "subRegion": ""}, {"code": "VCSV", "name": "Capital Cinemas (Victory Screen)", "subRegion": ""}, {"code": "SVLA", "name": "Sri Vijaya Lakshmi Theater: Kankipadu", "subRegion": ""}], "VIZA": [{"code": "JGDM", "name": "Jagadamba Complex A/C 4K Dolby Atmos : Vizag", "subRegion": ""}, {"code": "INVB", "name": "INOX: Varun Beach, Beach Road", "subRegion": ""}, {"code": "KSGK", "name": "Sree Kanya Cinemas: Gajuwaka", "subRegion": ""}, {"code": "MELD", "name": "Sri Melody HDR Dolby Atmos: Vizag", "subRegion": ""}, {"code": "INCM", "name": "INOX: CMR Central, Maddilapalem", "subRegion": ""}, {"code": "STTR", "name": "Sarat Theater A/C 4K Dolby Atmos: Vizag", "subRegion": ""}, {"code": "STMD", "name": "STBL Cine World, Madhurawada: Vizag", "subRegion": ""}, {"code": "CSCV", "name": "Cinepolis: Sreekanya Cineglitz, Madhurawada", "subRegion": ""}, {"code": "ICMG", "name": "INOX: CMR Central, Gajuwaka", "subRegion": ""}, {"code": "APVZ", "name": "Annapurna A/C 2KDolby Digital:Kurmananapalem,Vizag", "subRegion": ""}, {"code": "MAVC", "name": "Mukta A2 Cinemas: Vizag (ONLY RECLINERS AND SOFAS)", "subRegion": ""}, {"code": "KCMD", "name": "Kameswari & Kinnera AC Laser 4K Maddilapalem:Vizag", "subRegion": ""}, {"code": "INVC", "name": "INOX: Vizag Chitralaya Mall", "subRegion": ""}, {"code": "NSRV", "name": "Natraj A/c DTS: Pendurthi", "subRegion": ""}, {"code": "MCDV", "name": "Mohini Cinemas Dolby Atmos: Gajuwaka", "subRegion": ""}, {"code": "JTBL", "name": "STBL Cinemas Multiplex SL Nagar: Visakhapatnam", "subRegion": ""}, {"code": "SLKP", "name": "Sri Lakshmi Narasimha Picture Palace: 104 Area", "subRegion": ""}, {"code": "SSLL", "name": "Sree Leela Mahal 4K Dolby Atmos: Vizag", "subRegion": ""}, {"code": "SKRN", "name": "SreeKanya Theatre 4K Dolby Atmos: Rly New Colony", "subRegion": ""}, {"code": "NDGP", "name": "Narasimha & Sri Narasimha Complex: Gopalapatnam", "subRegion": ""}, {"code": "RCNM", "name": "Raja Cinemax A/C 2K Dolby: Kothavalasa", "subRegion": ""}, {"code": "JTYS", "name": "Sangam Theatre 4K Dolby Atmos: Vizag", "subRegion": ""}, {"code": "TTPP", "name": "M/S Tata Picture Palace A/C Dts: Thagarapuvalasa", "subRegion": ""}, {"code": "MBSJ", "name": "Miraj Cinemas: Bupathi Surya Central, Dondaparthy", "subRegion": ""}, {"code": "SRPP", "name": "Sree Rama Theatre 4K Dolby Atmos: Vizag", "subRegion": ""}, {"code": "SRVV", "name": "Sri Venkateswara Theatres Dolby 7.1 2K & 4K: Vizag", "subRegion": ""}, {"code": "STCV", "name": "AVR Saptagiri 2K: Chittivalasa", "subRegion": ""}, {"code": "STBV", "name": "STBL Balaji Village Cinema, Sabbavaram: Vizag", "subRegion": ""}, {"code": "UTDV", "name": "Urvasi Cinemas: Laser 15K AC Dolby, Vizag", "subRegion": ""}, {"code": "RATG", "name": "Sri Ramulamma Theatre, Thagarapuvalasa: Vizag", "subRegion": ""}, {"code": "GSTV", "name": "Ganesh A/C 2K Dolby: Tagarapuvalasa", "subRegion": ""}, {"code": "SJYV", "name": "Sri Jaya Theatre AC Dts: Kothavalasa", "subRegion": ""}, {"code": "APPZ", "name": "Aruna Picture Palace 2K A/C PAM", "subRegion": ""}, {"code": "KMPV", "name": "Krishna Miniplex 2K Dolby, IT Sez: Madhurawada", "subRegion": ""}], "WAR": [{"code": "ASMW", "name": "Asian Sridevi Multiplex: Hanumakonda", "subRegion": ""}, {"code": "PWLM", "name": "PVR", "subRegion": ""}, {"code": "ASGM", "name": "Asian Gemini Theatre", "subRegion": ""}, {"code": "AAPW", "name": "Asian Ashoka Air-Conditioned: Hanumakonda", "subRegion": ""}, {"code": "ACWH", "name": "Amrutha Cinema: Hanumakonda", "subRegion": ""}, {"code": "VKTR", "name": "Venkatrama 70MM 2k Barco Laser", "subRegion": ""}, {"code": "RTWA", "name": "Radhika Theatre", "subRegion": ""}, {"code": "JTBP", "name": "Bhavani Picture Palace: Kazipet", "subRegion": ""}]};
+
+
+// Preloaded database of movies across Indian cities
+const ALL_MOVIES_BY_CITY = {"MUMBAI": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00505232", "title": "Jayanti 2"}, {"code": "ET00506305", "title": "Mitrata"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00513462", "title": "Chatni"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00516520", "title": "Tujhya Aaila"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00452034", "title": "The Odyssey"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00509404", "title": "Dahaan: The Evil Within"}, {"code": "ET00511400", "title": "The Magic Faraway Tree"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00447840", "title": "Spider-Man: Brand New Day"}, {"code": "ET00000652", "title": "Dilwale Dulhania Le Jayenge"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00515640", "title": "Devghar On Rent"}, {"code": "ET00516253", "title": "Aasha"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00517490", "title": "Om Ka Hari"}, {"code": "ET00506419", "title": "Fall 2: Deadpoint"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00500543", "title": "Mahaprabhu Jagannath"}, {"code": "ET00514653", "title": "Oye Chill Maar"}, {"code": "ET00502386", "title": "PAW Patrol: The Dino Movie"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00512660", "title": "Marham: Poetry & Music - Live on Stage"}, {"code": "ET00510575", "title": "Tony (2026)"}, {"code": "ET00489902", "title": "Village Rockstars 2"}, {"code": "ET00509388", "title": "Pidha Pachhi"}, {"code": "ET00510603", "title": "Psycho Ranga"}, {"code": "ET00465655", "title": "The Super Mario Galaxy Movie"}], "NCR": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00447840", "title": "Spider-Man: Brand New Day"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00452034", "title": "The Odyssey"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00502386", "title": "PAW Patrol: The Dino Movie"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00514369", "title": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00413205", "title": "Ramayana: The Legend of Prince Rama"}, {"code": "ET00459359", "title": "Colorful Stage! The Movie: A Miku Who Can't Sing"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00342811", "title": "The Place Promised in Our Early Days"}, {"code": "ET00510575", "title": "Tony (2026)"}, {"code": "ET00511400", "title": "The Magic Faraway Tree"}, {"code": "ET00513865", "title": "4 Rivers 6 Ranges Chushi Gangdruk"}, {"code": "ET00506419", "title": "Fall 2: Deadpoint"}, {"code": "ET00352085", "title": "Suzume"}, {"code": "ET00430496", "title": "My Hero Academia: You're Next"}, {"code": "ET00514653", "title": "Oye Chill Maar"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00452562", "title": "Na Ik Duje Ton Ghat Singh Vs Kaur 2 Na Ik Duje Ton Wake"}, {"code": "ET00514718", "title": "Azaad Singh"}, {"code": "ET00517922", "title": "Raibasi"}, {"code": "ET00489902", "title": "Village Rockstars 2"}, {"code": "ET00487783", "title": "Minions & Monsters"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00508355", "title": "The Uprising"}, {"code": "ET00408547", "title": "Blue Lock: Episode Nagi"}, {"code": "ET00517757", "title": "Lutt Mubarak"}, {"code": "ET00512660", "title": "Marham: Poetry & Music - Live on Stage"}, {"code": "ET00315233", "title": "27 September"}, {"code": "ET00448286", "title": "Adventure of Iceberg 7D - Combo"}, {"code": "ET00448287", "title": "Adventure of Jetcat 7D - Combo"}, {"code": "ET00021991", "title": "Roller Coaster 7D - Combo"}, {"code": "ET00090482", "title": "Avengers: Endgame"}, {"code": "ET00506432", "title": "Haiwaan"}], "BANG": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00412717", "title": "Premada Oorali"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00511528", "title": "America America 2"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00495643", "title": "Jadi: The Untold Side of If"}, {"code": "ET00447840", "title": "Spider-Man: Brand New Day"}, {"code": "ET00514426", "title": "Toss"}, {"code": "ET00513356", "title": "Spark"}, {"code": "ET00378770", "title": "Toxic: A Fairy Tale for Grown-ups"}, {"code": "ET00310216", "title": "Devara - Part 1"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00516253", "title": "Aasha"}, {"code": "ET00514378", "title": "Video"}, {"code": "ET00501839", "title": "Common Man"}, {"code": "ET00514267", "title": "Heggana Muddu"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00518364", "title": "Doctor 24/7"}, {"code": "ET00452034", "title": "The Odyssey"}, {"code": "ET00518216", "title": "Rudrabhishekam"}, {"code": "ET00419437", "title": "Bingo"}, {"code": "ET00513616", "title": "Amartha"}, {"code": "ET00509404", "title": "Dahaan: The Evil Within"}, {"code": "ET00513285", "title": "Anireekshita Atithigalu"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00517748", "title": "Anumana Pakshi"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00517027", "title": "Mahakavi"}, {"code": "ET00518066", "title": "Lenin Pandiyan"}, {"code": "ET00512528", "title": "Rou Sha Bi"}, {"code": "ET00439318", "title": "Awarapan 2"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00493836", "title": "Insidious: Out of The Further"}, {"code": "ET00489902", "title": "Village Rockstars 2"}, {"code": "ET00506419", "title": "Fall 2: Deadpoint"}], "HYD": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00508816", "title": "Happy Journey"}, {"code": "ET00310216", "title": "Devara - Part 1"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00495643", "title": "Jadi: The Untold Side of If"}, {"code": "ET00487933", "title": "Irumudi"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00509404", "title": "Dahaan: The Evil Within"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00517748", "title": "Anumana Pakshi"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00502386", "title": "PAW Patrol: The Dino Movie"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00447840", "title": "Spider-Man: Brand New Day"}, {"code": "ET00464932", "title": "Secret Soldier"}, {"code": "ET00507281", "title": "Kalyanam Kamaniyam Jeevitam"}, {"code": "ET00480372", "title": "The Sheep Detectives"}, {"code": "ET00489902", "title": "Village Rockstars 2"}, {"code": "ET00487783", "title": "Minions & Monsters"}, {"code": "ET00436673", "title": "Demon Slayer: Kimetsu no Yaiba Infinity Castle"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00514653", "title": "Oye Chill Maar"}, {"code": "ET00475599", "title": "Jai Kishen"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore (3D)"}, {"code": "ET00518014", "title": "Forgotten Island"}], "CHD": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00517757", "title": "Lutt Mubarak"}, {"code": "ET00514369", "title": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00514373", "title": "Mitti De Putt"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00452034", "title": "The Odyssey"}, {"code": "ET00447840", "title": "Spider-Man: Brand New Day"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00452562", "title": "Na Ik Duje Ton Ghat Singh Vs Kaur 2 Na Ik Duje Ton Wake"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}], "AHD": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00513462", "title": "Chatni"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00506305", "title": "Mitrata"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00509388", "title": "Pidha Pachhi"}, {"code": "ET00514653", "title": "Oye Chill Maar"}, {"code": "ET00452034", "title": "The Odyssey"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00501011", "title": "Jindagi Once More"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00378770", "title": "Toxic: A Fairy Tale for Grown-ups"}, {"code": "ET00505635", "title": "Tom & Cherry"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00519018", "title": "Ha Tuj Maro Prem Chhe"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00470536", "title": "Firki"}, {"code": "ET00439318", "title": "Awarapan 2"}, {"code": "ET00512660", "title": "Marham: Poetry & Music - Live on Stage"}], "PUNE": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00505232", "title": "Jayanti 2"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00452034", "title": "The Odyssey"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00447840", "title": "Spider-Man: Brand New Day"}, {"code": "ET00515640", "title": "Devghar On Rent"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00502386", "title": "PAW Patrol: The Dino Movie"}, {"code": "ET00516520", "title": "Tujhya Aaila"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00310216", "title": "Devara - Part 1"}, {"code": "ET00511400", "title": "The Magic Faraway Tree"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00506419", "title": "Fall 2: Deadpoint"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00514748", "title": "Manjar"}, {"code": "ET00508355", "title": "The Uprising"}, {"code": "ET00510603", "title": "Psycho Ranga"}, {"code": "ET00513865", "title": "4 Rivers 6 Ranges Chushi Gangdruk"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00502360", "title": "The Voice of Hind Rajab"}, {"code": "ET00510575", "title": "Tony (2026)"}, {"code": "ET00489902", "title": "Village Rockstars 2"}], "CHEN": [{"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00515005", "title": "The Dark Heaven"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00518066", "title": "Lenin Pandiyan"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00511827", "title": "Modha Rathri"}, {"code": "ET00515665", "title": "Enna Vilai"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00518587", "title": "The Grand Master"}, {"code": "ET00447840", "title": "Spider-Man: Brand New Day"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00515800", "title": "Wild Tamil Nadu"}, {"code": "ET00038721", "title": "Vinnaithaandi Varuvaayaa"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00489902", "title": "Village Rockstars 2"}, {"code": "ET00513702", "title": "Immortal"}, {"code": "ET00509196", "title": "Hi (2026)"}, {"code": "ET00430817", "title": "Jana Nayagan"}, {"code": "ET00310216", "title": "Devara - Part 1"}], "KOLK": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00508935", "title": "Winkle Twinkle"}, {"code": "ET00516191", "title": "Daktar Kaku"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00508681", "title": "Autobi"}, {"code": "ET00511763", "title": "Beporoya"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00492122", "title": "Keu Bole Biplobi Keu Bole Dakat"}, {"code": "ET00513020", "title": "Maya Satya Bhram"}, {"code": "ET00465229", "title": "Projapati 2"}, {"code": "ET00513851", "title": "Ghun Gaon"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00452034", "title": "The Odyssey"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00489902", "title": "Village Rockstars 2"}, {"code": "ET00511400", "title": "The Magic Faraway Tree"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00482024", "title": "DeSu7"}, {"code": "ET00506432", "title": "Haiwaan"}], "KOCH": [{"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00516472", "title": "Aaram"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00516253", "title": "Aasha"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00515245", "title": "It's a Medical Miracle"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00447840", "title": "Spider-Man: Brand New Day"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00473215", "title": "I'm Game"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00516189", "title": "Amanushikam"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00517403", "title": "Ottam Thullal"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00518066", "title": "Lenin Pandiyan"}], "AGRA": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00488644", "title": "Love Lottery"}], "AJMER": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00498770", "title": "Forgotten Island"}], "AMRI": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00514369", "title": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne"}, {"code": "ET00514373", "title": "Mitti De Putt"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00517757", "title": "Lutt Mubarak"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00452562", "title": "Na Ik Duje Ton Ghat Singh Vs Kaur 2 Na Ik Duje Ton Wake"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}], "ATKK": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00434922", "title": "Mahendragiri Varahi"}], "AUBI": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}], "AURW": [{"code": "ET00436621", "title": "The Paradise"}], "BKOT": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00487933", "title": "Irumudi"}], "BELG": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00412717", "title": "Premada Oorali"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00514267", "title": "Heggana Muddu"}, {"code": "ET00501839", "title": "Common Man"}, {"code": "ET00518216", "title": "Rudrabhishekam"}, {"code": "ET00517027", "title": "Mahakavi"}, {"code": "ET00513356", "title": "Spark"}], "BHAW": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00495643", "title": "Jadi: The Untold Side of If"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00516051", "title": "Maliput Melodies"}, {"code": "ET00509404", "title": "Dahaan: The Evil Within"}], "BHOP": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00078437", "title": "Spider-Man: Far From Home"}], "BHUB": [{"code": "ET00495643", "title": "Jadi: The Untold Side of If"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00509404", "title": "Dahaan: The Evil Within"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00510338", "title": "Dandakali"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00516051", "title": "Maliput Melodies"}, {"code": "ET00500543", "title": "Mahaprabhu Jagannath"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}], "CPTN": [{"code": "ET00510578", "title": "Citylights"}, {"code": "ET00513356", "title": "Spark"}], "AURA": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00505232", "title": "Jayanti 2"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00516520", "title": "Tujhya Aaila"}, {"code": "ET00510603", "title": "Psycho Ranga"}, {"code": "ET00515640", "title": "Devghar On Rent"}], "COIM": [{"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00515005", "title": "The Dark Heaven"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00518066", "title": "Lenin Pandiyan"}, {"code": "ET00511827", "title": "Modha Rathri"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}], "DEH": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00513865", "title": "4 Rivers 6 Ranges Chushi Gangdruk"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00516985", "title": "Khoonta"}, {"code": "ET00514369", "title": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00514653", "title": "Oye Chill Maar"}], "GOA": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}], "GOAL": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00518192", "title": "NRC - Nalparar Ramchandra"}], "GUNT": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00487933", "title": "Irumudi"}, {"code": "ET00498770", "title": "Forgotten Island"}], "GUW": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00518192", "title": "NRC - Nalparar Ramchandra"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00489902", "title": "Village Rockstars 2"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00488644", "title": "Love Lottery"}], "HUBL": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00412717", "title": "Premada Oorali"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00419437", "title": "Bingo"}, {"code": "ET00513865", "title": "4 Rivers 6 Ranges Chushi Gangdruk"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00513356", "title": "Spark"}, {"code": "ET00514267", "title": "Heggana Muddu"}, {"code": "ET00518216", "title": "Rudrabhishekam"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00501839", "title": "Common Man"}], "IND": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00514653", "title": "Oye Chill Maar"}, {"code": "ET00430706", "title": "2020 Delhi"}], "JGRO": [{"code": "ET00514373", "title": "Mitti De Putt"}, {"code": "ET00517757", "title": "Lutt Mubarak"}, {"code": "ET00514369", "title": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne"}, {"code": "ET00436621", "title": "The Paradise"}], "JAIJ": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00507738", "title": "Hanuman Ansh"}], "JAIP": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00512660", "title": "Marham: Poetry & Music - Live on Stage"}, {"code": "ET00448287", "title": "Adventure of Jetcat 7D - Combo"}, {"code": "ET00448286", "title": "Adventure of Iceberg 7D - Combo"}], "JALA": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00514369", "title": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00514373", "title": "Mitti De Putt"}, {"code": "ET00517757", "title": "Lutt Mubarak"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00517728", "title": "BTS World Tour Arirang in Buenos Aires: Live Viewing (Delayed)"}, {"code": "ET00517730", "title": "BTS World Tour Arirang in Sao Paulo: Live Viewing (Delayed)"}, {"code": "ET00518039", "title": "Dorothy"}], "JAMM": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00517757", "title": "Lutt Mubarak"}, {"code": "ET00514369", "title": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne"}, {"code": "ET00514373", "title": "Mitti De Putt"}], "JMDP": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00488644", "title": "Love Lottery"}], "JODH": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00514653", "title": "Oye Chill Maar"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}], "KAKI": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00507281", "title": "Kalyanam Kamaniyam Jeevitam"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00310216", "title": "Devara - Part 1"}, {"code": "ET00517748", "title": "Anumana Pakshi"}, {"code": "ET00434922", "title": "Mahendragiri Varahi"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00498770", "title": "Forgotten Island"}], "KPKT": [{"code": "ET00436621", "title": "The Paradise"}], "KANP": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00439318", "title": "Awarapan 2"}, {"code": "ET00488644", "title": "Love Lottery"}], "KOTA": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}]};
+
+// Venue-to-exact-movies mapping for 93 Indian cinema halls
+const VENUE_MOVIES_MAP = {"PRHN": [{"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00498183", "title": "Resident Evil"}], "AMBH": [{"code": "ET00516224", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00514261", "title": "Mandaadi"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}], "ALUC": [{"code": "ET00516728", "title": "Avengers Endgame: Encore"}, {"code": "ET00518242", "title": "The Paradise"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}], "ACPM": [{"code": "ET00514535", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}], "ACEV": [{"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00508816", "title": "Happy Journey"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00498183", "title": "Resident Evil"}], "PVFS": [{"code": "ET00508081", "title": "Runner"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00514261", "title": "Mandaadi"}, {"code": "ET00518417", "title": "Forgotten Island"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00516729", "title": "Avengers Endgame: Encore"}, {"code": "ET00495643", "title": "Jadi: The Untold Side of If"}, {"code": "ET00508816", "title": "Happy Journey"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}], "ACAS": [{"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00514261", "title": "Mandaadi"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}], "AACN": [{"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}], "CTNR": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00516728", "title": "Avengers Endgame: Encore"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00495643", "title": "Jadi: The Untold Side of If"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00498183", "title": "Resident Evil"}], "ILKS": [{"code": "ET00502386", "title": "PAW Patrol: The Dino Movie"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00436673", "title": "Demon Slayer: Kimetsu no Yaiba Infinity Castle"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00505185", "title": "Minions & Monsters"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00508816", "title": "Happy Journey"}, {"code": "ET00502600", "title": "Spider-Man: Brand New Day"}, {"code": "ET00506465", "title": "VIBE"}], "SRMO": [{"code": "ET00436621", "title": "The Paradise"}], "IGMH": [{"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00514261", "title": "Mandaadi"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00515244", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00516853", "title": "Dhoomakethu"}], "MMAH": [{"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00516853", "title": "Dhoomakethu"}], "GPRH": [{"code": "ET00508816", "title": "Happy Journey"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00464932", "title": "Secret Soldier"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00498185", "title": "Resident Evil"}], "CPMH": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00516728", "title": "Avengers Endgame: Encore"}, {"code": "ET00515244", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}], "CVMU": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00498185", "title": "Resident Evil"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00518043", "title": "Avengers Endgame: Encore"}, {"code": "ET00517748", "title": "Anumana Pakshi"}, {"code": "ET00508816", "title": "Happy Journey"}], "MMCA": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00498185", "title": "Resident Evil"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}], "ASHN": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00514535", "title": "Avengers Endgame: Encore"}, {"code": "ET00514261", "title": "Mandaadi"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00517748", "title": "Anumana Pakshi"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00508816", "title": "Happy Journey"}], "MAHM": [{"code": "ET00436621", "title": "The Paradise"}], "AMCA": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00507738", "title": "Hanuman Ansh"}], "SRCM": [{"code": "ET00436621", "title": "The Paradise"}], "ABCS": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}], "BRKH": [{"code": "ET00436621", "title": "The Paradise"}], "CPHY": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}], "PNNG": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00498770", "title": "Forgotten Island"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00508816", "title": "Happy Journey"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00502386", "title": "PAW Patrol: The Dino Movie"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00464932", "title": "Secret Soldier"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00480372", "title": "The Sheep Detectives"}, {"code": "ET00514261", "title": "Mandaadi"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00504928", "title": "Heart of the Beast"}], "CMMA": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516728", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00498186", "title": "Resident Evil"}], "ISTN": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00509404", "title": "Dahaan: The Evil Within"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00498183", "title": "Resident Evil"}], "GOKU": [{"code": "ET00436621", "title": "The Paradise"}], "PVTS": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00504928", "title": "Heart of the Beast"}], "JJPP": [{"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00508816", "title": "Happy Journey"}, {"code": "ET00514261", "title": "Mandaadi"}, {"code": "ET00517748", "title": "Anumana Pakshi"}], "INZS": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}], "RAVE": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00517726", "title": "Avengers Endgame: Encore"}, {"code": "ET00436631", "title": "The Paradise"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}], "RMIK": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00517726", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00436631", "title": "The Paradise"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}], "PSXM": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}], "PDDK": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00517726", "title": "Avengers Endgame: Encore"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}], "NYCH": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00436631", "title": "The Paradise"}], "MCGP": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00517726", "title": "Avengers Endgame: Encore"}], "SDPO": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}], "MCRL": [{"code": "ET00517726", "title": "Avengers Endgame: Encore"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00436631", "title": "The Paradise"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}], "MHKT": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00436631", "title": "The Paradise"}], "PCSK": [{"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00436631", "title": "The Paradise"}], "ANRR": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}], "SAPK": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}], "NCUK": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}], "GUCK": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}], "DBSC": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}], "JUGA": [{"code": "ET00439318", "title": "Awarapan 2"}], "LALK": [{"code": "ET00436631", "title": "The Paradise"}], "CSWO": [{"code": "ET00505232", "title": "Jayanti 2"}, {"code": "ET00518793", "title": "Heart of the Beast"}, {"code": "ET00516224", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00516520", "title": "Tujhya Aaila"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00498183", "title": "Resident Evil"}], "IMOB": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00516734", "title": "Avengers Endgame: Encore"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00518793", "title": "Heart of the Beast"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00516520", "title": "Tujhya Aaila"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00514345", "title": "Primetime"}], "CPVM": [{"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00516728", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00502630", "title": "Spider-Man: Brand New Day"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00508081", "title": "Runner"}], "FMMA": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516520", "title": "Tujhya Aaila"}, {"code": "ET00516734", "title": "Avengers Endgame: Encore"}, {"code": "ET00489902", "title": "Village Rockstars 2"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00518871", "title": "Heart of the Beast"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00517503", "title": "Resident Evil"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00513462", "title": "Chatni"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00506305", "title": "Mitrata"}], "INRC": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00511400", "title": "The Magic Faraway Tree"}, {"code": "ET00516734", "title": "Avengers Endgame: Encore"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00516520", "title": "Tujhya Aaila"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00506305", "title": "Mitrata"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00452034", "title": "The Odyssey"}], "PIPP": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00512660", "title": "Marham: Poetry & Music - Live on Stage"}, {"code": "ET00516734", "title": "Avengers Endgame: Encore"}], "POVI": [{"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00516728", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}], "BMXC": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00498186", "title": "Resident Evil"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00504928", "title": "Heart of the Beast"}], "PCMM": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00505232", "title": "Jayanti 2"}, {"code": "ET00516728", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00516520", "title": "Tujhya Aaila"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}], "PMKM": [{"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00509404", "title": "Dahaan: The Evil Within"}, {"code": "ET00516729", "title": "Avengers Endgame: Encore"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00506465", "title": "VIBE"}], "IMCM": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00513462", "title": "Chatni"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00506305", "title": "Mitrata"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}], "MCIW": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516734", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}], "POPE": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00505232", "title": "Jayanti 2"}, {"code": "ET00516520", "title": "Tujhya Aaila"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00506465", "title": "VIBE"}], "PVAE": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516728", "title": "Avengers Endgame: Encore"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}], "MXBY": [{"code": "ET00436631", "title": "The Paradise"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00506305", "title": "Mitrata"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00518079", "title": "Bandkhor"}, {"code": "ET00514533", "title": "Avengers Endgame: Encore"}, {"code": "ET00464392", "title": "Daayra"}], "PVVW": [{"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516734", "title": "Avengers Endgame: Encore"}, {"code": "ET00511400", "title": "The Magic Faraway Tree"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00498186", "title": "Resident Evil"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}], "CPNS": [{"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514369", "title": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne"}, {"code": "ET00517726", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00518014", "title": "Forgotten Island"}], "DTYN": [{"code": "ET00518793", "title": "Heart of the Beast"}, {"code": "ET00516734", "title": "Avengers Endgame: Encore"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00452034", "title": "The Odyssey"}, {"code": "ET00517400", "title": "Resident Evil"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00518417", "title": "Forgotten Island"}, {"code": "ET00506465", "title": "VIBE"}], "PVLE": [{"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516734", "title": "Avengers Endgame: Encore"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00518417", "title": "Forgotten Island"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00502386", "title": "PAW Patrol: The Dino Movie"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00518793", "title": "Heart of the Beast"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00506419", "title": "Fall 2: Deadpoint"}], "PAEG": [{"code": "ET00516733", "title": "Avengers Endgame: Encore"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00517533", "title": "Resident Evil"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00502386", "title": "PAW Patrol: The Dino Movie"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00502600", "title": "Spider-Man: Brand New Day"}, {"code": "ET00464392", "title": "Daayra"}], "PTCW": [{"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00516734", "title": "Avengers Endgame: Encore"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00506465", "title": "VIBE"}], "PGND": [{"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00516728", "title": "Avengers Endgame: Encore"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00498183", "title": "Resident Evil"}], "USEB": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00436631", "title": "The Paradise"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00504928", "title": "Heart of the Beast"}], "PPGV": [{"code": "ET00508081", "title": "Runner"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00516728", "title": "Avengers Endgame: Encore"}, {"code": "ET00518868", "title": "Forgotten Island"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00517533", "title": "Resident Evil"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00489902", "title": "Village Rockstars 2"}, {"code": "ET00518039", "title": "Dorothy"}], "G3SR": [{"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00436631", "title": "The Paradise"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00517726", "title": "Avengers Endgame: Encore"}], "IPMJ": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00516735", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00513865", "title": "4 Rivers 6 Ranges Chushi Gangdruk"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00514369", "title": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}], "CIPS": [{"code": "ET00488644", "title": "Love Lottery"}, {"code": "ET00516729", "title": "Avengers Endgame: Encore"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}], "INVM": [{"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00516734", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00514369", "title": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00498183", "title": "Resident Evil"}], "DVDC": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00436631", "title": "The Paradise"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00514533", "title": "Avengers Endgame: Encore"}], "PCSN": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00514369", "title": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne"}, {"code": "ET00516729", "title": "Avengers Endgame: Encore"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00513554", "title": "Mahakavya Shri Ramayan Katha"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00452562", "title": "Na Ik Duje Ton Ghat Singh Vs Kaur 2 Na Ik Duje Ton Wake"}], "IMMO": [{"code": "ET00508081", "title": "Runner"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00516735", "title": "Avengers Endgame: Encore"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00513356", "title": "Spark"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00501839", "title": "Common Man"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00412717", "title": "Premada Oorali"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00495643", "title": "Jadi: The Untold Side of If"}, {"code": "ET00378770", "title": "Toxic: A Fairy Tale for Grown-ups"}], "PVFF": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516729", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00464392", "title": "Daayra"}], "PSPR": [{"code": "ET00516729", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00514744", "title": "Toss"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00511528", "title": "America America 2"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00513356", "title": "Spark"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00518868", "title": "Forgotten Island"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00516853", "title": "Dhoomakethu"}], "PVOO": [{"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00516729", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00501839", "title": "Common Man"}, {"code": "ET00511528", "title": "America America 2"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00513356", "title": "Spark"}, {"code": "ET00514267", "title": "Heggana Muddu"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00378770", "title": "Toxic: A Fairy Tale for Grown-ups"}, {"code": "ET00506465", "title": "VIBE"}], "CFBS": [{"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00502600", "title": "Spider-Man: Brand New Day"}, {"code": "ET00509404", "title": "Dahaan: The Evil Within"}, {"code": "ET00513356", "title": "Spark"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00516729", "title": "Avengers Endgame: Encore"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00495643", "title": "Jadi: The Untold Side of If"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00514345", "title": "Primetime"}], "PVER": [{"code": "ET00516734", "title": "Avengers Endgame: Encore"}, {"code": "ET00518793", "title": "Heart of the Beast"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00412717", "title": "Premada Oorali"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00513356", "title": "Spark"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00518417", "title": "Forgotten Island"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00514267", "title": "Heggana Muddu"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00489902", "title": "Village Rockstars 2"}, {"code": "ET00508081", "title": "Runner"}, {"code": "ET00516853", "title": "Dhoomakethu"}], "IMCB": [{"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00516253", "title": "Aasha"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00513356", "title": "Spark"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00514267", "title": "Heggana Muddu"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00442702", "title": "Mandaadi"}], "ACKB": [{"code": "ET00517027", "title": "Mahakavi"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00515244", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00518216", "title": "Rudrabhishekam"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00518866", "title": "Heart of the Beast"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00419437", "title": "Bingo"}, {"code": "ET00514163", "title": "Avengers Endgame: Encore"}, {"code": "ET00412717", "title": "Premada Oorali"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00507738", "title": "Hanuman Ansh"}], "PVWW": [{"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00516734", "title": "Avengers Endgame: Encore"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00464392", "title": "Daayra"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}], "CEHR": [{"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00513356", "title": "Spark"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00516731", "title": "Avengers Endgame: Encore"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00516853", "title": "Dhoomakethu"}], "PBMM": [{"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00516729", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00501839", "title": "Common Man"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00502829", "title": "Bethlehem Kudumba Unit"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00506465", "title": "VIBE"}], "PPNX": [{"code": "ET00518039", "title": "Dorothy"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00516729", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}], "CLGM": [{"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00498183", "title": "Resident Evil"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00514744", "title": "Toss"}, {"code": "ET00412717", "title": "Premada Oorali"}, {"code": "ET00514345", "title": "Primetime"}, {"code": "ET00516728", "title": "Avengers Endgame: Encore"}, {"code": "ET00513356", "title": "Spark"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00516853", "title": "Dhoomakethu"}], "INRZ": [{"code": "ET00516734", "title": "Avengers Endgame: Encore"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00513356", "title": "Spark"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00511528", "title": "America America 2"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00507738", "title": "Hanuman Ansh"}], "CNRM": [{"code": "ET00518014", "title": "Forgotten Island"}, {"code": "ET00436621", "title": "The Paradise"}, {"code": "ET00442702", "title": "Mandaadi"}, {"code": "ET00516813", "title": "Meesaya Murukku 2"}, {"code": "ET00510578", "title": "Citylights"}, {"code": "ET00514744", "title": "Toss"}, {"code": "ET00516728", "title": "Avengers Endgame: Encore"}, {"code": "ET00513356", "title": "Spark"}, {"code": "ET00444235", "title": "The Vvaan - Force of the Forrest"}, {"code": "ET00506465", "title": "VIBE"}, {"code": "ET00507738", "title": "Hanuman Ansh"}, {"code": "ET00504928", "title": "Heart of the Beast"}, {"code": "ET00516853", "title": "Dhoomakethu"}, {"code": "ET00417686", "title": "Mirzapur: The Movie"}, {"code": "ET00512696", "title": "Pradhama Drishtiya Kuttakkar"}, {"code": "ET00498183", "title": "Resident Evil"}]};
+
+
+// Fallback trending movies
+const POPULAR_MOVIES = [
+  {
+    "code": "ET00516731",
+    "title": "Avengers: Endgame - Encore (3D)"
+  },
+  {
+    "code": "ET00514163",
+    "title": "Avengers: Endgame - Encore (2D)"
+  },
+  {
+    "code": "ET00436621",
+    "title": "The Paradise"
+  },
+  {
+    "code": "ET00444235",
+    "title": "The Vvaan - Force of the Forrest"
+  },
+  {
+    "code": "ET00507738",
+    "title": "Hanuman Ansh"
+  },
+  {
+    "code": "ET00498183",
+    "title": "Resident Evil"
+  },
+  {
+    "code": "ET00504928",
+    "title": "Heart of the Beast"
+  },
+  {
+    "code": "ET00518014",
+    "title": "Forgotten Island"
+  },
+  {
+    "code": "ET00513554",
+    "title": "Mahakavya Shri Ramayan Katha"
+  },
+  {
+    "code": "ET00310216",
+    "title": "Devara - Part 1"
+  },
+  {
+    "code": "ET00447840",
+    "title": "Spider-Man: Brand New Day"
+  }
+];
+
+
+function getHeaders(regionCode = "HYD", citySlug = "hyderabad", lat = "17.385", lon = "78.487") {
+  return {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "x-app-code": "WEB",
+    "x-region-code": regionCode,
+    "x-region-slug": citySlug,
+    "x-geohash": "tep",
+    "x-latitude": String(lat || "17.385"),
+    "x-longitude": String(lon || "78.487"),
+    "x-location-selection": "manual",
+    "Referer": "https://in.bookmyshow.com/",
+    "Cookie": `Rgn=|Code=${regionCode}|`,
+  };
+}
+
+export default {
+  // 1. Telegram Webhook Handler & Utilities
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    // GET /set-webhook: Automatically sets Telegram webhook to this Worker's URL
+    if (url.pathname === "/set-webhook") {
+      if (!env.TELEGRAM_BOT_TOKEN) {
+        return new Response("TELEGRAM_BOT_TOKEN is not configured in Worker environment.", { status: 400 });
+      }
+      const host = url.origin;
+      const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/setWebhook?url=${encodeURIComponent(host)}`);
+      const data = await res.json();
+      return new Response(JSON.stringify(data, null, 2), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    // GET /webhook-info: Checks current webhook registration status
+    if (url.pathname === "/webhook-info") {
+      if (!env.TELEGRAM_BOT_TOKEN) {
+        return new Response("TELEGRAM_BOT_TOKEN is not configured in Worker environment.", { status: 400 });
+      }
+      const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getWebhookInfo`);
+      const data = await res.json();
+      return new Response(JSON.stringify(data, null, 2), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    // GET /diag: Verifies environment variables and KV binding
+    if (url.pathname === "/diag") {
+      const cityTest = url.searchParams.get("city") || "KANP";
+      const venues = await fetchVenuesForCity(cityTest, env);
+      return new Response(JSON.stringify({
+        status: "online",
+        hasToken: !!env.TELEGRAM_BOT_TOKEN,
+        hasChatId: !!env.TELEGRAM_CHAT_ID,
+        hasKV: !!env.TRACKER_DB,
+        testedCity: cityTest,
+        venuesCount: venues.length,
+        venuesSample: venues.slice(0, 5),
+        moviesCount: (await fetchMoviesForCity(cityTest, "ALL", env)).length
+      }, null, 2), { headers: { "Content-Type": "application/json" } });
+    }
+
+    // GET /api/trackers: Export active trackers for external scanner (GitHub Actions)
+    if (url.pathname === "/api/trackers") {
+      const auth = request.headers.get("Authorization") || url.searchParams.get("token");
+      if (auth !== env.TELEGRAM_BOT_TOKEN) {
+        return new Response("Unauthorized", { status: 401 });
+      }
+
+      const allTrackers = [];
+      if (env.TRACKER_DB) {
+        const list = await env.TRACKER_DB.list({ prefix: "trackers:" });
+        for (const k of list.keys) {
+          const raw = await env.TRACKER_DB.get(k.name);
+          if (raw) {
+            try {
+              allTrackers.push(...JSON.parse(raw));
+            } catch (e) {}
+          }
+        }
+      }
+
+      return new Response(JSON.stringify(allTrackers, null, 2), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    // POST /api/trackers/sync: Update known sessions from external scanner
+    if (url.pathname === "/api/trackers/sync" && request.method === "POST") {
+      const auth = request.headers.get("Authorization") || url.searchParams.get("token");
+      if (auth !== env.TELEGRAM_BOT_TOKEN) {
+        return new Response("Unauthorized", { status: 401 });
+      }
+
+      try {
+        const payload = await request.json(); // { trackerId, knownSessions }
+        if (env.TRACKER_DB && payload.trackerId) {
+          const list = await env.TRACKER_DB.list({ prefix: "trackers:" });
+          for (const k of list.keys) {
+            const raw = await env.TRACKER_DB.get(k.name);
+            if (!raw) continue;
+            let trackers = JSON.parse(raw);
+            let updated = false;
+            for (let t of trackers) {
+              if (t.id === payload.trackerId) {
+                t.knownSessions = payload.knownSessions || [];
+                updated = true;
+              }
+            }
+            if (updated) {
+              await env.TRACKER_DB.put(k.name, JSON.stringify(trackers));
+              break;
+            }
+          }
+        }
+        return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
+      } catch (err) {
+        return new Response("Error: " + err.message, { status: 400 });
+      }
+    }
+
+    // POST /api/movies/sync: Push freshly scraped movies for cities into Cloudflare KV
+    if (url.pathname === "/api/movies/sync" && request.method === "POST") {
+      const auth = request.headers.get("Authorization") || url.searchParams.get("token");
+      if (auth !== env.TELEGRAM_BOT_TOKEN) {
+        return new Response("Unauthorized", { status: 401 });
+      }
+
+      try {
+        const payload = await request.json(); // { cityCode, movies } or { "HYD": [...], ... }
+        if (env.TRACKER_DB && payload) {
+          if (payload.cityCode && Array.isArray(payload.movies)) {
+            await env.TRACKER_DB.put(`movies:${payload.cityCode}`, JSON.stringify(payload.movies), { expirationTtl: 86400 * 7 });
+          } else {
+            for (const [cCode, mList] of Object.entries(payload)) {
+              if (Array.isArray(mList) && mList.length > 0) {
+                await env.TRACKER_DB.put(`movies:${cCode}`, JSON.stringify(mList), { expirationTtl: 86400 * 7 });
+              }
+            }
+          }
+        }
+        return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
+      } catch (err) {
+        return new Response("Error: " + err.message, { status: 400 });
+      }
+    }
+
+    if (request.method !== "POST") {
+      return new Response("Movie Tracker Bot Running 24/7 on Cloudflare", { status: 200 });
+    }
+
+    try {
+      const update = await request.json();
+      await handleTelegramUpdate(update, env);
+      return new Response("OK", { status: 200 });
+    } catch (err) {
+      console.error("Fetch handler error:", err);
+      return new Response("OK", { status: 200 });
+    }
+  },
+
+  // 2. 24/7 Autonomous Scanner (Cloudflare Cron Trigger every 3 mins)
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(scanAllTrackers(env));
+  }
+};
+
+// Handle Telegram Updates
+async function handleTelegramUpdate(update, env) {
+  const botToken = env.TELEGRAM_BOT_TOKEN;
+  const configuredChatId = String(env.TELEGRAM_CHAT_ID || "").trim().replace(/['"]/g, "");
+
+  // A. Handle Button Clicks
+  if (update.callback_query) {
+    const cb = update.callback_query;
+    const chatId = String(cb.message?.chat?.id || "");
+    const userId = String(cb.from?.id || "");
+    const messageId = cb.message?.message_id;
+    const data = cb.data || "";
+
+    if (configuredChatId && chatId !== configuredChatId && userId !== configuredChatId) {
+      await answerCallbackQuery(botToken, cb.id, "Unauthorized user");
+      return;
+    }
+
+    await answerCallbackQuery(botToken, cb.id);
+    await handleCallbackData(botToken, chatId, messageId, data, env);
+    return;
+  }
+
+  // B. Handle Text Messages
+  const msg = update.message || update.edited_message;
+  if (!msg || !msg.text) return;
+
+  const chatId = String(msg.chat.id);
+  const userId = String(msg.from?.id || "");
+  const text = msg.text.trim();
+
+  if (configuredChatId && chatId !== configuredChatId && userId !== configuredChatId) {
+    return;
+  }
+
+  const cmd = text.toLowerCase().split(/\s+/)[0].split("@")[0];
+
+  // Commands
+  if (cmd === "/start" || cmd === "/track") {
+    await clearSession(env, chatId);
+    await sendCitySelection(botToken, chatId);
+    return;
+  }
+  if (cmd === "/list") {
+    await clearSession(env, chatId);
+    await sendTrackerList(botToken, chatId, env);
+    return;
+  }
+  if (cmd === "/status") {
+    await clearSession(env, chatId);
+    await sendStatusReport(botToken, chatId, env);
+    return;
+  }
+  if (cmd === "/help") {
+    await sendTelegram(botToken, chatId,
+      "🤖 *Movie Ticket Tracker Bot Commands:*\n\n" +
+      "• /track — Track tickets (City ➔ Theatre ➔ Movie ➔ Screen)\n" +
+      "• /list — View and manage your active trackers\n" +
+      "• /status — Check live status of all tracked shows\n" +
+      "• /help — Show this help menu\n\n" +
+      "💡 *Tip:* You can also paste any BookMyShow movie link directly into this chat anytime!"
+    );
+    return;
+  }
+
+  // Check if user has an active pending session (City search, Theatre search, Custom movie)
+  const session = await getSession(env, chatId);
+
+  if (session && session.step === "AWAITING_CITY_QUERY") {
+    await handleCitySearchInput(botToken, chatId, text, env);
+    return;
+  }
+
+  if (session && session.step === "AWAITING_THEATRE_QUERY") {
+    await handleTheatreSearchInput(botToken, chatId, session.cityCode, text, env);
+    return;
+  }
+
+  if (session && session.step === "AWAITING_MOVIE_QUERY") {
+    await handleMovieSearchInput(botToken, chatId, session.cityCode, session.venueCode, text, env);
+    return;
+  }
+
+  if (session && session.step === "AWAITING_MOVIE_INPUT") {
+    const parsed = parseBmsUrl(text);
+    if (parsed.eventCode) {
+      await clearSession(env, chatId);
+      await sendFormatSelection(botToken, chatId, session.cityCode, session.venueCode, parsed.eventCode);
+    } else {
+      await sendTelegram(botToken, chatId,
+        "⚠️ Could not find a valid BookMyShow event code in your message.\n\n" +
+        "Please paste a valid BookMyShow URL (e.g. `https://in.bookmyshow.com/.../ET00516731`) or code like `ET00516731`."
+      );
+    }
+    return;
+  }
+
+  // Check if user spontaneously sent a BookMyShow URL or Event Code
+  const parsed = parseBmsUrl(text);
+  if (parsed.eventCode) {
+    const cityCode = parsed.cityCode || "HYD";
+    await sendTheatreSelection(botToken, chatId, cityCode, 0, null, env, parsed.eventCode);
+    return;
+  }
+
+  // Default fallback
+  await sendTelegram(botToken, chatId,
+    "👋 Hello! Send /track to begin tracking movie tickets, or paste a BookMyShow link!"
+  );
+}
+
+// Parse BMS URL or Event Code
+function parseBmsUrl(input) {
+  const codeMatch = input.match(/ET\d{6,10}/i);
+  const eventCode = codeMatch ? codeMatch[0].toUpperCase() : null;
+
+  let cityCode = "HYD";
+  const lower = input.toLowerCase();
+  for (const [c, info] of Object.entries(TOP_CITIES)) {
+    if (lower.includes(`/${info.slug}/`) || lower.includes(`/${info.name.toLowerCase()}/`)) {
+      cityCode = c;
+      break;
+    }
+  }
+
+  return { eventCode, cityCode };
+}
+
+// -------------------------------------------------------------
+// STEP 1: CITY SELECTION & SEARCH
+// -------------------------------------------------------------
+
+async function sendCitySelection(botToken, chatId, messageId = null) {
+  const buttons = [];
+  for (let i = 0; i < POPULAR_CITIES.length; i += 2) {
+    const row = [
+      { text: `🏙️ ${POPULAR_CITIES[i].name}`, callback_data: `c:${POPULAR_CITIES[i].code}` }
+    ];
+    if (i + 1 < POPULAR_CITIES.length) {
+      row.push({ text: `🏙️ ${POPULAR_CITIES[i + 1].name}`, callback_data: `c:${POPULAR_CITIES[i + 1].code}` });
+    }
+    buttons.push(row);
+  }
+
+  buttons.push([
+    { text: "🔍 Search Another City in India", callback_data: "act:search_city" }
+  ]);
+  buttons.push([
+    { text: "📋 View Active Trackers", callback_data: "act:list" }
+  ]);
+
+  const text =
+    "📍 *Step 1/4: Choose Your City*\n\n" +
+    "Select from popular cities below, or search for any city in India:";
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
+  } else {
+    await sendTelegram(botToken, chatId, text, { inline_keyboard: buttons });
+  }
+}
+
+async function handleCitySearchInput(botToken, chatId, query, env) {
+  const matches = await searchCities(query, env);
+
+  if (!matches || matches.length === 0) {
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: "🔍 Search Again", callback_data: "act:search_city" }],
+        [{ text: "« Back to Popular Cities", callback_data: "act:cities" }]
+      ]
+    };
+    await sendTelegram(botToken, chatId,
+      `❌ No cities found matching "*${query}*".\n\nPlease check spelling or try another city name:`,
+      keyboard
+    );
+    return;
+  }
+
+  await clearSession(env, chatId);
+  const buttons = [];
+  for (const c of matches.slice(0, 8)) {
+    buttons.push([{ text: `🏙️ ${c.name} (${c.code})`, callback_data: `c:${c.code}` }]);
+  }
+  buttons.push([{ text: "🔍 Search Another City", callback_data: "act:search_city" }]);
+  buttons.push([{ text: "« Back to Popular Cities", callback_data: "act:cities" }]);
+
+  await sendTelegram(botToken, chatId,
+    `📍 *Select your city from search results for "${query}":*`,
+    { inline_keyboard: buttons }
+  );
+}
+
+async function searchCities(query, env) {
+  const q = query.toLowerCase().trim();
+  const results = [];
+
+  // 1. Search in local 87 cities
+  for (const [code, c] of Object.entries(TOP_CITIES)) {
+    if (c.name.toLowerCase().includes(q) || code.toLowerCase() === q || c.slug.toLowerCase().includes(q)) {
+      results.push(c);
+    }
+  }
+
+  if (results.length >= 3) return results;
+
+  // 2. Fallback to BMS dynamic GETREGIONS API
+  try {
+    const res = await fetch(REGIONS_API, { headers: getHeaders() });
+    if (res.ok) {
+      const text = await res.text();
+      const match = text.match(/var\s+regionlst\s*=\s*(\{.*?\});\s*var/s);
+      if (match) {
+        const obj = JSON.parse(match[1]);
+        for (const [code, items] of Object.entries(obj)) {
+          for (const item of items) {
+            const name = item.name || "";
+            const alias = item.alias || "";
+            const slug = item.slug || "";
+            if (name.toLowerCase().includes(q) || alias.toLowerCase().includes(q) || slug.toLowerCase().includes(q)) {
+              if (!results.find(r => r.code === item.code)) {
+                const cityObj = {
+                  code: item.code,
+                  name: name,
+                  slug: slug,
+                  lat: item.lat || "17.385",
+                  lon: item.long || "78.487"
+                };
+                results.push(cityObj);
+                if (env && env.TRACKER_DB) {
+                  await env.TRACKER_DB.put(`city:${item.code}`, JSON.stringify(cityObj), { expirationTtl: 86400 * 7 });
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Error searching BMS regions:", e);
+  }
+
+  return results;
+}
+
+async function resolveCity(cityCode, env) {
+  if (TOP_CITIES[cityCode]) return TOP_CITIES[cityCode];
+  if (env && env.TRACKER_DB) {
+    const cached = await env.TRACKER_DB.get(`city:${cityCode}`);
+    if (cached) return JSON.parse(cached);
+  }
+  return {
+    code: cityCode,
+    name: cityCode,
+    slug: cityCode.toLowerCase(),
+    lat: "17.385",
+    lon: "78.487"
+  };
+}
+
+// -------------------------------------------------------------
+// STEP 2: THEATRE SELECTION, SEARCH & PAGINATION
+// -------------------------------------------------------------
+
+async function sendTheatreSelection(botToken, chatId, cityCode, page = 0, messageId = null, env = null, preselectedEventCode = "") {
+  const city = await resolveCity(cityCode, env);
+  const venues = await fetchVenuesForCity(cityCode, env);
+
+  const PAGE_SIZE = 6;
+  const totalVenues = venues.length;
+  const totalPages = Math.max(1, Math.ceil(totalVenues / PAGE_SIZE));
+  const safePage = Math.max(0, Math.min(page, totalPages - 1));
+
+  const startIdx = safePage * PAGE_SIZE;
+  const pageVenues = venues.slice(startIdx, startIdx + PAGE_SIZE);
+
+  const buttons = [];
+  // All Theatres button
+  buttons.push([
+    { text: `⭐ All Theatres in ${city.name} (${totalVenues})`, callback_data: `th:${cityCode}:ALL:${preselectedEventCode || ""}` }
+  ]);
+
+  // Venue buttons on this page
+  for (const v of pageVenues) {
+    const label = v.name.length > 36 ? v.name.slice(0, 34) + "…" : v.name;
+    buttons.push([
+      { text: `🏛️ ${label}`, callback_data: `th:${cityCode}:${v.code}:${preselectedEventCode || ""}` }
+    ]);
+  }
+
+  // Pagination navigation row
+  if (totalPages > 1) {
+    const navRow = [];
+    if (safePage > 0) {
+      navRow.push({ text: "◀️ Prev", callback_data: `thp:${cityCode}:${safePage - 1}:${preselectedEventCode || ""}` });
+    } else {
+      navRow.push({ text: "·", callback_data: "noop" });
+    }
+
+    navRow.push({ text: `📄 ${safePage + 1}/${totalPages}`, callback_data: "noop" });
+
+    if (safePage < totalPages - 1) {
+      navRow.push({ text: "Next ▶️", callback_data: `thp:${cityCode}:${safePage + 1}:${preselectedEventCode || ""}` });
+    } else {
+      navRow.push({ text: "·", callback_data: "noop" });
+    }
+    buttons.push(navRow);
+  }
+
+  // Search Theatre button
+  buttons.push([
+    { text: `🔍 Search Theatre in ${city.name}`, callback_data: `act:search_th:${cityCode}` }
+  ]);
+
+  // Back button
+  buttons.push([
+    { text: "« Back to Cities", callback_data: "act:cities" }
+  ]);
+
+  const text =
+    `🏛️ *Step 2/4: Choose Theatre in ${city.name}*\n\n` +
+    `Found *${totalVenues}* theatres. Select a cinema below, or choose *All Theatres*:`;
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
+  } else {
+    await sendTelegram(botToken, chatId, text, { inline_keyboard: buttons });
+  }
+}
+
+async function handleTheatreSearchInput(botToken, chatId, cityCode, query, env) {
+  const city = await resolveCity(cityCode, env);
+  const venues = await fetchVenuesForCity(cityCode, env);
+  const q = query.toLowerCase().trim();
+
+  const matched = venues.filter(v => 
+    v.name.toLowerCase().includes(q) || 
+    v.code.toLowerCase().includes(q) ||
+    (v.subRegion && v.subRegion.toLowerCase().includes(q))
+  );
+
+  if (matched.length === 0) {
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: `🔍 Search Again in ${city.name}`, callback_data: `act:search_th:${cityCode}` }],
+        [{ text: "« Show All Theatres", callback_data: `thp:${cityCode}:0:` }]
+      ]
+    };
+    await sendTelegram(botToken, chatId,
+      `❌ No theatres found in *${city.name}* matching "*${query}*".\n\nTry searching for PVR, INOX, Cinepolis, Rave, Miraj, etc.:`,
+      keyboard
+    );
+    return;
+  }
+
+  await clearSession(env, chatId);
+  const buttons = [];
+  for (const v of matched.slice(0, 10)) {
+    const label = v.name.length > 36 ? v.name.slice(0, 34) + "…" : v.name;
+    buttons.push([{ text: `🏛️ ${label}`, callback_data: `th:${cityCode}:${v.code}:` }]);
+  }
+  buttons.push([{ text: "🔍 Search Another Theatre", callback_data: `act:search_th:${cityCode}` }]);
+  buttons.push([{ text: `« Browse All Theatres (${venues.length})`, callback_data: `thp:${cityCode}:0:` }]);
+
+  await sendTelegram(botToken, chatId,
+    `🏛️ *Theatres matching "${query}" in ${city.name}:*`,
+    { inline_keyboard: buttons }
+  );
+}
+
+function cleanVenueName(name, cityName) {
+  if (!name) return "";
+  let clean = name.trim();
+  if (cityName) {
+    const target = `: ${cityName.toLowerCase()}`;
+    const lower = clean.toLowerCase();
+    const idx = lower.lastIndexOf(target);
+    if (idx !== -1) clean = clean.slice(0, idx).trim();
+  }
+  return clean || name;
+}
+
+async function fetchVenuesForCity(cityCode, env) {
+  // 1. Check pre-loaded 1,397 venues across 87 Indian cities
+  if (ALL_VENUES[cityCode] && ALL_VENUES[cityCode].length > 0) {
+    return ALL_VENUES[cityCode];
+  }
+
+  // 2. Check KV cache
+  if (env && env.TRACKER_DB) {
+    const cached = await env.TRACKER_DB.get(`venues:${cityCode}`);
+    if (cached) {
+      try { return JSON.parse(cached); } catch (e) {}
+    }
+  }
+
+  // 3. Fallback to live API (if proxy configured or available)
+  const city = await resolveCity(cityCode, env);
+  const url = `${VENUES_API}?eventType=MT&regionCode=${cityCode}`;
+
+  try {
+    const res = await fetch(url, { headers: getHeaders(cityCode, city.slug, city.lat, city.lon) });
+    if (res.ok) {
+      const data = await res.json();
+      const rawVenues = data.venues || [];
+      const venues = rawVenues.map(v => ({
+        code: v.VenueCode,
+        name: cleanVenueName(v.VenueName, city.name),
+        subRegion: v.SubRegionName || "",
+        isPopular: v.tag === "POPULARITY"
+      }));
+
+      if (env && env.TRACKER_DB && venues.length > 0) {
+        await env.TRACKER_DB.put(`venues:${cityCode}`, JSON.stringify(venues), { expirationTtl: 3600 * 24 });
+      }
+      return venues;
+    }
+  } catch (err) {
+    console.error(`Error fetching venues for ${cityCode}:`, err);
+  }
+
+  return [];
+}
+
+// -------------------------------------------------------------
+// STEP 3: MOVIE SELECTION FOR THEATRE (LINKED TO CINEMA HALL)
+// -------------------------------------------------------------
+
+async function sendMovieSelection(botToken, chatId, cityCode, venueCode, page = 0, showAllCity = false, messageId = null, env = null) {
+  const city = await resolveCity(cityCode, env);
+  const venues = await fetchVenuesForCity(cityCode, env);
+  const vObj = venues.find(v => v.code === venueCode);
+  const venueName = venueCode === "ALL" ? `All Theatres in ${city.name}` : (vObj?.name || venueCode);
+
+  const { movies, isVenueSpecific } = await fetchMoviesForCity(cityCode, venueCode, showAllCity, env);
+  const totalMovies = movies.length;
+  const pageSize = 8;
+  const totalPages = Math.ceil(totalMovies / pageSize) || 1;
+  const safePage = Math.max(0, Math.min(page, totalPages - 1));
+  const slice = movies.slice(safePage * pageSize, (safePage + 1) * pageSize);
+
+  const buttons = [];
+  for (const m of slice) {
+    const title = m.title.length > 36 ? m.title.slice(0, 34) + "…" : m.title;
+    buttons.push([{ text: `🎬 ${title}`, callback_data: `mv:${cityCode}:${venueCode}:${m.code}` }]);
+  }
+
+  // Pagination navigation row
+  if (totalPages > 1) {
+    const navRow = [];
+    if (safePage > 0) {
+      navRow.push({ text: "◀️ Prev", callback_data: `mvp:${cityCode}:${venueCode}:${safePage - 1}:${showAllCity ? "1" : "0"}` });
+    } else {
+      navRow.push({ text: "·", callback_data: "noop" });
+    }
+
+    navRow.push({ text: `📄 ${safePage + 1}/${totalPages}`, callback_data: "noop" });
+
+    if (safePage < totalPages - 1) {
+      navRow.push({ text: "Next ▶️", callback_data: `mvp:${cityCode}:${venueCode}:${safePage + 1}:${showAllCity ? "1" : "0"}` });
+    } else {
+      navRow.push({ text: "·", callback_data: "noop" });
+    }
+    buttons.push(navRow);
+  }
+
+  // If cinema-specific, allow viewing all city movies
+  if (isVenueSpecific && venueCode !== "ALL") {
+    buttons.push([
+      { text: `🌟 Browse All ${city.name} Movies`, callback_data: `mv_all:${cityCode}:${venueCode}` }
+    ]);
+  } else if (showAllCity && VENUE_MOVIES_MAP[venueCode]) {
+    buttons.push([
+      { text: `🏛️ Show Only ${vObj?.name ? vObj.name.slice(0, 24) : "Cinema"}'s Shows`, callback_data: `th:${cityCode}:${venueCode}:` }
+    ]);
+  }
+
+  // Search Movie button
+  buttons.push([
+    { text: `🔍 Search Movie by Name`, callback_data: `act:search_mv:${cityCode}:${venueCode}` }
+  ]);
+
+  // Paste Custom Link button
+  buttons.push([
+    { text: "🔗 Paste Custom BMS Link / Code...", callback_data: `custom:${cityCode}:${venueCode}` }
+  ]);
+
+  // Back button
+  buttons.push([
+    { text: "« Back to Theatres", callback_data: `thp:${cityCode}:0:` }
+  ]);
+
+  let headerPrefix = `🎬 *Step 3/4: Choose Movie*\n\n• City: *${city.name}*\n• Theatre: *${venueName}*\n\n`;
+  if (isVenueSpecific) {
+    headerPrefix += `Showing *${totalMovies}* movie(s) playing specifically at this cinema hall:\n`;
+  } else {
+    headerPrefix += `Found *${totalMovies}* movies currently active in ${city.name}:\n`;
+  }
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, headerPrefix, { inline_keyboard: buttons });
+  } else {
+    await sendTelegram(botToken, chatId, headerPrefix, { inline_keyboard: buttons });
+  }
+}
+
+async function handleMovieSearchInput(botToken, chatId, cityCode, venueCode, query, env) {
+  const city = await resolveCity(cityCode, env);
+  const { movies } = await fetchMoviesForCity(cityCode, venueCode, true, env);
+  const q = query.toLowerCase().trim();
+
+  const matched = movies.filter(m =>
+    m.title.toLowerCase().includes(q) ||
+    m.code.toLowerCase().includes(q)
+  );
+
+  if (matched.length === 0) {
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: `🔍 Search Again in ${city.name}`, callback_data: `act:search_mv:${cityCode}:${venueCode}` }],
+        [{ text: "« Show All Movies", callback_data: `mvp:${cityCode}:${venueCode}:0:0` }],
+        [{ text: "🔗 Paste BMS Link / Code", callback_data: `custom:${cityCode}:${venueCode}` }]
+      ]
+    };
+    await sendTelegram(botToken, chatId,
+      `❌ No movies found matching "*${query}*".\n\nTry searching for another movie, or paste the BookMyShow link directly:`,
+      keyboard
+    );
+    return;
+  }
+
+  await clearSession(env, chatId);
+  const buttons = [];
+  for (const m of matched.slice(0, 10)) {
+    const title = m.title.length > 36 ? m.title.slice(0, 34) + "…" : m.title;
+    buttons.push([{ text: `🎬 ${title}`, callback_data: `mv:${cityCode}:${venueCode}:${m.code}` }]);
+  }
+  buttons.push([{ text: "🔍 Search Another Movie", callback_data: `act:search_mv:${cityCode}:${venueCode}` }]);
+  buttons.push([{ text: "« Back to Movies", callback_data: `mvp:${cityCode}:${venueCode}:0:0` }]);
+
+  await sendTelegram(botToken, chatId,
+    `🎬 *Movies matching "${query}":*\n\nSelect a movie below:`,
+    { inline_keyboard: buttons }
+  );
+}
+
+async function fetchMoviesForCity(cityCode, venueCode = "ALL", showAllCity = false, env = null) {
+  // 1. Check if venue has dedicated movie list
+  if (venueCode !== "ALL" && !showAllCity) {
+    if (VENUE_MOVIES_MAP[venueCode] && VENUE_MOVIES_MAP[venueCode].length > 0) {
+      return { movies: VENUE_MOVIES_MAP[venueCode], isVenueSpecific: true };
+    }
+    if (env && env.TRACKER_DB) {
+      const cached = await env.TRACKER_DB.get(`v_movies:${venueCode}`);
+      if (cached) {
+        try {
+          const arr = JSON.parse(cached);
+          if (Array.isArray(arr) && arr.length > 0) return { movies: arr, isVenueSpecific: true };
+        } catch (e) {}
+      }
+    }
+  }
+
+  // 2. Fallback to city-wide movies
+  let list = [];
+  if (ALL_MOVIES_BY_CITY[cityCode] && ALL_MOVIES_BY_CITY[cityCode].length > 0) {
+    list = [...ALL_MOVIES_BY_CITY[cityCode]];
+  }
+  if (env && env.TRACKER_DB) {
+    const cached = await env.TRACKER_DB.get(`movies:${cityCode}`);
+    if (cached) {
+      try {
+        const kvMovies = JSON.parse(cached);
+        if (Array.isArray(kvMovies) && kvMovies.length > 0) list = kvMovies;
+      } catch (e) {}
+    }
+  }
+  if (list.length === 0) list = [...POPULAR_MOVIES];
+
+  return { movies: list, isVenueSpecific: false };
+}
+
+// -------------------------------------------------------------
+// STEP 4: SCREEN & FORMAT SELECTION (TAILORED TO CINEMA)
+// -------------------------------------------------------------
+
+async function sendFormatSelection(botToken, chatId, cityCode, venueCode, eventCode, messageId = null, env = null) {
+  const city = await resolveCity(cityCode, env);
+  const venues = await fetchVenuesForCity(cityCode, env);
+  const vObj = venues.find(v => v.code === venueCode);
+  const venueName = venueCode === "ALL" ? `All Theatres in ${city.name}` : (vObj?.name || venueCode);
+
+  const keyboardButtons = [];
+  const lowerVenue = venueName.toLowerCase();
+
+  if (venueCode === "PRHN") {
+    keyboardButtons.push([{ text: "🌟 PCX / Large Screen Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }]);
+    keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
+  } else if (lowerVenue.includes("imax")) {
+    keyboardButtons.push([{ text: "🌟 IMAX Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }]);
+    keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
+  } else if (lowerVenue.includes("4dx")) {
+    keyboardButtons.push([{ text: "🌟 4DX Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }]);
+    keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
+  } else if (venueCode === "ALL") {
+    keyboardButtons.push([{ text: "🌟 Premium (IMAX / PCX / 4DX / Screen 1)", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }]);
+    keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
+  } else {
+    // Normal cinema hall (e.g. ALLU Cinemas, Asian Lakshmikala, Rave, etc.)
+    keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
+    keyboardButtons.push([{ text: "🎟️ 2D / Standard Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:2D` }]);
+  }
+
+  keyboardButtons.push([{ text: "🎟️ Any Screen / Format", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:ALL` }]);
+  keyboardButtons.push([{ text: "« Back to Movies", callback_data: `th:${cityCode}:${venueCode}:` }]);
+
+  const text =
+    `🎯 *Step 4/4: Screen Format Preference*\n\n` +
+    `• City: *${city.name}*\n` +
+    `• Theatre: *${venueName}*\n` +
+    `• Movie Code: \`${eventCode}\`\n\n` +
+    `Choose which screens or formats you want alerts for:`;
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: keyboardButtons });
+  } else {
+    await sendTelegram(botToken, chatId, text, { inline_keyboard: keyboardButtons });
+  }
+}
+// -------------------------------------------------------------
+// CALLBACK ACTIONS HANDLER
+// -------------------------------------------------------------
+
+async function handleCallbackData(botToken, chatId, messageId, data, env) {
+  const parts = data.split(":");
+  const action = parts[0];
+
+  // 1. City clicked -> show theatres
+  if (action === "c") {
+    const cityCode = parts[1];
+    await sendTheatreSelection(botToken, chatId, cityCode, 0, messageId, env);
+    return;
+  }
+
+  // 2. Theatre pagination
+  if (action === "thp") {
+    const [, cityCode, pageStr, preselectedEventCode] = parts;
+    const page = parseInt(pageStr, 10) || 0;
+    await sendTheatreSelection(botToken, chatId, cityCode, page, messageId, env, preselectedEventCode);
+    return;
+  }
+
+  // 3. Theatre clicked
+  if (action === "th") {
+    const [, cityCode, venueCode, preselectedEventCode] = parts;
+    if (preselectedEventCode) {
+      await sendFormatSelection(botToken, chatId, cityCode, venueCode, preselectedEventCode, messageId, env);
+    } else {
+      await sendMovieSelection(botToken, chatId, cityCode, venueCode, 0, false, messageId, env);
+    }
+    return;
+  }
+
+  // Show all city movies clicked
+  if (action === "mv_all") {
+    const [, cityCode, venueCode] = parts;
+    await sendMovieSelection(botToken, chatId, cityCode, venueCode, 0, true, messageId, env);
+    return;
+  }
+
+  // Movie pagination clicked
+  if (action === "mvp") {
+    const [, cityCode, venueCode, pageStr, showAllStr] = parts;
+    const page = parseInt(pageStr, 10) || 0;
+    const showAll = showAllStr === "1";
+    await sendMovieSelection(botToken, chatId, cityCode, venueCode, page, showAll, messageId, env);
+    return;
+  }
+
+  // 4. Movie clicked
+  if (action === "mv") {
+    const [, cityCode, venueCode, eventCode] = parts;
+    await sendFormatSelection(botToken, chatId, cityCode, venueCode, eventCode, messageId, env);
+    return;
+  }
+
+  // 5. Custom movie clicked
+  if (action === "custom") {
+    const [, cityCode, venueCode] = parts;
+    await setSession(env, chatId, { step: "AWAITING_MOVIE_INPUT", cityCode, venueCode });
+    await editTelegramMessage(botToken, chatId, messageId,
+      "🔗 *Custom Movie Setup*\n\n" +
+      "Please paste any BookMyShow movie URL or Event Code (e.g. `ET00516731`) directly in this chat!"
+    );
+    return;
+  }
+
+  // 6. Format picked -> Create Tracker!
+  if (action === "flt") {
+    const [, cityCode, venueCode, eventCode, filter] = parts;
+    await createTracker(botToken, chatId, eventCode, venueCode, filter, cityCode, env, messageId);
+    return;
+  }
+
+  // 7. Search city clicked
+  if (action === "act" && parts[1] === "search_city") {
+    await setSession(env, chatId, { step: "AWAITING_CITY_QUERY" });
+    await editTelegramMessage(botToken, chatId, messageId,
+      "🔍 *Search City in India*\n\n" +
+      "Please type the name of your city (e.g. `Chandigarh`, `Jaipur`, `Kochi`, `Indore`, `Lucknow`, `Surat`, `Bhopal`, etc.):"
+    );
+    return;
+  }
+
+  // 8. Search theatre clicked
+  if (action === "act" && parts[1] === "search_th") {
+    const cityCode = parts[2] || "HYD";
+    const city = await resolveCity(cityCode, env);
+    await setSession(env, chatId, { step: "AWAITING_THEATRE_QUERY", cityCode });
+    await editTelegramMessage(botToken, chatId, messageId,
+      `🔍 *Search Theatre in ${city.name}*\n\n` +
+      `Please type the name of the theatre (e.g., \`Prasads\`, \`PVR\`, \`INOX\`, \`Cinepolis\`, \`Rave\`, \`Miraj\`, etc.):`
+    );
+    return;
+  }
+
+  // 9. Search movie clicked
+  if (action === "act" && parts[1] === "search_mv") {
+    const cityCode = parts[2] || "HYD";
+    const venueCode = parts[3] || "ALL";
+    const city = await resolveCity(cityCode, env);
+    await setSession(env, chatId, { step: "AWAITING_MOVIE_QUERY", cityCode, venueCode });
+    await editTelegramMessage(botToken, chatId, messageId,
+      `🔍 *Search Movie in ${city.name}*\n\n` +
+      `Please type the movie name (e.g. \`Avengers\`, \`Resident Evil\`, \`Spider-Man\`, \`Ramayan\`, \`Devara\`, \`Paradise\`):`
+    );
+    return;
+  }
+
+  // Navigation
+  if (action === "act" && parts[1] === "cities") {
+    await clearSession(env, chatId);
+    await sendCitySelection(botToken, chatId, messageId);
+    return;
+  }
+  if (action === "act" && parts[1] === "list") {
+    await clearSession(env, chatId);
+    await sendTrackerList(botToken, chatId, env);
+    return;
+  }
+
+  // Tracker Controls
+  if (action === "t_pause") {
+    await setTrackerPaused(env, parts[1], true);
+    await editTelegramMessage(botToken, chatId, messageId, "⏸️ *Tracker Paused.* No alerts will be sent.");
+    return;
+  }
+  if (action === "t_res") {
+    await setTrackerPaused(env, parts[1], false);
+    await editTelegramMessage(botToken, chatId, messageId, "▶️ *Tracker Resumed.* Monitoring active.");
+    return;
+  }
+  if (action === "t_del") {
+    await deleteTracker(env, parts[1]);
+    await editTelegramMessage(botToken, chatId, messageId, "🗑️ *Tracker Deleted.*");
+    return;
+  }
+}
+
+// -------------------------------------------------------------
+// STEP 5: TRACKER CREATION & STORAGE IN KV
+// -------------------------------------------------------------
+
+async function createTracker(botToken, chatId, eventCode, venueCode, filter, cityCode, env, messageId = null) {
+  const trackerId = "trk_" + Date.now().toString(36);
+  const city = await resolveCity(cityCode, env);
+  const venues = await fetchVenuesForCity(cityCode, env);
+  const vObj = venues.find(v => v.code === venueCode);
+  const venueDisplayName = venueCode === "ALL" ? `All Theatres in ${city.name}` : (vObj?.name || venueCode);
+
+  const popMovie = POPULAR_MOVIES.find(m => m.code === eventCode);
+  let movieTitle = popMovie?.title || `Movie (${eventCode})`;
+
+  const tracker = {
+    id: trackerId,
+    chatId: chatId,
+    eventCode: eventCode,
+    venueCode: venueCode,
+    venueName: venueDisplayName,
+    movieTitle: movieTitle,
+    filter: filter,
+    cityCode: cityCode,
+    isPaused: false,
+    createdAt: new Date().toISOString(),
+    knownSessions: [],
+  };
+
+  try {
+    const shows = await fetchShowsForTracker(tracker, env);
+    tracker.knownSessions = shows.map(s => s.sessionId);
+    if (shows[0]?.movieTitle) tracker.movieTitle = shows[0].movieTitle;
+  } catch (e) {}
+
+  if (env && env.TRACKER_DB) {
+    const userTrackers = await getTrackersForUser(env, chatId);
+    userTrackers.push(tracker);
+    await env.TRACKER_DB.put(`trackers:${chatId}`, JSON.stringify(userTrackers));
+    await clearSession(env, chatId);
+  }
+
+  const successText =
+    `✅ *Ticket Tracker Activated!*\n\n` +
+    `• City: *${city.name}*\n` +
+    `• Theatre: *${tracker.venueName}*\n` +
+    `• Movie: *${tracker.movieTitle}*\n` +
+    `• Screen Filter: *${filter}*\n\n` +
+    `🔔 *You will receive an instant notification the moment a NEW show drops!*`;
+
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: "📋 View My Trackers", callback_data: "act:list" },
+        { text: "⏸️ Pause", callback_data: `t_pause:${trackerId}` }
+      ]
+    ]
+  };
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, successText, keyboard);
+  } else {
+    await sendTelegram(botToken, chatId, successText, keyboard);
+  }
+}
+
+// -------------------------------------------------------------
+// 24/7 AUTONOMOUS SCANNER (Cloudflare Cron Trigger)
+// -------------------------------------------------------------
+
+async function scanAllTrackers(env) {
+  if (!env.TRACKER_DB) return;
+  const botToken = env.TELEGRAM_BOT_TOKEN;
+
+  const list = await env.TRACKER_DB.list({ prefix: "trackers:" });
+  for (const key of list.keys) {
+    const raw = await env.TRACKER_DB.get(key.name);
+    if (!raw) continue;
+    let trackers = JSON.parse(raw);
+    let updated = false;
+
+    for (let tracker of trackers) {
+      if (tracker.isPaused) continue;
+
+      try {
+        const currentShows = await fetchShowsForTracker(tracker, env);
+        const knownSet = new Set(tracker.knownSessions || []);
+        const newShows = currentShows.filter(s => !knownSet.has(s.sessionId));
+
+        if (newShows.length > 0) {
+          await sendNewShowsAlert(botToken, tracker.chatId, tracker, newShows);
+          for (const s of newShows) knownSet.add(s.sessionId);
+          tracker.knownSessions = Array.from(knownSet);
+          updated = true;
+        }
+      } catch (err) {
+        console.error(`Error scanning tracker ${tracker.id}:`, err);
+      }
+    }
+
+    if (updated) {
+      await env.TRACKER_DB.put(key.name, JSON.stringify(trackers));
+    }
+  }
+}
+
+// Query BookMyShow for shows matching tracker
+async function fetchShowsForTracker(tracker, env) {
+  const city = await resolveCity(tracker.cityCode, env);
+  const url = `${SHOWTIMES_API}?eventCode=${tracker.eventCode}&isDesktop=true&regionCode=${tracker.cityCode}&lat=${city.lat}&lon=${city.lon}`;
+
+  try {
+    const res = await fetch(url, { headers: getHeaders(tracker.cityCode, city.slug, city.lat, city.lon) });
+    if (!res.ok) return [];
+    const json = await res.json();
+
+    const movieTitle = json.metadata?.analytics?.title || tracker.movieTitle || "Movie";
+    const dates = [];
+    for (const w of json.data?.topStickyWidgets || []) {
+      if (w.type === "horizontal-block-list") {
+        for (const item of w.data || []) {
+          if (item.id && item.styleId !== "date-disabled") dates.push(String(item.id).trim());
+        }
+      }
+    }
+
+    const allShows = [];
+    const datesToCheck = dates.length > 0 ? dates : [""];
+
+    for (const d of datesToCheck) {
+      const dateUrl = d ? `${url}&dateCode=${d}` : url;
+      const dRes = await fetch(dateUrl, { headers: getHeaders(tracker.cityCode, city.slug, city.lat, city.lon) });
+      if (!dRes.ok) continue;
+      const dJson = await dRes.json();
+
+      for (const w of dJson.data?.showtimeWidgets || []) {
+        if (w.type !== "groupList") continue;
+        for (const grp of w.data || []) {
+          for (const item of grp.data || []) {
+            const vCode = item.additionalData?.venueCode;
+            if (tracker.venueCode !== "ALL" && vCode !== tracker.venueCode) continue;
+
+            const venueName = item.additionalData?.venueName || tracker.venueName || "Cinema";
+
+            for (const s of item.showtimes || []) {
+              const sid = String(s.additionalData?.sessionId || "");
+              if (!sid) continue;
+
+              const attr = (s.screenAttr || s.additionalData?.attributes || "").toLowerCase();
+              const sName = (s.additionalData?.screenName || "").toLowerCase();
+
+              // Apply screen filter
+              if (tracker.filter === "PCX") {
+                const isPcx = attr.includes("pcx") || attr.includes("infinity") || sName.includes("screen 1") || attr.includes("imax");
+                if (!isPcx) continue;
+              } else if (tracker.filter === "3D") {
+                const is3d = attr.includes("3d") || sName.includes("3d");
+                if (!is3d) continue;
+              }
+
+              allShows.push({
+                sessionId: sid,
+                date: d ? `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}` : "Today",
+                time: s.title || s.additionalData?.showTime || "Show",
+                screen: s.screenAttr || s.additionalData?.screenName || "Standard",
+                venueName: venueName,
+                movieTitle: movieTitle,
+                bookingUrl: `https://in.bookmyshow.com/cinemas/${city.slug}/${vCode || "tickets"}/buytickets/${vCode}/${d}`
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return allShows;
+  } catch (e) {
+    return [];
+  }
+}
+
+// Send Alert Notification
+async function sendNewShowsAlert(botToken, chatId, tracker, newShows) {
+  let listText = "";
+  for (const s of newShows) {
+    listText += `• *${s.date}* at *${s.time}* (${s.screen})\n  📍 ${s.venueName}\n\n`;
+  }
+
+  const alertMsg =
+    `🚨 *NEW SHOWS ADDED ON BOOKMYSHOW!* 🚨\n\n` +
+    `🎬 *${tracker.movieTitle || "Movie"}*\n\n` +
+    listText +
+    `🎟️ [Book Instantly on BookMyShow](${newShows[0]?.bookingUrl || "https://in.bookmyshow.com"})\n\n` +
+    `⚡ _Alert sent automatically by your Cloudflare Bot_`;
+
+  await sendTelegram(botToken, chatId, alertMsg);
+}
+
+// -------------------------------------------------------------
+// KV STORAGE & SESSION HELPERS
+// -------------------------------------------------------------
+
+async function getSession(env, chatId) {
+  if (!env.TRACKER_DB) return null;
+  const raw = await env.TRACKER_DB.get(`session:${chatId}`);
+  return raw ? JSON.parse(raw) : null;
+}
+
+async function setSession(env, chatId, sessionData) {
+  if (!env.TRACKER_DB) return;
+  await env.TRACKER_DB.put(`session:${chatId}`, JSON.stringify(sessionData), { expirationTtl: 900 }); // 15 min TTL
+}
+
+async function clearSession(env, chatId) {
+  if (!env.TRACKER_DB) return;
+  await env.TRACKER_DB.delete(`session:${chatId}`);
+}
+
+async function getTrackersForUser(env, chatId) {
+  if (!env.TRACKER_DB) return [];
+  const raw = await env.TRACKER_DB.get(`trackers:${chatId}`);
+  return raw ? JSON.parse(raw) : [];
+}
+
+async function setTrackerPaused(env, trackerId, isPaused) {
+  if (!env.TRACKER_DB) return;
+  const list = await env.TRACKER_DB.list({ prefix: "trackers:" });
+  for (const k of list.keys) {
+    const raw = await env.TRACKER_DB.get(k.name);
+    if (!raw) continue;
+    let trackers = JSON.parse(raw);
+    let matched = false;
+    for (let t of trackers) {
+      if (t.id === trackerId) {
+        t.isPaused = isPaused;
+        matched = true;
+      }
+    }
+    if (matched) {
+      await env.TRACKER_DB.put(k.name, JSON.stringify(trackers));
+      break;
+    }
+  }
+}
+
+async function deleteTracker(env, trackerId) {
+  if (!env.TRACKER_DB) return;
+  const list = await env.TRACKER_DB.list({ prefix: "trackers:" });
+  for (const k of list.keys) {
+    const raw = await env.TRACKER_DB.get(k.name);
+    if (!raw) continue;
+    let trackers = JSON.parse(raw);
+    const filtered = trackers.filter(t => t.id !== trackerId);
+    if (filtered.length !== trackers.length) {
+      await env.TRACKER_DB.put(k.name, JSON.stringify(filtered));
+      break;
+    }
+  }
+}
+
+// -------------------------------------------------------------
+// LIST & STATUS REPORTS
+// -------------------------------------------------------------
+
+async function sendTrackerList(botToken, chatId, env) {
+  const trackers = await getTrackersForUser(env, chatId);
+  if (!trackers || trackers.length === 0) {
+    await sendTelegram(botToken, chatId,
+      "📋 *No active trackers found.*\n\nSend /track or paste a BookMyShow link to start tracking a movie!"
+    );
+    return;
+  }
+
+  for (const t of trackers) {
+    const status = t.isPaused ? "Paused ⏸️" : "Active 🟢";
+    const buttons = [
+      [
+        t.isPaused
+          ? { text: "▶️ Resume", callback_data: `t_res:${t.id}` }
+          : { text: "⏸️ Pause", callback_data: `t_pause:${t.id}` },
+        { text: "🗑️ Delete", callback_data: `t_del:${t.id}` }
+      ]
+    ];
+
+    const card =
+      `🎬 *${t.movieTitle || t.eventCode}*\n` +
+      `• Status: *${status}*\n` +
+      `• Theatre: ${t.venueName || t.venueCode}\n` +
+      `• Screen Filter: ${t.filter}\n` +
+      `• Shows Known: ${t.knownSessions?.length || 0}`;
+
+    await sendTelegram(botToken, chatId, card, { inline_keyboard: buttons });
+  }
+}
+
+async function sendStatusReport(botToken, chatId, env) {
+  const trackers = await getTrackersForUser(env, chatId);
+  if (!trackers || trackers.length === 0) {
+    await sendTelegram(botToken, chatId, "📊 *No trackers configured yet.*\n\nSend /track to create one!");
+    return;
+  }
+
+  let text = "📊 *Live Tracker Status Summary:*\n\n";
+  for (const t of trackers) {
+    const status = t.isPaused ? "⏸️ Paused" : "🟢 Active";
+    text += `• *${t.movieTitle || t.eventCode}* (${status})\n  Theatre: ${t.venueName}\n  Shows Known: ${t.knownSessions?.length || 0}\n\n`;
+  }
+  text += "💡 Use /list to pause, resume, or remove trackers.";
+  await sendTelegram(botToken, chatId, text);
+}
+
+// -------------------------------------------------------------
+// TELEGRAM API HELPERS
+// -------------------------------------------------------------
+
+async function sendTelegram(token, chatId, text, replyMarkup = null) {
+  const body = {
+    chat_id: chatId,
+    text: text,
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+  };
+  if (replyMarkup) body.reply_markup = replyMarkup;
+
+  let res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    // Fallback: send without markdown if syntax error occurred
+    body.text = text.replace(/[*_`\[\]()]/g, "");
+    delete body.parse_mode;
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+}
+
+async function editTelegramMessage(token, chatId, messageId, text, replyMarkup = null) {
+  const body = {
+    chat_id: chatId,
+    message_id: messageId,
+    text: text,
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+  };
+  if (replyMarkup) body.reply_markup = replyMarkup;
+
+  let res = await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    body.text = text.replace(/[*_`\[\]()]/g, "");
+    delete body.parse_mode;
+    await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+}
+
+async function answerCallbackQuery(token, queryId, alertText = null) {
+  const body = { callback_query_id: queryId };
+  if (alertText) body.text = alertText;
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {}
+}
