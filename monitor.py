@@ -216,9 +216,8 @@ def main():
     known_sessions = state.setdefault("known_sessions", {})
     is_initial_seeding = len(known_sessions) == 0
 
-    # In CI/GitHub Actions, check 3 times across a 2-minute window (every 60s)
-    # Locally, perform a single immediate check
-    total_checks = 3 if os.getenv("GITHUB_ACTIONS") else 1
+    # Default to 1 fast check per trigger (ideal for 5-minute external cron jobs)
+    total_checks = int(os.getenv("POLL_CHECKS", "1"))
     poll_interval_seconds = 60
 
     new_shows_found = False
