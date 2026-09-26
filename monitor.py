@@ -431,9 +431,12 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
 
     city_code = tracker.get("cityCode", "HYD")
     city_slug = tracker.get("citySlug", "hyderabad")
+    city_lat = str(tracker.get("lat") or "17.385")
+    city_lon = str(tracker.get("lon") or "78.487")
     venue_code = tracker.get("venueCode", "ALL")
     venue_name = tracker.get("venueName", "All Theatres")
-    event_code = tracker.get("eventCode")
+    raw_event_code = tracker.get("eventCode", "")
+    event_codes = [c.strip() for c in str(raw_event_code).split(",") if c.strip()]
     movie_title = tracker.get("movieTitle", "Movie")
     screen_filter = tracker.get("filter", "ANY")
     known_sessions = set(str(sid) for sid in tracker.get("knownSessions", []))
@@ -454,83 +457,85 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
         "Cookie": f"Rgn=|Code={city_code}|",
     }
 
-    url = f"{API_URL}?eventCode={event_code}&isDesktop=true&regionCode={city_code}&lat=17.385&lon=78.487"
-
-    try:
-        res = cffi_requests.get(url, headers=headers, timeout=20, impersonate="chrome124")
-        if res.status_code != 200:
-            print(f"[DYNAMIC] HTTP {res.status_code} for {event_code}")
-            return False
-        initial_data = res.json()
-    except Exception as e:
-        print(f"[DYNAMIC] Error fetching event {event_code}: {e}")
-        return False
-
-    active_dates = extract_dates(initial_data)
-    if not active_dates:
-        print(f"[DYNAMIC] No dates found for {movie_title}.")
-        return False
-
     new_shows = []
     current_seen_sessions = set()
 
-    for date_code in active_dates:
-        date_url = f"{url}&dateCode={date_code}"
+    for event_code in event_codes:
+        url = f"{API_URL}?eventCode={event_code}&isDesktop=true&regionCode={city_code}&lat={city_lat}&lon={city_lon}"
+
         try:
-            d_res = cffi_requests.get(date_url, headers=headers, timeout=20, impersonate="chrome124")
-            if d_res.status_code != 200:
+            res = cffi_requests.get(url, headers=headers, timeout=20, impersonate="chrome124")
+            if res.status_code != 200:
+                print(f"[DYNAMIC] HTTP {res.status_code} for {event_code}")
                 continue
-            date_data = d_res.json()
-        except Exception:
+            initial_data = res.json()
+        except Exception as e:
+            print(f"[DYNAMIC] Error fetching event {event_code}: {e}")
             continue
 
-        for widget in date_data.get("data", {}).get("showtimeWidgets", []):
-            if widget.get("type") != "groupList":
+        active_dates = extract_dates(initial_data)
+        dates_to_check = active_dates if active_dates else [""]
+
+        for date_code in dates_to_check:
+            date_url = f"{url}&dateCode={date_code}" if date_code else url
+            try:
+                d_res = cffi_requests.get(date_url, headers=headers, timeout=20, impersonate="chrome124")
+                if d_res.status_code != 200:
+                    continue
+                date_data = d_res.json()
+            except Exception:
                 continue
-            for group in widget.get("data", []):
-                for item in group.get("data", []):
-                    item_vcode = item.get("additionalData", {}).get("venueCode", "")
-                    if venue_code != "ALL" and item_vcode != venue_code:
-                        continue
 
-                    v_name = item.get("additionalData", {}).get("venueName") or venue_name
-
-                    for show in item.get("showtimes", []):
-                        show_add = show.get("additionalData", {})
-                        session_id = str(show_add.get("sessionId", "")).strip()
-                        if not session_id:
+            for widget in date_data.get("data", {}).get("showtimeWidgets", []):
+                if widget.get("type") != "groupList":
+                    continue
+                for group in widget.get("data", []):
+                    for item in group.get("data", []):
+                        item_vcode = item.get("additionalData", {}).get("venueCode", "")
+                        if venue_code != "ALL" and item_vcode != venue_code:
                             continue
 
-                        current_seen_sessions.add(session_id)
+                        v_name = item.get("additionalData", {}).get("venueName") or venue_name
 
-                        screen_attr = str(show.get("screenAttr") or show_add.get("attributes") or "").lower()
-                        screen_name = str(show_add.get("screenName", "")).lower()
-
-                        if screen_filter == "PCX":
-                            is_pcx = (
-                                "pcx" in screen_attr
-                                or "infinity" in screen_attr
-                                or "screen 1" in screen_name
-                                or "imax" in screen_attr
-                            )
-                            if not is_pcx:
-                                continue
-                        elif screen_filter == "3D":
-                            if "3d" not in screen_attr and "3d" not in screen_name:
+                        for show in item.get("showtimes", []):
+                            show_add = show.get("additionalData", {})
+                            session_id = str(show_add.get("sessionId", "")).strip()
+                            if not session_id:
                                 continue
 
-                        if session_id not in known_sessions:
-                            show_time = str(show.get("title") or show_add.get("showTime", "Detected")).strip()
-                            d_str = f"{date_code[:4]}-{date_code[4:6]}-{date_code[6:8]}" if len(date_code) == 8 else date_code
-                            booking_url = f"https://in.bookmyshow.com/cinemas/{city_slug}/{item_vcode}/buytickets/{item_vcode}/{date_code}"
-                            new_shows.append({
-                                "sessionId": session_id,
-                                "date": d_str,
-                                "time": show_time,
-                                "screen": show.get("screenAttr") or show_add.get("screenName") or "Standard",
-                                "venue": v_name,
-                                "url": booking_url
-                            })
+                            current_seen_sessions.add(session_id)
+
+                            screen_attr = str(show.get("screenAttr") or show_add.get("attributes") or "").lower()
+                            screen_name = str(show_add.get("screenName", "")).lower()
+
+                            if screen_filter == "PCX":
+                                is_pcx = (
+                                    "pcx" in screen_attr
+                                    or "infinity" in screen_attr
+                                    or "screen 1" in screen_name
+                                    or "imax" in screen_attr
+                                )
+                                if not is_pcx:
+                                    continue
+                            elif screen_filter == "3D":
+                                if "3d" not in screen_attr and "3d" not in screen_name:
+                                    continue
+                            elif screen_filter == "2D":
+                                if "3d" in screen_attr or "3d" in screen_name:
+                                    continue
+
+                            if session_id not in known_sessions:
+                                show_time = str(show.get("title") or show_add.get("showTime", "Detected")).strip()
+                                d_str = f"{date_code[:4]}-{date_code[4:6]}-{date_code[6:8]}" if len(date_code) == 8 else (date_code or "Today")
+                                booking_url = f"https://in.bookmyshow.com/cinemas/{city_slug}/{item_vcode}/buytickets/{item_vcode}/{date_code}"
+                                new_shows.append({
+                                    "sessionId": session_id,
+                                    "date": d_str,
+                                    "time": show_time,
+                                    "screen": show.get("screenAttr") or show_add.get("screenName") or "Standard",
+                                    "venue": v_name,
+                                    "url": booking_url
+                                })
 
     if len(known_sessions) == 0:
         print(f"[DYNAMIC] Baseline seeded with {len(current_seen_sessions)} shows for {movie_title}.")

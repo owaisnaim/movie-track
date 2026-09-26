@@ -253,7 +253,16 @@ export default {
           const raw = await env.TRACKER_DB.get(k.name);
           if (raw) {
             try {
-              allTrackers.push(...JSON.parse(raw));
+              const listArr = JSON.parse(raw);
+              for (const t of listArr) {
+                if (!t.citySlug || !t.lat || !t.lon) {
+                  const c = await resolveCity(t.cityCode || "HYD", env);
+                  t.citySlug = c.slug;
+                  t.lat = c.lat;
+                  t.lon = c.lon;
+                }
+                allTrackers.push(t);
+              }
             } catch (e) {}
           }
         }
@@ -1167,6 +1176,10 @@ async function createTracker(botToken, chatId, eventCode, venueCode, filter, cit
     movieTitle: movieTitle,
     filter: filter,
     cityCode: cityCode,
+    cityName: city.name,
+    citySlug: city.slug,
+    lat: city.lat,
+    lon: city.lon,
     isPaused: false,
     createdAt: new Date().toISOString(),
     knownSessions: [],
