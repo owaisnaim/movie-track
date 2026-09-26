@@ -1,4 +1,4 @@
-name: Avengers Endgame PCX Monitor
+name: BookMyShow 24/7 Movie Tracker
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: avengers-pcx-monitor
+  group: movie-tracker
   cancel-in-progress: true
 
 permissions:
