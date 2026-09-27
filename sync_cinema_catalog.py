@@ -99,12 +99,14 @@ def scrape_cinema_movies(city_slug: str, venue_slug: str, venue_code: str) -> li
             print(f"[CATALOG SYNC] HTTP {res.status_code} for {venue_code} ({url})")
             return []
 
-        pattern = r'<a\s+href="[^"]*?/movies/[^"]+/(ET\d{8})"[^>]*>([^<]+)</a>'
+        # Real movies playing at this cinema have the city in their URL: /movies/{city_slug}/.../{eventCode}
+        # Bottom SEO and trending links do not have the city slug in the URL path.
+        pattern = rf'<a\s+href="[^"]*?/movies/{city_slug}/([^"]+)/(ET\d{{8}})"[^>]*>([^<]+)</a>'
         matches = re.findall(pattern, res.text)
         seen = set()
         movies = []
 
-        for code, raw_title in matches:
+        for slug, code, raw_title in matches:
             if code not in seen:
                 seen.add(code)
                 clean_title = html.unescape(raw_title).strip()
