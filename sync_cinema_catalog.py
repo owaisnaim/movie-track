@@ -129,7 +129,7 @@ def scrape_venue_movies(item):
         if res.status_code != 200:
             return vcode, ccode, [], res.status_code
 
-        # Method 1: Extract from React window.__INITIAL_STATE__ (highest quality clean titles)
+        # Method 1: Extract from React window.__INITIAL_STATE__ (highest quality clean titles with format & language)
         if "window.__INITIAL_STATE__" in res.text:
             idx = res.text.find("window.__INITIAL_STATE__ = ")
             if idx != -1:
@@ -141,12 +141,25 @@ def scrape_venue_movies(item):
                         if "getShowtimesByVenue" in qk:
                             events = queries[qk].get("data", {}).get("showDetailsTransformed", {}).get("Event", [])
                             for e in events:
-                                title = e.get("EventTitle")
-                                child_codes = [ce.get("EventCode") for ce in e.get("ChildEvents", []) if ce.get("EventCode")]
-                                code = child_codes[0] if child_codes else None
-                                if title and code and code not in seen:
-                                    seen.add(code)
-                                    movies.append({"code": code, "title": title.strip()})
+                                base_title = (e.get("EventTitle") or "").strip()
+                                if not base_title:
+                                    continue
+                                children = e.get("ChildEvents", [])
+                                if children:
+                                    for ce in children:
+                                        code = ce.get("EventCode")
+                                        if code and code not in seen:
+                                            seen.add(code)
+                                            dim = (ce.get("EventDimension") or "").strip()
+                                            lang = (ce.get("EventLanguage") or "").strip()
+                                            parts = [p for p in [lang, dim] if p]
+                                            full_title = f"{base_title} ({' '.join(parts)})" if parts else base_title
+                                            movies.append({"code": code, "title": full_title})
+                                else:
+                                    code = e.get("EventCode")
+                                    if code and code not in seen:
+                                        seen.add(code)
+                                        movies.append({"code": code, "title": base_title})
                 except Exception:
                     pass
 
@@ -158,8 +171,8 @@ def scrape_venue_movies(item):
             if code not in seen:
                 seen.add(code)
                 clean_title = html.unescape(raw_title).strip()
-                # Clean up any trailing age rating like (UA16+) or (A)
-                clean_title = re.sub(r"\s*\([UA160-9+]+|\s*\(A\)|\s*\(U\)", "", clean_title).strip()
+                clean_title = re.sub(r"\s*\((?:UA|U/A|A|U|16\+|18\+|12\+|13\+|15\+|7\+|R)[^)]*\)", "", clean_title).strip()
+                clean_title = re.sub(r"\s*[\(\)]+$", "", clean_title).strip()
                 movies.append({"code": code, "title": clean_title})
 
         return vcode, ccode, movies, 200

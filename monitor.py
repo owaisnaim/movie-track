@@ -508,12 +508,16 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
                             screen_attr = str(show.get("screenAttr") or show_add.get("attributes") or "").lower()
                             screen_name = str(show_add.get("screenName", "")).lower()
 
-                            if screen_filter == "PCX":
+                            if screen_filter in ("EXACT", "ALL", "ANY"):
+                                pass  # Specific format event code selected by user: track all shows!
+                            elif screen_filter == "PCX":
                                 is_pcx = (
                                     "pcx" in screen_attr
                                     or "infinity" in screen_attr
                                     or "screen 1" in screen_name
                                     or "imax" in screen_attr
+                                    or "4dx" in screen_attr
+                                    or "mx4d" in screen_attr
                                 )
                                 if not is_pcx:
                                     continue

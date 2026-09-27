@@ -957,6 +957,36 @@ async function fetchMoviesForCity(cityCode, venueCode = "ALL", showAllCity = fal
   return { movies: list, isVenueSpecific: false };
 }
 
+async function resolveMovieTitle(eventCode, venueCode, cityCode, env) {
+  if (typeof MOVIES_CATALOG !== "undefined" && MOVIES_CATALOG[eventCode]) {
+    return MOVIES_CATALOG[eventCode];
+  }
+  if (env && env.TRACKER_DB) {
+    if (venueCode && venueCode !== "ALL") {
+      const vRaw = await env.TRACKER_DB.get(`v_movies:${venueCode}`);
+      if (vRaw) {
+        try {
+          const list = JSON.parse(vRaw);
+          const found = list.find(m => (m.code || m) === eventCode);
+          if (found && found.title) return found.title;
+        } catch (e) {}
+      }
+    }
+    if (cityCode) {
+      const cRaw = await env.TRACKER_DB.get(`movies:${cityCode}`);
+      if (cRaw) {
+        try {
+          const list = JSON.parse(cRaw);
+          const found = list.find(m => (m.code || m) === eventCode);
+          if (found && found.title) return found.title;
+        } catch (e) {}
+      }
+    }
+  }
+  const pop = (typeof POPULAR_MOVIES !== "undefined" ? POPULAR_MOVIES : []).find(m => m.code === eventCode);
+  return pop?.title || `Movie (${eventCode})`;
+}
+
 // -------------------------------------------------------------
 // STEP 4: SCREEN & FORMAT SELECTION (TAILORED TO CINEMA)
 // -------------------------------------------------------------
@@ -966,26 +996,41 @@ async function sendFormatSelection(botToken, chatId, cityCode, venueCode, eventC
   const venues = await fetchVenuesForCity(cityCode, env);
   const vObj = venues.find(v => v.code === venueCode);
   const venueName = venueCode === "ALL" ? `All Theatres in ${city.name}` : (vObj?.name || venueCode);
+  const movieTitle = await resolveMovieTitle(eventCode, venueCode, cityCode, env);
 
   const keyboardButtons = [];
   const lowerVenue = venueName.toLowerCase();
 
-  if (venueCode === "PRHN") {
-    keyboardButtons.push([{ text: "🌟 PCX / Large Screen Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }]);
-    keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
-  } else if (lowerVenue.includes("imax")) {
-    keyboardButtons.push([{ text: "🌟 IMAX Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }]);
-    keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
-  } else if (lowerVenue.includes("4dx")) {
-    keyboardButtons.push([{ text: "🌟 4DX Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }]);
-    keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
-  } else if (venueCode === "ALL") {
-    keyboardButtons.push([{ text: "🌟 Premium (IMAX / PCX / 4DX / Screen 1)", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }]);
-    keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
+  // Check if movie title has an explicit format tag: e.g. "Avengers Endgame: Encore (English IMAX 2D)"
+  const mFormat = movieTitle.match(/\(([^)]+)\)$/);
+  if (mFormat) {
+    const formatTag = mFormat[1].trim();
+    // Primary Option: Lock tracking strictly to this exact format variant
+    keyboardButtons.push([
+      { text: `🎯 Track ONLY ${formatTag}`, callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:EXACT` }
+    ]);
+
+    // If premium screen, offer premium screen bundle
+    const lowerTag = formatTag.toLowerCase();
+    if (lowerTag.includes("imax") || lowerTag.includes("4dx") || lowerTag.includes("mx4d") || lowerTag.includes("infinity") || venueCode === "PRHN") {
+      keyboardButtons.push([
+        { text: "🌟 Any Premium Screen (IMAX / 4DX / PCX)", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }
+      ]);
+    }
   } else {
-    // Normal cinema hall (e.g. ALLU Cinemas, Asian Lakshmikala, Rave, etc.)
-    keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
-    keyboardButtons.push([{ text: "🎟️ 2D / Standard Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:2D` }]);
+    // Generic title fallback
+    if (venueCode === "PRHN") {
+      keyboardButtons.push([{ text: "🌟 PCX / Large Screen Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }]);
+      keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
+      keyboardButtons.push([{ text: "🎟️ 2D / Standard Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:2D` }]);
+    } else if (lowerVenue.includes("imax") || lowerVenue.includes("megaplex") || lowerVenue.includes("superplex")) {
+      keyboardButtons.push([{ text: "🌟 IMAX / Premium Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }]);
+      keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
+      keyboardButtons.push([{ text: "🎟️ 2D / Standard Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:2D` }]);
+    } else {
+      keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
+      keyboardButtons.push([{ text: "🎟️ 2D / Standard Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:2D` }]);
+    }
   }
 
   // If this movie has multi-language siblings (English + Hindi), offer combined tracking
@@ -996,7 +1041,6 @@ async function sendFormatSelection(botToken, chatId, cityCode, venueCode, eventC
   keyboardButtons.push([{ text: "🎟️ Any Screen / Format", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:ALL` }]);
   keyboardButtons.push([{ text: "« Back to Movies", callback_data: `th:${cityCode}:${venueCode}:` }]);
 
-  const movieTitle = MOVIES_CATALOG[eventCode] || eventCode;
   const text =
     `🎯 *Step 4/4: Screen & Language Preference*\n\n` +
     `• City: *${city.name}*\n` +
@@ -1161,7 +1205,7 @@ async function createTracker(botToken, chatId, eventCode, venueCode, filter, cit
   const vObj = venues.find(v => v.code === venueCode);
   const venueDisplayName = venueCode === "ALL" ? `All Theatres in ${city.name}` : (vObj?.name || venueCode);
 
-  let movieTitle = MOVIES_CATALOG[eventCode] || POPULAR_MOVIES.find(m => m.code === eventCode)?.title || `Movie (${eventCode})`;
+  let movieTitle = await resolveMovieTitle(eventCode, venueCode, cityCode, env);
   let finalEventCode = eventCode;
 
   if (filter === "BOTH" && typeof MULTILINGUAL_SIBLINGS !== "undefined" && MULTILINGUAL_SIBLINGS[eventCode]) {
@@ -1201,12 +1245,20 @@ async function createTracker(botToken, chatId, eventCode, venueCode, filter, cit
     await clearSession(env, chatId);
   }
 
+  let filterDesc = filter;
+  if (filter === "EXACT") filterDesc = "Exact Selected Format";
+  else if (filter === "ALL") filterDesc = "Any Screen / Format";
+  else if (filter === "BOTH") filterDesc = "English & Hindi Formats";
+  else if (filter === "PCX") filterDesc = "IMAX / 4DX / PCX Premium";
+  else if (filter === "3D") filterDesc = "3D Shows Only";
+  else if (filter === "2D") filterDesc = "2D Shows Only";
+
   const successText =
     `✅ *Ticket Tracker Activated!*\n\n` +
     `• City: *${city.name}*\n` +
     `• Theatre: *${tracker.venueName}*\n` +
     `• Movie: *${tracker.movieTitle}*\n` +
-    `• Screen Filter: *${filter}*\n\n` +
+    `• Screen Filter: *${filterDesc}*\n\n` +
     `🔔 *You will receive an instant notification the moment a NEW show drops!*`;
 
   const keyboard = {
@@ -1315,8 +1367,10 @@ async function fetchShowsForTracker(tracker, env) {
                 const sName = (s.additionalData?.screenName || "").toLowerCase();
 
                 // Apply screen filter
-                if (tracker.filter === "PCX") {
-                  const isPcx = attr.includes("pcx") || attr.includes("infinity") || sName.includes("screen 1") || attr.includes("imax");
+                if (tracker.filter === "EXACT" || tracker.filter === "ALL") {
+                  // Specific event code chosen by user: keep all shows!
+                } else if (tracker.filter === "PCX") {
+                  const isPcx = attr.includes("pcx") || attr.includes("infinity") || sName.includes("screen 1") || attr.includes("imax") || attr.includes("4dx") || attr.includes("mx4d");
                   if (!isPcx) continue;
                 } else if (tracker.filter === "3D") {
                   const is3d = attr.includes("3d") || sName.includes("3d");
