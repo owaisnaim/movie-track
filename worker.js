@@ -955,6 +955,53 @@ async function fetchTheatresForMovieLive(cityCode, eventCodes, env) {
 // STEP 4: SHOWS & FORMATS INSIDE THEATRE (BOOKMYSHOW FLOW)
 // -------------------------------------------------------------
 
+function formatScreenLabel(tag, venueCode = "") {
+  const lower = (tag || "").toLowerCase();
+  
+  if (lower.includes("barco") || lower.includes("hdr") || (venueCode === "PRHN" && lower.includes("pcx"))) {
+    return { emoji: "🌟", label: "PCX / Large Screen (Barco HDR)", isPremium: true };
+  }
+  if (lower.includes("imax 3d")) {
+    return { emoji: "🌟", label: "IMAX 3D", isPremium: true };
+  }
+  if (lower.includes("imax 2d") || lower.includes("imax")) {
+    return { emoji: "🌟", label: "IMAX 2D", isPremium: true };
+  }
+  if (lower.includes("4dx 3d")) {
+    return { emoji: "🌟", label: "4DX 3D", isPremium: true };
+  }
+  if (lower.includes("4dx")) {
+    return { emoji: "🌟", label: "4DX", isPremium: true };
+  }
+  if (lower.includes("mx4d 3d")) {
+    return { emoji: "🌟", label: "MX4D 3D", isPremium: true };
+  }
+  if (lower.includes("mx4d")) {
+    return { emoji: "🌟", label: "MX4D", isPremium: true };
+  }
+  if (lower.includes("infinity vsn 3d") || lower.includes("infinity vision 3d")) {
+    return { emoji: "🌟", label: "Infinity Vision 3D", isPremium: true };
+  }
+  if (lower.includes("infinity")) {
+    return { emoji: "🌟", label: "Infinity Vision (Screen 1)", isPremium: true };
+  }
+  if (lower.includes("screenx")) {
+    return { emoji: "🌟", label: "ScreenX", isPremium: true };
+  }
+  if (lower.includes("ice")) {
+    return { emoji: "🌟", label: "ICE Immersive", isPremium: true };
+  }
+  if (lower.includes("3d")) {
+    const lang = lower.includes("hindi") ? "Hindi" : lower.includes("telugu") ? "Telugu" : "English";
+    return { emoji: "👓", label: `${lang} 3D`, isPremium: false };
+  }
+  if (lower.includes("2d")) {
+    const lang = lower.includes("hindi") ? "Hindi" : lower.includes("telugu") ? "Telugu" : "English";
+    return { emoji: "🎟️", label: `${lang} 2D`, isPremium: false };
+  }
+  return { emoji: "🎟️", label: tag || "Standard", isPremium: false };
+}
+
 async function sendTheatreShowsSelection(botToken, chatId, cityCode, venueCode, masterCode, messageId = null, env = null) {
   const city = await resolveCity(cityCode, env);
   const movieGroup = await getMovieGroup(cityCode, masterCode, env);
@@ -973,19 +1020,23 @@ async function sendTheatreShowsSelection(botToken, chatId, cityCode, venueCode, 
   const { variants, showSummaries, hasPremium, hasMultiLang, primaryCode } = showsData;
 
   const keyboardButtons = [];
+  const premiumVariants = [];
 
-  // 1. Dedicated button for each specific format variant playing at this theatre
+  // 1. Dedicated button for each specific format variant playing at this theatre (properly bifurcated)
   for (const v of variants) {
-    const formatTag = v.formatTag || "Standard";
+    const f = formatScreenLabel(v.formatTag, venueCode);
+    if (f.isPremium && !premiumVariants.includes(f.label)) {
+      premiumVariants.push(f.label);
+    }
     keyboardButtons.push([
-      { text: `🎯 Track ONLY ${formatTag}`, callback_data: `flt:${cityCode}:${venueCode}:${v.code}:EXACT` }
+      { text: `${f.emoji} Track ONLY ${f.label}`, callback_data: `flt:${cityCode}:${venueCode}:${v.code}:EXACT` }
     ]);
   }
 
-  // 2. If premium screen available (IMAX, 4DX, PCX, MX4D, Infinity Vision)
-  if (hasPremium) {
+  // 2. If multiple distinct premium screens available (e.g. IMAX and MX4D), offer bundle
+  if (premiumVariants.length >= 2) {
     keyboardButtons.push([
-      { text: "🌟 Any Premium Screen (IMAX / 4DX / PCX)", callback_data: `flt:${cityCode}:${venueCode}:${primaryCode}:PCX` }
+      { text: `🌟 Any Premium Screen (${premiumVariants.join(" / ")})`, callback_data: `flt:${cityCode}:${venueCode}:${primaryCode}:PCX` }
     ]);
   }
 
@@ -998,7 +1049,7 @@ async function sendTheatreShowsSelection(botToken, chatId, cityCode, venueCode, 
 
   // 4. Any show / format option
   keyboardButtons.push([
-    { text: `🎟️ Any Show / Format at ${venueCode === "ALL" ? "All Theatres" : "this Theatre"}`, callback_data: `flt:${cityCode}:${venueCode}:${primaryCode}:ALL` }
+    { text: `🎟️ All Shows at ${venueName}`, callback_data: `flt:${cityCode}:${venueCode}:${primaryCode}:ALL` }
   ]);
 
   // 5. Back button
