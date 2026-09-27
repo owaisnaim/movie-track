@@ -417,7 +417,7 @@ async function handleTelegramUpdate(update, env) {
   if (cmd === "/help") {
     await sendTelegram(botToken, chatId,
       "🤖 *Movie Ticket Tracker Bot Commands:*\n\n" +
-      "• /track — Track tickets (City ➔ Theatre ➔ Movie ➔ Screen)\n" +
+      "• /start — Track tickets (City ➔ Theatre ➔ Movie ➔ Screen)\n" +
       "• /list — View and manage your active trackers\n" +
       "• /status — Check live status of all tracked shows\n" +
       "• /help — Show this help menu\n\n" +
@@ -468,7 +468,7 @@ async function handleTelegramUpdate(update, env) {
 
   // Default fallback
   await sendTelegram(botToken, chatId,
-    "👋 Hello! Send /track to begin tracking movie tickets, or paste a BookMyShow link!"
+    "👋 Hello! Send /start to begin tracking movie tickets, or paste a BookMyShow link!"
   );
 }
 
@@ -1430,7 +1430,7 @@ async function sendTrackerList(botToken, chatId, env) {
   const trackers = await getTrackersForUser(env, chatId);
   if (!trackers || trackers.length === 0) {
     await sendTelegram(botToken, chatId,
-      "📋 *No active trackers found.*\n\nSend /track or paste a BookMyShow link to start tracking a movie!"
+      "📋 *No active trackers found.*\n\nSend /start or paste a BookMyShow link to start tracking a movie!"
     );
     return;
   }
@@ -1460,7 +1460,7 @@ async function sendTrackerList(botToken, chatId, env) {
 async function sendStatusReport(botToken, chatId, env) {
   const trackers = await getTrackersForUser(env, chatId);
   if (!trackers || trackers.length === 0) {
-    await sendTelegram(botToken, chatId, "📊 *No trackers configured yet.*\n\nSend /track to create one!");
+    await sendTelegram(botToken, chatId, "📊 *No trackers configured yet.*\n\nSend /start to create one!");
     return;
   }
 

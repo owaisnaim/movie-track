@@ -83,7 +83,7 @@ The system uses a decoupled two-tier architecture designed to run continuously o
 
 ## How It Works
 
-1. **Tracker Creation**: The user sends `/track` in Telegram and selects their city, cinema hall, movie, language, and screen format.
+1. **Tracker Creation**: The user sends `/start` in Telegram and selects their city, cinema hall, movie, language, and screen format.
 2. **State Storage**: The Cloudflare Worker stores the tracker in Cloudflare KV (`TRACKER_DB`).
 3. **Scheduled Check**: Every 5 minutes, GitHub Actions runs `monitor.py`:
    - Retrieves active trackers from Cloudflare KV via `GET /api/trackers?token=...`.
@@ -100,7 +100,7 @@ The system uses a decoupled two-tier architecture designed to run continuously o
 
 | Command | Description |
 | :--- | :--- |
-| `/track` | Start the 4-step interactive wizard to add a new tracker |
+| `/start` | Start the 4-step interactive wizard to add a new tracker |
 | `/mytrackers` | List all active trackers with pause, resume, and delete options |
 | `/pause` | Temporarily pause active monitoring |
 | `/resume` | Resume paused monitoring |
