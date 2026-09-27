@@ -420,7 +420,7 @@ async function handleTelegramUpdate(update, env) {
   if (cmd === "/help") {
     await sendTelegram(botToken, chatId,
       "🤖 *Movie Ticket Tracker Bot Commands:*\n\n" +
-      "• /start — Track tickets (City ➔ Theatre ➔ Movie ➔ Screen)\n" +
+      "• /start — Track tickets (City ➔ Movie ➔ Theatre ➔ Screen)\n" +
       "• /list — View and manage your active trackers\n" +
       "• /status — Check live status of all tracked shows\n" +
       "• /help — Show this help menu\n\n" +
@@ -443,7 +443,7 @@ async function handleTelegramUpdate(update, env) {
   }
 
   if (session && session.step === "AWAITING_MOVIE_QUERY") {
-    await handleMovieSearchInput(botToken, chatId, session.cityCode, session.venueCode, text, env);
+    await handleMovieSearchInput(botToken, chatId, session.cityCode, text, env);
     return;
   }
 
@@ -465,7 +465,7 @@ async function handleTelegramUpdate(update, env) {
   const parsed = parseBmsUrl(text);
   if (parsed.eventCode) {
     const cityCode = parsed.cityCode || "HYD";
-    await sendTheatreSelection(botToken, chatId, cityCode, 0, null, env, parsed.eventCode);
+    await sendMovieTheatreSelection(botToken, chatId, cityCode, parsed.eventCode, 0, null, env);
     return;
   }
 
@@ -622,6 +622,449 @@ async function resolveCity(cityCode, env) {
     lat: "17.385",
     lon: "78.487"
   };
+}
+
+
+function cleanBaseTitle(title) {
+  if (!title) return "";
+  return title.replace(/\s*\([^)]+\)$/, "").trim();
+}
+
+function groupCityMovies(rawMovies) {
+  const groups = new Map();
+  for (const m of rawMovies) {
+    const rawTitle = typeof m === "string" ? m : (m.title || m.code);
+    const code = typeof m === "string" ? m : m.code;
+    const base = cleanBaseTitle(rawTitle);
+    const mFormat = rawTitle.match(/\(([^)]+)\)$/);
+    const formatTag = mFormat ? mFormat[1].trim() : "";
+
+    if (!groups.has(base)) {
+      groups.set(base, {
+        masterCode: code,
+        baseTitle: base,
+        variants: []
+      });
+    }
+
+    const g = groups.get(base);
+    if (!g.variants.some(v => v.code === code)) {
+      g.variants.push({
+        code: code,
+        formatTag: formatTag,
+        fullTitle: rawTitle
+      });
+    }
+  }
+  return Array.from(groups.values());
+}
+
+async function getMovieGroup(cityCode, masterCode, env) {
+  const { movies } = await fetchMoviesForCity(cityCode, "ALL", true, env);
+  const groups = groupCityMovies(movies);
+  let found = groups.find(g => g.masterCode === masterCode || g.variants.some(v => v.code === masterCode));
+  if (found) return found;
+
+  const title = await resolveMovieTitle(masterCode, null, cityCode, env);
+  const base = cleanBaseTitle(title);
+  found = groups.find(g => g.baseTitle.toLowerCase() === base.toLowerCase());
+  if (found) return found;
+
+  const siblings = (typeof MULTILINGUAL_SIBLINGS !== "undefined" && MULTILINGUAL_SIBLINGS[masterCode]) || [masterCode];
+  const variants = [];
+  for (const c of siblings) {
+    const t = await resolveMovieTitle(c, null, cityCode, env);
+    const mFmt = t.match(/\(([^)]+)\)$/);
+    variants.push({ code: c, formatTag: mFmt ? mFmt[1].trim() : "Standard", fullTitle: t });
+  }
+  return { masterCode, baseTitle: base || title, variants };
+}
+
+// -------------------------------------------------------------
+// STEP 2: MOVIE SELECTION IN CITY (BOOKMYSHOW FLOW)
+// -------------------------------------------------------------
+
+async function sendCityMovieSelection(botToken, chatId, cityCode, page = 0, messageId = null, env = null) {
+  const city = await resolveCity(cityCode, env);
+  const { movies } = await fetchMoviesForCity(cityCode, "ALL", true, env);
+  const groups = groupCityMovies(movies);
+
+  const totalMovies = groups.length;
+  const pageSize = 8;
+  const totalPages = Math.max(1, Math.ceil(totalMovies / pageSize));
+  const safePage = Math.max(0, Math.min(page, totalPages - 1));
+  const slice = groups.slice(safePage * pageSize, (safePage + 1) * pageSize);
+
+  const buttons = [];
+  for (const g of slice) {
+    const fmtCount = g.variants.length > 1 ? ` (${g.variants.length} formats)` : "";
+    const rawLabel = `${g.baseTitle}${fmtCount}`;
+    const label = rawLabel.length > 36 ? rawLabel.slice(0, 34) + "…" : rawLabel;
+    buttons.push([
+      { text: `🎬 ${label}`, callback_data: `mvt:${cityCode}:${g.masterCode}:0` }
+    ]);
+  }
+
+  // Pagination navigation row
+  if (totalPages > 1) {
+    const navRow = [];
+    if (safePage > 0) {
+      navRow.push({ text: "◀️ Prev", callback_data: `mv_p:${cityCode}:${safePage - 1}` });
+    } else {
+      navRow.push({ text: "·", callback_data: "noop" });
+    }
+    navRow.push({ text: `📄 ${safePage + 1}/${totalPages}`, callback_data: "noop" });
+    if (safePage < totalPages - 1) {
+      navRow.push({ text: "Next ▶️", callback_data: `mv_p:${cityCode}:${safePage + 1}` });
+    } else {
+      navRow.push({ text: "·", callback_data: "noop" });
+    }
+    buttons.push(navRow);
+  }
+
+  // Search Movie button
+  buttons.push([
+    { text: `🔍 Search Movie in ${city.name}`, callback_data: `act:search_mv:${cityCode}` }
+  ]);
+
+  // Option to browse all theatres in city directly
+  buttons.push([
+    { text: `🏛️ Browse Theatres in ${city.name}`, callback_data: `thp:${cityCode}:0:` }
+  ]);
+
+  // Back button
+  buttons.push([
+    { text: "« Back to Cities", callback_data: "act:cities" }
+  ]);
+
+  const text =
+    `🎬 *Step 2/4: Choose Movie in ${city.name}*\n\n` +
+    `Found *${totalMovies}* active movie(s) showing in *${city.name}*:\n\n` +
+    `Select a movie below to see all theatres & showtimes:`;
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
+  } else {
+    await sendTelegram(botToken, chatId, text, { inline_keyboard: buttons });
+  }
+}
+
+// -------------------------------------------------------------
+// STEP 3: THEATRE SELECTION FOR MOVIE (BOOKMYSHOW FLOW)
+// -------------------------------------------------------------
+
+async function sendMovieTheatreSelection(botToken, chatId, cityCode, masterCode, page = 0, messageId = null, env = null) {
+  const city = await resolveCity(cityCode, env);
+  const movieGroup = await getMovieGroup(cityCode, masterCode, env);
+  const movieTitle = movieGroup?.baseTitle || await resolveMovieTitle(masterCode, null, cityCode, env);
+
+  const theatres = await findTheatresForMovieGroup(cityCode, movieGroup, env);
+  const totalTheatres = theatres.length;
+  const pageSize = 6;
+  const totalPages = Math.max(1, Math.ceil(totalTheatres / pageSize));
+  const safePage = Math.max(0, Math.min(page, totalPages - 1));
+  const slice = theatres.slice(safePage * pageSize, (safePage + 1) * pageSize);
+
+  const buttons = [];
+  // "All Theatres" option
+  buttons.push([
+    { text: `⭐ All Theatres in ${city.name} (${totalTheatres} cinemas)`, callback_data: `th_shows:${cityCode}:ALL:${masterCode}` }
+  ]);
+
+  for (const th of slice) {
+    const fmtStr = th.formats && th.formats.length > 0 ? ` (${th.formats.slice(0, 2).join(", ")})` : "";
+    const rawLabel = `${th.name}${fmtStr}`;
+    const label = rawLabel.length > 36 ? rawLabel.slice(0, 34) + "…" : rawLabel;
+    buttons.push([
+      { text: `🏛️ ${label}`, callback_data: `th_shows:${cityCode}:${th.code}:${masterCode}` }
+    ]);
+  }
+
+  // Pagination navigation row
+  if (totalPages > 1) {
+    const navRow = [];
+    if (safePage > 0) {
+      navRow.push({ text: "◀️ Prev", callback_data: `mvt_p:${cityCode}:${masterCode}:${safePage - 1}` });
+    } else {
+      navRow.push({ text: "·", callback_data: "noop" });
+    }
+    navRow.push({ text: `📄 ${safePage + 1}/${totalPages}`, callback_data: "noop" });
+    if (safePage < totalPages - 1) {
+      navRow.push({ text: "Next ▶️", callback_data: `mvt_p:${cityCode}:${masterCode}:${safePage + 1}` });
+    } else {
+      navRow.push({ text: "·", callback_data: "noop" });
+    }
+    buttons.push(navRow);
+  }
+
+  // Back button
+  buttons.push([
+    { text: `« Back to Movies (${city.name})`, callback_data: `c:${cityCode}` }
+  ]);
+
+  const text =
+    `🏛️ *Step 3/4: Choose Theatre for ${movieTitle}*\n\n` +
+    `• City: *${city.name}*\n` +
+    `• Movie: *${movieTitle}*\n\n` +
+    `Showing at *${totalTheatres}* theatre(s) in ${city.name}.\n` +
+    `Select a cinema below to view all screen formats & shows:`;
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
+  } else {
+    await sendTelegram(botToken, chatId, text, { inline_keyboard: buttons });
+  }
+}
+
+async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
+  const allVenues = await fetchVenuesForCity(cityCode, env);
+  const variantCodes = new Set(movieGroup.variants.map(v => v.code));
+  const matchingTheatres = [];
+
+  // 1. Fast check: Check KV cache for venues in city
+  if (env && env.TRACKER_DB && allVenues.length > 0) {
+    const checks = await Promise.all(
+      allVenues.slice(0, 30).map(async v => {
+        try {
+          const raw = await env.TRACKER_DB.get(`v_movies:${v.code}`);
+          if (raw) {
+            const list = JSON.parse(raw);
+            const matched = list.filter(m => variantCodes.has(m.code || m));
+            if (matched.length > 0) {
+              const formats = matched.map(m => {
+                const title = m.title || "";
+                const match = title.match(/\(([^)]+)\)$/);
+                return match ? match[1].replace(/English\s*|Hindi\s*|Telugu\s*|Tamil\s*/i, "").trim() : "Standard";
+              });
+              return {
+                code: v.code,
+                name: v.name,
+                formats: Array.from(new Set(formats)),
+                variants: matched.map(m => ({
+                  code: m.code || m,
+                  formatTag: (m.title?.match(/\(([^)]+)\)$/)?.[1] || "Standard").trim(),
+                  fullTitle: m.title
+                }))
+              };
+            }
+          }
+        } catch (e) {}
+        return null;
+      })
+    );
+    for (const r of checks) {
+      if (r) matchingTheatres.push(r);
+    }
+  }
+
+  // 2. If matching theatres found in KV, return them!
+  if (matchingTheatres.length >= 2) {
+    return matchingTheatres;
+  }
+
+  // 3. Fallback: Query live BookMyShow SHOWTIMES_API
+  try {
+    const liveTheatres = await fetchTheatresForMovieLive(cityCode, Array.from(variantCodes), env);
+    if (liveTheatres && liveTheatres.length > 0) {
+      return liveTheatres;
+    }
+  } catch (e) {}
+
+  // 4. Default fallback: Return popular venues in city
+  if (matchingTheatres.length > 0) return matchingTheatres;
+  return allVenues.slice(0, 10).map(v => ({
+    code: v.code,
+    name: v.name,
+    formats: movieGroup.variants.map(varnt => varnt.formatTag),
+    variants: movieGroup.variants
+  }));
+}
+
+async function fetchTheatresForMovieLive(cityCode, eventCodes, env) {
+  const city = await resolveCity(cityCode, env);
+  const venuesMap = new Map();
+  const codesToCheck = eventCodes.slice(0, 4);
+
+  for (const ev of codesToCheck) {
+    const url = `${SHOWTIMES_API}?eventCode=${ev}&isDesktop=true&regionCode=${cityCode}&lat=${city.lat}&lon=${city.lon}`;
+    try {
+      const res = await fetch(url, { headers: getHeaders(cityCode, city.slug, city.lat, city.lon) });
+      if (!res.ok) continue;
+      const json = await res.json();
+      for (const w of json.data?.showtimeWidgets || []) {
+        if (w.type !== "groupList") continue;
+        for (const grp of w.data || []) {
+          for (const item of grp.data || []) {
+            const vCode = item.additionalData?.venueCode;
+            const vName = item.additionalData?.venueName;
+            if (!vCode || !vName) continue;
+
+            if (!venuesMap.has(vCode)) {
+              venuesMap.set(vCode, {
+                code: vCode,
+                name: vName,
+                formats: new Set(),
+                variants: [],
+                shows: []
+              });
+            }
+            const vEntry = venuesMap.get(vCode);
+            for (const s of item.showtimes || []) {
+              const fmt = s.screenAttr || s.additionalData?.screenName || "Standard";
+              vEntry.formats.add(fmt);
+              const sTime = s.title || s.additionalData?.showTime;
+              if (sTime && !vEntry.shows.includes(sTime)) vEntry.shows.push(`${sTime} (${fmt})`);
+            }
+            if (!vEntry.variants.some(v => v.code === ev)) {
+              const title = await resolveMovieTitle(ev, vCode, cityCode, env);
+              const mFmt = title.match(/\(([^)]+)\)$/);
+              vEntry.variants.push({
+                code: ev,
+                formatTag: mFmt ? mFmt[1].trim() : "Standard",
+                fullTitle: title
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  return Array.from(venuesMap.values()).map(v => ({
+    code: v.code,
+    name: v.name,
+    formats: Array.from(v.formats),
+    variants: v.variants,
+    shows: v.shows
+  }));
+}
+
+// -------------------------------------------------------------
+// STEP 4: SHOWS & FORMATS INSIDE THEATRE (BOOKMYSHOW FLOW)
+// -------------------------------------------------------------
+
+async function sendTheatreShowsSelection(botToken, chatId, cityCode, venueCode, masterCode, messageId = null, env = null) {
+  const city = await resolveCity(cityCode, env);
+  const movieGroup = await getMovieGroup(cityCode, masterCode, env);
+  const baseTitle = movieGroup?.baseTitle || cleanBaseTitle(await resolveMovieTitle(masterCode, venueCode, cityCode, env));
+
+  let venueName = "";
+  if (venueCode === "ALL") {
+    venueName = `All Theatres in ${city.name}`;
+  } else {
+    const venues = await fetchVenuesForCity(cityCode, env);
+    const vObj = venues.find(v => v.code === venueCode);
+    venueName = vObj?.name || venueCode;
+  }
+
+  const showsData = await getShowsForVenueAndMovie(cityCode, venueCode, movieGroup, env);
+  const { variants, showSummaries, hasPremium, hasMultiLang, primaryCode } = showsData;
+
+  const keyboardButtons = [];
+
+  // 1. Dedicated button for each specific format variant playing at this theatre
+  for (const v of variants) {
+    const formatTag = v.formatTag || "Standard";
+    keyboardButtons.push([
+      { text: `🎯 Track ONLY ${formatTag}`, callback_data: `flt:${cityCode}:${venueCode}:${v.code}:EXACT` }
+    ]);
+  }
+
+  // 2. If premium screen available (IMAX, 4DX, PCX, MX4D, Infinity Vision)
+  if (hasPremium) {
+    keyboardButtons.push([
+      { text: "🌟 Any Premium Screen (IMAX / 4DX / PCX)", callback_data: `flt:${cityCode}:${venueCode}:${primaryCode}:PCX` }
+    ]);
+  }
+
+  // 3. If multi-lingual available
+  if (hasMultiLang) {
+    keyboardButtons.push([
+      { text: "🌐 Track Both English & Hindi Shows", callback_data: `flt:${cityCode}:${venueCode}:${primaryCode}:BOTH` }
+    ]);
+  }
+
+  // 4. Any show / format option
+  keyboardButtons.push([
+    { text: `🎟️ Any Show / Format at ${venueCode === "ALL" ? "All Theatres" : "this Theatre"}`, callback_data: `flt:${cityCode}:${venueCode}:${primaryCode}:ALL` }
+  ]);
+
+  // 5. Back button
+  keyboardButtons.push([
+    { text: "« Back to Theatres", callback_data: `mvt:${cityCode}:${masterCode}:0` }
+  ]);
+
+  let showListText = "";
+  if (showSummaries && showSummaries.length > 0) {
+    showListText = "\n\n*Live Shows on BookMyShow:*\n" + showSummaries.slice(0, 5).map(s => `• ${s}`).join("\n");
+  }
+
+  const text =
+    `🎯 *Step 4/4: Screen & Format Selection*\n\n` +
+    `• City: *${city.name}*\n` +
+    `• Theatre: *${venueName}*\n` +
+    `• Movie: *${baseTitle}*` +
+    showListText +
+    `\n\nChoose which show, screen format, or language version to track:`;
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: keyboardButtons });
+  } else {
+    await sendTelegram(botToken, chatId, text, { inline_keyboard: keyboardButtons });
+  }
+}
+
+async function getShowsForVenueAndMovie(cityCode, venueCode, movieGroup, env) {
+  let variants = [];
+  const showSummaries = [];
+
+  if (venueCode === "ALL") {
+    variants = [...movieGroup.variants];
+  } else {
+    if (env && env.TRACKER_DB) {
+      try {
+        const raw = await env.TRACKER_DB.get(`v_movies:${venueCode}`);
+        if (raw) {
+          const vList = JSON.parse(raw);
+          const vCodes = new Set(movieGroup.variants.map(v => v.code));
+          const matched = vList.filter(m => vCodes.has(m.code || m));
+          if (matched.length > 0) {
+            variants = matched.map(m => {
+              const mTitle = m.title || "";
+              const mFmt = mTitle.match(/\(([^)]+)\)$/);
+              return {
+                code: m.code || m,
+                formatTag: mFmt ? mFmt[1].trim() : "Standard",
+                fullTitle: mTitle
+              };
+            });
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (variants.length === 0) {
+      variants = [...movieGroup.variants];
+    }
+  }
+
+  let hasPremium = false;
+  let hasEnglish = false;
+  let hasHindi = false;
+
+  for (const v of variants) {
+    const lower = (v.formatTag || "").toLowerCase();
+    if (lower.includes("imax") || lower.includes("4dx") || lower.includes("pcx") || lower.includes("mx4d") || lower.includes("infinity") || venueCode === "PRHN") {
+      hasPremium = true;
+    }
+    if (lower.includes("english")) hasEnglish = true;
+    if (lower.includes("hindi")) hasHindi = true;
+  }
+
+  const hasMultiLang = hasEnglish && hasHindi;
+  const primaryCode = variants[0]?.code || movieGroup.masterCode;
+
+  return { variants, showSummaries, hasPremium, hasMultiLang, primaryCode };
 }
 
 // -------------------------------------------------------------
@@ -870,26 +1313,26 @@ async function sendMovieSelection(botToken, chatId, cityCode, venueCode, page = 
   }
 }
 
-async function handleMovieSearchInput(botToken, chatId, cityCode, venueCode, query, env) {
+async function handleMovieSearchInput(botToken, chatId, cityCode, text, env) {
   const city = await resolveCity(cityCode, env);
-  const { movies } = await fetchMoviesForCity(cityCode, venueCode, true, env);
-  const q = query.toLowerCase().trim();
+  const { movies } = await fetchMoviesForCity(cityCode, "ALL", true, env);
+  const groups = groupCityMovies(movies);
+  const q = text.toLowerCase().trim();
 
-  const matched = movies.filter(m =>
-    m.title.toLowerCase().includes(q) ||
-    m.code.toLowerCase().includes(q)
+  const matched = groups.filter(g =>
+    g.baseTitle.toLowerCase().includes(q) ||
+    g.variants.some(v => v.code.toLowerCase().includes(q) || v.fullTitle.toLowerCase().includes(q))
   );
 
   if (matched.length === 0) {
     const keyboard = {
       inline_keyboard: [
-        [{ text: `🔍 Search Again in ${city.name}`, callback_data: `act:search_mv:${cityCode}:${venueCode}` }],
-        [{ text: "« Show All Movies", callback_data: `mvp:${cityCode}:${venueCode}:0:0` }],
-        [{ text: "🔗 Paste BMS Link / Code", callback_data: `custom:${cityCode}:${venueCode}` }]
+        [{ text: `🔍 Search Again in ${city.name}`, callback_data: `act:search_mv:${cityCode}` }],
+        [{ text: `« Browse All Movies (${groups.length})`, callback_data: `c:${cityCode}` }]
       ]
     };
     await sendTelegram(botToken, chatId,
-      `❌ No movies found matching "*${query}*".\n\nTry searching for another movie, or paste the BookMyShow link directly:`,
+      `❌ No movies found in *${city.name}* matching "*${text}*".\n\nPlease check spelling or try another movie name:`,
       keyboard
     );
     return;
@@ -897,15 +1340,17 @@ async function handleMovieSearchInput(botToken, chatId, cityCode, venueCode, que
 
   await clearSession(env, chatId);
   const buttons = [];
-  for (const m of matched.slice(0, 10)) {
-    const title = m.title.length > 36 ? m.title.slice(0, 34) + "…" : m.title;
-    buttons.push([{ text: `🎬 ${title}`, callback_data: `mv:${cityCode}:${venueCode}:${m.code}` }]);
+  for (const g of matched.slice(0, 8)) {
+    const fmtCount = g.variants.length > 1 ? ` (${g.variants.length} formats)` : "";
+    const rawLabel = `${g.baseTitle}${fmtCount}`;
+    const label = rawLabel.length > 36 ? rawLabel.slice(0, 34) + "…" : rawLabel;
+    buttons.push([{ text: `🎬 ${label}`, callback_data: `mvt:${cityCode}:${g.masterCode}:0` }]);
   }
-  buttons.push([{ text: "🔍 Search Another Movie", callback_data: `act:search_mv:${cityCode}:${venueCode}` }]);
-  buttons.push([{ text: "« Back to Movies", callback_data: `mvp:${cityCode}:${venueCode}:0:0` }]);
+  buttons.push([{ text: "🔍 Search Another Movie", callback_data: `act:search_mv:${cityCode}` }]);
+  buttons.push([{ text: `« Back to All Movies (${groups.length})`, callback_data: `c:${cityCode}` }]);
 
   await sendTelegram(botToken, chatId,
-    `🎬 *Movies matching "${query}":*\n\nSelect a movie below:`,
+    `🎬 *Movies matching "${text}" in ${city.name}:*\n\nSelect a movie to view theatres & showtimes:`,
     { inline_keyboard: buttons }
   );
 }
@@ -1065,10 +1510,41 @@ async function handleCallbackData(botToken, chatId, messageId, data, env) {
   const parts = data.split(":");
   const action = parts[0];
 
-  // 1. City clicked -> show theatres
+  // 1. City clicked -> Step 2: Show Movies in City (BookMyShow flow)
   if (action === "c") {
     const cityCode = parts[1];
-    await sendTheatreSelection(botToken, chatId, cityCode, 0, messageId, env);
+    await sendCityMovieSelection(botToken, chatId, cityCode, 0, messageId, env);
+    return;
+  }
+
+  // 2. Movie in City pagination clicked
+  if (action === "mv_p") {
+    const [, cityCode, pageStr] = parts;
+    const page = parseInt(pageStr, 10) || 0;
+    await sendCityMovieSelection(botToken, chatId, cityCode, page, messageId, env);
+    return;
+  }
+
+  // 3. Movie clicked -> Step 3: Show Theatres for Movie
+  if (action === "mvt") {
+    const [, cityCode, masterCode, pageStr] = parts;
+    const page = parseInt(pageStr, 10) || 0;
+    await sendMovieTheatreSelection(botToken, chatId, cityCode, masterCode, page, messageId, env);
+    return;
+  }
+
+  // 4. Theatres pagination for movie clicked
+  if (action === "mvt_p") {
+    const [, cityCode, masterCode, pageStr] = parts;
+    const page = parseInt(pageStr, 10) || 0;
+    await sendMovieTheatreSelection(botToken, chatId, cityCode, masterCode, page, messageId, env);
+    return;
+  }
+
+  // 5. Theatre clicked -> Step 4: Show Shows / Formats inside Theatre
+  if (action === "th_shows") {
+    const [, cityCode, venueCode, masterCode] = parts;
+    await sendTheatreShowsSelection(botToken, chatId, cityCode, venueCode, masterCode, messageId, env);
     return;
   }
 
@@ -1154,12 +1630,11 @@ async function handleCallbackData(botToken, chatId, messageId, data, env) {
     return;
   }
 
-  // 9. Search movie clicked
+  // Search movie clicked
   if (action === "act" && parts[1] === "search_mv") {
     const cityCode = parts[2] || "HYD";
-    const venueCode = parts[3] || "ALL";
     const city = await resolveCity(cityCode, env);
-    await setSession(env, chatId, { step: "AWAITING_MOVIE_QUERY", cityCode, venueCode });
+    await setSession(env, chatId, { step: "AWAITING_MOVIE_QUERY", cityCode });
     await editTelegramMessage(botToken, chatId, messageId,
       `🔍 *Search Movie in ${city.name}*\n\n` +
       `Please type the movie name (e.g. \`Avengers\`, \`Resident Evil\`, \`Spider-Man\`, \`Ramayan\`, \`Devara\`, \`Paradise\`):`
