@@ -1,6 +1,8 @@
 name: BookMyShow 24/7 Movie Tracker
 
 on:
+  schedule:
+    - cron: '0 4 * * *'  # Runs once every 24 hours (daily at 09:30 AM IST / 04:00 UTC)
   workflow_dispatch:
 
 concurrency:
