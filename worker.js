@@ -366,6 +366,9 @@ async function handleTelegramUpdate(update, env) {
   const botToken = env.TELEGRAM_BOT_TOKEN;
   const configuredChatId = String(env.TELEGRAM_CHAT_ID || "").trim().replace(/['"]/g, "");
 
+  // Optional whitelist if explicitly configured in env.ALLOWED_CHAT_IDS
+  const allowedList = env.ALLOWED_CHAT_IDS ? env.ALLOWED_CHAT_IDS.split(",").map(s => s.trim()) : null;
+
   // A. Handle Button Clicks
   if (update.callback_query) {
     const cb = update.callback_query;
@@ -374,7 +377,7 @@ async function handleTelegramUpdate(update, env) {
     const messageId = cb.message?.message_id;
     const data = cb.data || "";
 
-    if (configuredChatId && chatId !== configuredChatId && userId !== configuredChatId) {
+    if (allowedList && !allowedList.includes(chatId) && !allowedList.includes(userId)) {
       await answerCallbackQuery(botToken, cb.id, "Unauthorized user");
       return;
     }
@@ -392,7 +395,7 @@ async function handleTelegramUpdate(update, env) {
   const userId = String(msg.from?.id || "");
   const text = msg.text.trim();
 
-  if (configuredChatId && chatId !== configuredChatId && userId !== configuredChatId) {
+  if (allowedList && !allowedList.includes(chatId) && !allowedList.includes(userId)) {
     return;
   }
 
