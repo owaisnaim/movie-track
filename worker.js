@@ -772,7 +772,7 @@ async function sendMovieTheatreSelection(botToken, chatId, cityCode, masterCode,
   ]);
 
   for (const th of slice) {
-    const fmtStr = th.formats && th.formats.length > 0 ? ` (${th.formats.slice(0, 2).join(", ")})` : "";
+    const fmtStr = th.formats && th.formats.length > 0 ? ` (${th.formats.slice(0, 3).join(", ")})` : "";
     const rawLabel = `${th.name}${fmtStr}`;
     const label = rawLabel.length > 36 ? rawLabel.slice(0, 34) + "…" : rawLabel;
     buttons.push([
@@ -841,12 +841,24 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
                 const c = m.code || m;
                 const title = m.title || (typeof MOVIES_CATALOG !== "undefined" ? MOVIES_CATALOG[c] : "") || "";
                 const match = title.match(/\(([^)]+)\)$/);
-                return match ? match[1].replace(/English\s*|Hindi\s*|Telugu\s*|Tamil\s*/i, "").trim() : "Standard";
+                let tag = match ? match[1].replace(/English\s*|Hindi\s*|Telugu\s*|Tamil\s*/i, "").trim() : "Standard";
+                const lower = tag.toLowerCase();
+                if (lower.includes("barco") || lower.includes("hdr") || (v.code === "PRHN" && lower.includes("pcx"))) {
+                  tag = "PCX";
+                }
+                return tag;
               });
+              const formatPriority = f => {
+                const l = f.toLowerCase();
+                if (l.includes("pcx") || l.includes("imax") || l.includes("4dx") || l.includes("infinity")) return 0;
+                if (l.includes("3d")) return 1;
+                return 2;
+              };
+              const uniqueFormats = Array.from(new Set(formats)).sort((a, b) => formatPriority(a) - formatPriority(b));
               return {
                 code: v.code,
                 name: v.name || v.title || v.code,
-                formats: Array.from(new Set(formats)),
+                formats: uniqueFormats,
                 variants: matched.map(m => {
                   const c = m.code || m;
                   const title = m.title || (typeof MOVIES_CATALOG !== "undefined" ? MOVIES_CATALOG[c] : "") || movieGroup.baseTitle;
@@ -997,9 +1009,9 @@ function formatScreenLabel(tag, venueCode = "") {
   }
   if (lower.includes("2d")) {
     const lang = lower.includes("hindi") ? "Hindi" : lower.includes("telugu") ? "Telugu" : "English";
-    return { emoji: "🎟️", label: `${lang} 2D`, isPremium: false };
+    return { emoji: "🎟️", label: `${lang} 2D (Standard)`, isPremium: false };
   }
-  return { emoji: "🎟️", label: tag || "Standard", isPremium: false };
+  return { emoji: "🎟️", label: tag ? `${tag} (Standard)` : "Standard Screen", isPremium: false };
 }
 
 async function sendTheatreShowsSelection(botToken, chatId, cityCode, venueCode, masterCode, messageId = null, env = null) {
@@ -1022,8 +1034,21 @@ async function sendTheatreShowsSelection(botToken, chatId, cityCode, venueCode, 
   const keyboardButtons = [];
   const premiumVariants = [];
 
+  // Sort variants so Premium screens (PCX, IMAX, 4DX) appear first, followed by 3D, followed by 2D / Standard
+  const sortedVariants = [...variants].sort((a, b) => {
+    const fA = formatScreenLabel(a.formatTag, venueCode);
+    const fB = formatScreenLabel(b.formatTag, venueCode);
+    if (fA.isPremium && !fB.isPremium) return -1;
+    if (!fA.isPremium && fB.isPremium) return 1;
+    const aLower = (a.formatTag || "").toLowerCase();
+    const bLower = (b.formatTag || "").toLowerCase();
+    if (aLower.includes("3d") && !bLower.includes("3d")) return -1;
+    if (!aLower.includes("3d") && bLower.includes("3d")) return 1;
+    return 0;
+  });
+
   // 1. Dedicated button for each specific format variant playing at this theatre (properly bifurcated)
-  for (const v of variants) {
+  for (const v of sortedVariants) {
     const f = formatScreenLabel(v.formatTag, venueCode);
     if (f.isPremium && !premiumVariants.includes(f.label)) {
       premiumVariants.push(f.label);
@@ -1310,16 +1335,32 @@ async function sendMovieSelection(botToken, chatId, cityCode, venueCode, page = 
   const venueName = venueCode === "ALL" ? `All Theatres in ${city.name}` : (vObj?.name || venueCode);
 
   const { movies, isVenueSpecific } = await fetchMoviesForCity(cityCode, venueCode, showAllCity, env);
-  const totalMovies = movies.length;
+  const groups = groupCityMovies(movies);
+  const totalMovies = groups.length;
   const pageSize = 8;
   const totalPages = Math.ceil(totalMovies / pageSize) || 1;
   const safePage = Math.max(0, Math.min(page, totalPages - 1));
-  const slice = movies.slice(safePage * pageSize, (safePage + 1) * pageSize);
+  const slice = groups.slice(safePage * pageSize, (safePage + 1) * pageSize);
 
   const buttons = [];
-  for (const m of slice) {
-    const title = m.title.length > 36 ? m.title.slice(0, 34) + "…" : m.title;
-    buttons.push([{ text: `🎬 ${title}`, callback_data: `mv:${cityCode}:${venueCode}:${m.code}` }]);
+  for (const g of slice) {
+    const fmtList = g.variants.map(v => {
+      const match = v.fullTitle?.match(/\(([^)]+)\)$/);
+      let tag = match ? match[1].replace(/English\s*|Hindi\s*|Telugu\s*|Tamil\s*/i, "").trim() : "Standard";
+      if (venueCode === "PRHN" && (tag.toLowerCase().includes("barco") || tag.toLowerCase().includes("hdr"))) tag = "PCX";
+      return tag;
+    });
+    const formatPriority = f => {
+      const l = f.toLowerCase();
+      if (l.includes("pcx") || l.includes("imax") || l.includes("4dx") || l.includes("infinity")) return 0;
+      if (l.includes("3d")) return 1;
+      return 2;
+    };
+    const uniqueFmts = Array.from(new Set(fmtList)).sort((a, b) => formatPriority(a) - formatPriority(b));
+    const fmtStr = uniqueFmts.length > 1 ? ` (${uniqueFmts.slice(0, 3).join(", ")})` : "";
+    const rawLabel = `${g.baseTitle}${fmtStr}`;
+    const title = rawLabel.length > 36 ? rawLabel.slice(0, 34) + "…" : rawLabel;
+    buttons.push([{ text: `🎬 ${title}`, callback_data: `th_shows:${cityCode}:${venueCode}:${g.masterCode}` }]);
   }
 
   // Pagination navigation row
@@ -1508,67 +1549,7 @@ async function resolveMovieTitle(eventCode, venueCode, cityCode, env) {
 // -------------------------------------------------------------
 
 async function sendFormatSelection(botToken, chatId, cityCode, venueCode, eventCode, messageId = null, env = null) {
-  const city = await resolveCity(cityCode, env);
-  const venues = await fetchVenuesForCity(cityCode, env);
-  const vObj = venues.find(v => v.code === venueCode);
-  const venueName = venueCode === "ALL" ? `All Theatres in ${city.name}` : (vObj?.name || venueCode);
-  const movieTitle = await resolveMovieTitle(eventCode, venueCode, cityCode, env);
-
-  const keyboardButtons = [];
-  const lowerVenue = venueName.toLowerCase();
-
-  // Check if movie title has an explicit format tag: e.g. "Avengers Endgame: Encore (English IMAX 2D)"
-  const mFormat = movieTitle.match(/\(([^)]+)\)$/);
-  if (mFormat) {
-    const formatTag = mFormat[1].trim();
-    // Primary Option: Lock tracking strictly to this exact format variant
-    keyboardButtons.push([
-      { text: `🎯 Track ONLY ${formatTag}`, callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:EXACT` }
-    ]);
-
-    // If premium screen, offer premium screen bundle
-    const lowerTag = formatTag.toLowerCase();
-    if (lowerTag.includes("imax") || lowerTag.includes("4dx") || lowerTag.includes("mx4d") || lowerTag.includes("infinity") || venueCode === "PRHN") {
-      keyboardButtons.push([
-        { text: "🌟 Any Premium Screen (IMAX / 4DX / PCX)", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }
-      ]);
-    }
-  } else {
-    // Generic title fallback
-    if (venueCode === "PRHN") {
-      keyboardButtons.push([{ text: "🌟 PCX / Large Screen Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }]);
-      keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
-      keyboardButtons.push([{ text: "🎟️ 2D / Standard Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:2D` }]);
-    } else if (lowerVenue.includes("imax") || lowerVenue.includes("megaplex") || lowerVenue.includes("superplex")) {
-      keyboardButtons.push([{ text: "🌟 IMAX / Premium Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:PCX` }]);
-      keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
-      keyboardButtons.push([{ text: "🎟️ 2D / Standard Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:2D` }]);
-    } else {
-      keyboardButtons.push([{ text: "👓 3D Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:3D` }]);
-      keyboardButtons.push([{ text: "🎟️ 2D / Standard Shows Only", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:2D` }]);
-    }
-  }
-
-  // If this movie has multi-language siblings (English + Hindi), offer combined tracking
-  if (typeof MULTILINGUAL_SIBLINGS !== "undefined" && MULTILINGUAL_SIBLINGS[eventCode] && MULTILINGUAL_SIBLINGS[eventCode].length > 1) {
-    keyboardButtons.push([{ text: "🌐 Track Both English & Hindi Shows", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:BOTH` }]);
-  }
-
-  keyboardButtons.push([{ text: "🎟️ Any Screen / Format", callback_data: `flt:${cityCode}:${venueCode}:${eventCode}:ALL` }]);
-  keyboardButtons.push([{ text: "« Back to Movies", callback_data: `th:${cityCode}:${venueCode}:` }]);
-
-  const text =
-    `🎯 *Step 4/4: Screen & Language Preference*\n\n` +
-    `• City: *${city.name}*\n` +
-    `• Theatre: *${venueName}*\n` +
-    `• Selected: *${movieTitle}*\n\n` +
-    `Choose which screens, formats, or language versions you want alerts for:`;
-
-  if (messageId) {
-    await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: keyboardButtons });
-  } else {
-    await sendTelegram(botToken, chatId, text, { inline_keyboard: keyboardButtons });
-  }
+  return sendTheatreShowsSelection(botToken, chatId, cityCode, venueCode, eventCode, messageId, env);
 }
 // -------------------------------------------------------------
 // CALLBACK ACTIONS HANDLER
