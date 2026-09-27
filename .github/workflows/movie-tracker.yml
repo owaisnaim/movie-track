@@ -1,8 +1,6 @@
 name: BookMyShow 24/7 Movie Tracker
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 concurrency:
