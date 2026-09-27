@@ -181,13 +181,13 @@ def scrape_venue_movies(item):
         return vcode, ccode, [], 0
 
 
-def push_batch_to_cloudflare(token: str, venues_batch: dict) -> bool:
-    """Push a batch of venue movie lists to Cloudflare Worker KV."""
-    if not venues_batch:
+def push_venue_movies_to_cloudflare(token: str, venue_code: str, movies: list) -> bool:
+    """Push a single venue's movie list directly to Cloudflare Worker KV."""
+    if not movies:
         return True
 
     url = f"{CF_WORKER_URL}/api/movies/sync?token={token}"
-    data = json.dumps({"venues": venues_batch}).encode("utf-8")
+    data = json.dumps({"venueCode": venue_code, "movies": movies}).encode("utf-8")
     req = urllib.request.Request(
         url,
         data=data,
@@ -196,10 +196,10 @@ def push_batch_to_cloudflare(token: str, venues_batch: dict) -> bool:
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=12) as resp:
             return resp.status == 200
     except Exception as e:
-        print(f"[CATALOG SYNC] Failed to push batch of {len(venues_batch)} venues: {e}")
+        print(f"[CATALOG SYNC] Failed to push {venue_code}: {e}")
         return False
 
 
@@ -299,13 +299,11 @@ def main():
     print(f"[CATALOG SYNC] Total venues queued for scraping: {len(queue)}")
     print(f"[CATALOG SYNC] Running concurrent sync with {MAX_WORKERS} workers...\n")
 
-    # 4. Concurrently Scrape Venues and Push in Batches
+    # 4. Concurrently Scrape Venues and Push Directly to Cloudflare KV
     synced_venues = 0
     total_movie_instances = 0
-    batch = {}
     city_movies_map = {}  # ccode -> dict of code: title
     completed_count = 0
-    batch_num = 1
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_venue = {executor.submit(scrape_venue_movies, item): item for item in queue}
@@ -315,40 +313,24 @@ def main():
             vcode, ccode, movies, status = future.result()
 
             if movies:
-                batch[vcode] = movies
-                synced_venues += 1
-                total_movie_instances += len(movies)
+                ok = push_venue_movies_to_cloudflare(token, vcode, movies)
+                if ok:
+                    synced_venues += 1
+                    total_movie_instances += len(movies)
 
-                # Accumulate for city-wide catalog
-                if ccode not in city_movies_map:
-                    city_movies_map[ccode] = {}
-                for m in movies:
-                    city_movies_map[ccode][m["code"]] = m["title"]
+                    # Accumulate for city-wide catalog
+                    if ccode not in city_movies_map:
+                        city_movies_map[ccode] = {}
+                    for m in movies:
+                        city_movies_map[ccode][m["code"]] = m["title"]
 
-            # Push batch when threshold reached
-            if len(batch) >= BATCH_SIZE:
-                ok = push_batch_to_cloudflare(token, batch)
-                status_str = "OK" if ok else "FAILED"
-                print(
-                    f"  [{completed_count}/{len(queue)}] Batch #{batch_num} pushed to Cloudflare: "
-                    f"{len(batch)} venues ({status_str})"
-                )
-                batch_num += 1
-                batch = {}
-
-            # Progress log every 100 venues
-            if completed_count % 100 == 0 or completed_count == len(queue):
+            # Progress log every 50 venues
+            if completed_count % 50 == 0 or completed_count == len(queue):
                 pct = (completed_count / len(queue)) * 100
                 print(
                     f"[PROGRESS] {completed_count}/{len(queue)} venues processed ({pct:.1f}%) | "
-                    f"{synced_venues} active cinemas found"
+                    f"{synced_venues} active cinemas synced"
                 )
-
-    # Flush remaining batch
-    if batch:
-        ok = push_batch_to_cloudflare(token, batch)
-        status_str = "OK" if ok else "FAILED"
-        print(f"  Final Batch #{batch_num} pushed to Cloudflare: {len(batch)} venues ({status_str})")
 
     # 5. Push Aggregated City-Wide Catalogs
     print(f"\n[CATALOG SYNC] Syncing city-wide movie catalogs for {len(city_movies_map)} cities...")
