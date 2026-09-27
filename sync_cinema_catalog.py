@@ -18,11 +18,25 @@ CF_WORKER_URL = "https://movie-track-bot.mustardshrek.workers.dev"
 
 # Popular flagship cinemas per city to keep pre-warmed
 DEFAULT_VENUES = [
-    # Kanpur
+    # Kanpur (All 18 Cinema Halls)
     {"code": "INZS", "name": "INOX: Z Square, Bada Chauraha", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "RAVE", "name": "Rave 3 AV Cinemas", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "RMIK", "name": "Rave Moti Cinemas", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "PSXM", "name": "PVR: South X Mall, Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
     {"code": "PDDK", "name": "PVR: Deep, Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "RAVE", "name": "Rave 3 AV Cinemas: Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "NYCH", "name": "Devgn CineX: Heer Palace, Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
     {"code": "MCGP", "name": "Miraj Cinemas: Gurudev Pammi", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "SDPO", "name": "Shyam Palace Cinema", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "MCRL", "name": "Movietime Cinemas: Ratan Elegance, Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "MHKT", "name": "Movietime Cinemas: Ratan Himachal Mall, Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "PCSK", "name": "PP Cinemall: Mandhana, Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "ANRR", "name": "Navrang Cineplex", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "SAPK", "name": "Sapna Palace Cinema", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "NCUK", "name": "Novelty Cinema", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "GUCK", "name": "Gunjan Cinema", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "DBSC", "name": "Delite Big Screen Cinema", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "JUGA", "name": "Jugul Palace Cinema", "citySlug": "kanpur", "cityCode": "KANP"},
+    {"code": "LALK", "name": "Lal Palace", "citySlug": "kanpur", "cityCode": "KANP"},
     # Lucknow
     {"code": "PVPP", "name": "PVR: Phoenix Palassio, Lucknow", "citySlug": "lucknow", "cityCode": "LUCK"},
     {"code": "PVPB", "name": "PVR: Wave Mall, Lucknow", "citySlug": "lucknow", "cityCode": "LUCK"},
