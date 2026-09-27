@@ -1,3 +1,10 @@
+"""
+Cinema Catalog Sync Engine
+Syncs active movies inside cinema halls across ALL Indian cities and cinema halls.
+Stores venue mappings (v_movies:<venueCode>) and city mappings (movies:<cityCode>) in Cloudflare KV.
+Runs twice daily via GitHub Actions (.github/workflows/daily-cinema-sync.yml).
+"""
+
 import datetime
 import html
 import json
@@ -7,6 +14,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from curl_cffi import requests as cffi_requests
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -15,65 +23,66 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 CF_WORKER_URL = "https://movie-track-bot.mustardshrek.workers.dev"
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+CITIES_FILE = os.path.join(DATA_DIR, "cities.json")
+VENUES_FILE = os.path.join(DATA_DIR, "venues.json")
 
-# Popular flagship cinemas per city to keep pre-warmed
-DEFAULT_VENUES = [
-    # Kanpur (All 18 Cinema Halls)
-    {"code": "INZS", "name": "INOX: Z Square, Bada Chauraha", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "RAVE", "name": "Rave 3 AV Cinemas", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "RMIK", "name": "Rave Moti Cinemas", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "PSXM", "name": "PVR: South X Mall, Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "PDDK", "name": "PVR: Deep, Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "NYCH", "name": "Devgn CineX: Heer Palace, Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "MCGP", "name": "Miraj Cinemas: Gurudev Pammi", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "SDPO", "name": "Shyam Palace Cinema", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "MCRL", "name": "Movietime Cinemas: Ratan Elegance, Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "MHKT", "name": "Movietime Cinemas: Ratan Himachal Mall, Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "PCSK", "name": "PP Cinemall: Mandhana, Kanpur", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "ANRR", "name": "Navrang Cineplex", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "SAPK", "name": "Sapna Palace Cinema", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "NCUK", "name": "Novelty Cinema", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "GUCK", "name": "Gunjan Cinema", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "DBSC", "name": "Delite Big Screen Cinema", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "JUGA", "name": "Jugul Palace Cinema", "citySlug": "kanpur", "cityCode": "KANP"},
-    {"code": "LALK", "name": "Lal Palace", "citySlug": "kanpur", "cityCode": "KANP"},
-    # Lucknow
-    {"code": "PVPP", "name": "PVR: Phoenix Palassio, Lucknow", "citySlug": "lucknow", "cityCode": "LUCK"},
-    {"code": "PVPB", "name": "PVR: Wave Mall, Lucknow", "citySlug": "lucknow", "cityCode": "LUCK"},
-    {"code": "LKIN", "name": "INOX: Riverside Mall, Gomti Nagar", "citySlug": "lucknow", "cityCode": "LUCK"},
-    {"code": "LPCM", "name": "Cinepolis: One Awadh Center", "citySlug": "lucknow", "cityCode": "LUCK"},
-    # Hyderabad
-    {"code": "PRHN", "name": "Prasads Multiplex: Hyderabad", "citySlug": "hyderabad", "cityCode": "HYD"},
-    {"code": "AMBP", "name": "AMB Cinemas: Gachibowli", "citySlug": "hyderabad", "cityCode": "HYD"},
-    {"code": "PVIN", "name": "PVR: Next Galleria Mall, Panjagutta", "citySlug": "hyderabad", "cityCode": "HYD"},
-    {"code": "INMH", "name": "INOX: GSM Mall, Miyapur", "citySlug": "hyderabad", "cityCode": "HYD"},
-    # NCR / Delhi
-    {"code": "PVVC", "name": "PVR: Vegas Mall, Dwarka", "citySlug": "national-capital-region-ncr", "cityCode": "NCR"},
-    {"code": "PVIW", "name": "PVR: Select CITYWALK, Saket", "citySlug": "national-capital-region-ncr", "cityCode": "NCR"},
-    {"code": "INPO", "name": "INOX: Nehru Place", "citySlug": "national-capital-region-ncr", "cityCode": "NCR"},
-    # Mumbai
-    {"code": "PVMC", "name": "PVR: Phoenix Palladium, Lower Parel", "citySlug": "mumbai", "cityCode": "MUMBAI"},
-    {"code": "INNB", "name": "INOX: Nariman Point", "citySlug": "mumbai", "cityCode": "MUMBAI"},
-    # Bengaluru
-    {"code": "PVBG", "name": "PVR: Forum Mall, Koramangala", "citySlug": "bengaluru", "cityCode": "BANG"},
-    {"code": "INBG", "name": "INOX: Garuda Mall, Magrath Road", "citySlug": "bengaluru", "cityCode": "BANG"},
-]
+# Concurrency & Batch Settings
+MAX_WORKERS = 8
+BATCH_SIZE = 30
+REQUEST_TIMEOUT = 10
+
 
 def slugify(text: str) -> str:
-    cleaned = re.sub(r"[^a-zA-Z0-9]+", "-", text.lower()).strip("-")
-    return cleaned
+    """Create a URL-safe slug from venue name matching BookMyShow format."""
+    return re.sub(r"[^a-zA-Z0-9]+", "-", text.lower()).strip("-")
 
-def get_active_venues_and_cities(token: str):
-    venues = {}
-    cities = set()
 
-    for v in DEFAULT_VENUES:
-        venues[v["code"]] = v
-        cities.add((v["cityCode"], v["citySlug"]))
+def load_directory():
+    """Load all 87 cities and 1,397 venues from data/ or fallback to worker.js."""
+    cities = {}
+    venues_by_city = {}
 
-    # Dynamically pull user trackers from Cloudflare KV
+    if os.path.exists(CITIES_FILE) and os.path.exists(VENUES_FILE):
+        try:
+            with open(CITIES_FILE, "r", encoding="utf-8") as f:
+                cities = json.load(f)
+            with open(VENUES_FILE, "r", encoding="utf-8") as f:
+                venues_by_city = json.load(f)
+            return cities, venues_by_city
+        except Exception as e:
+            print(f"[CATALOG SYNC] Notice: Failed loading from data/ files ({e}), falling back to worker.js")
+
+    # Fallback to parsing worker.js directly
+    worker_path = os.path.join(os.path.dirname(__file__), "worker.js")
+    if os.path.exists(worker_path):
+        try:
+            with open(worker_path, "r", encoding="utf-8") as f:
+                text = f.read()
+
+            # Parse TOP_CITIES
+            m_cities = re.search(r"const TOP_CITIES = ({.*?});\s*const", text, re.DOTALL)
+            if m_cities:
+                raw_c = m_cities.group(1)
+                # Convert JS object keys to valid JSON format
+                raw_c_fixed = re.sub(r"([{,])\s*([a-zA-Z0-9_]+):", r'\1 "\2":', raw_c)
+                cities = json.loads(raw_c_fixed)
+
+            # Parse ALL_VENUES
+            m_venues = re.search(r"const ALL_VENUES = ({.*?});\s*const", text, re.DOTALL)
+            if m_venues:
+                venues_by_city = json.loads(m_venues.group(1))
+        except Exception as e:
+            print(f"[CATALOG SYNC] Error parsing worker.js: {e}")
+
+    return cities, venues_by_city
+
+
+def get_user_tracked_venues(token: str):
+    """Fetch all venues actively being tracked by bot users."""
     url = f"{CF_WORKER_URL}/api/trackers?token={token}"
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    tracked = {}
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             trackers = json.loads(resp.read().decode("utf-8"))
@@ -83,20 +92,23 @@ def get_active_venues_and_cities(token: str):
                 c_code = t.get("cityCode", "KANP")
                 c_slug = t.get("citySlug", "kanpur")
                 if v_code and v_code != "ALL":
-                    venues[v_code] = {
+                    tracked[v_code] = {
                         "code": v_code,
                         "name": v_name or v_code,
-                        "citySlug": c_slug,
                         "cityCode": c_code,
+                        "citySlug": c_slug,
                     }
-                cities.add((c_code, c_slug))
     except Exception as e:
-        print(f"[CATALOG SYNC] Notice: Could not fetch dynamic trackers ({e})")
+        print(f"[CATALOG SYNC] Notice: Could not fetch active user trackers ({e})")
+    return tracked
 
-    return list(venues.values()), list(cities)
 
-def scrape_cinema_movies(city_slug: str, venue_slug: str, venue_code: str) -> list:
-    url = f"https://in.bookmyshow.com/cinemas/{city_slug}/{venue_slug}/{venue_code}"
+def scrape_venue_movies(item):
+    """Scrape movies playing at a specific cinema hall using curl_cffi."""
+    ccode, cslug, vcode, vname = item
+    vslug = slugify(vname)
+    url = f"https://in.bookmyshow.com/cinemas/{cslug}/{vslug}/{vcode}"
+
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -105,38 +117,86 @@ def scrape_cinema_movies(city_slug: str, venue_slug: str, venue_code: str) -> li
         ),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Referer": "https://in.bookmyshow.com/",
+        "x-region-code": ccode,
+        "Cookie": f"Rgn=|Code={ccode}|",
     }
 
+    movies = []
+    seen = set()
+
     try:
-        res = cffi_requests.get(url, headers=headers, timeout=20, impersonate="chrome124")
+        res = cffi_requests.get(url, headers=headers, impersonate="chrome124", timeout=REQUEST_TIMEOUT)
         if res.status_code != 200:
-            print(f"[CATALOG SYNC] HTTP {res.status_code} for {venue_code} ({url})")
-            return []
+            return vcode, ccode, [], res.status_code
 
-        # Real movies playing at this cinema have the city in their URL: /movies/{city_slug}/.../{eventCode}
-        # Bottom SEO and trending links do not have the city slug in the URL path.
-        pattern = rf'<a\s+href="[^"]*?/movies/{city_slug}/([^"]+)/(ET\d{{8}})"[^>]*>([^<]+)</a>'
+        # Method 1: Extract from React window.__INITIAL_STATE__ (highest quality clean titles)
+        if "window.__INITIAL_STATE__" in res.text:
+            idx = res.text.find("window.__INITIAL_STATE__ = ")
+            if idx != -1:
+                raw = res.text[idx + 27:]
+                try:
+                    data, _ = json.JSONDecoder().raw_decode(raw)
+                    queries = data.get("venueShowtimesFunctionalApi", {}).get("queries", {})
+                    for qk in queries:
+                        if "getShowtimesByVenue" in qk:
+                            events = queries[qk].get("data", {}).get("showDetailsTransformed", {}).get("Event", [])
+                            for e in events:
+                                title = e.get("EventTitle")
+                                child_codes = [ce.get("EventCode") for ce in e.get("ChildEvents", []) if ce.get("EventCode")]
+                                code = child_codes[0] if child_codes else None
+                                if title and code and code not in seen:
+                                    seen.add(code)
+                                    movies.append({"code": code, "title": title.strip()})
+                except Exception:
+                    pass
+
+        # Method 2: Extract from HTML links as fallback/supplement
+        # Filters out bottom SEO/footer links by enforcing /movies/{city_slug}/ in path
+        pattern = rf'<a\s+href="[^"]*?/movies/{cslug}/([^"]+)/(ET\d{{8}})"[^>]*>([^<]+)</a>'
         matches = re.findall(pattern, res.text)
-        seen = set()
-        movies = []
-
-        for slug, code, raw_title in matches:
+        for _, code, raw_title in matches:
             if code not in seen:
                 seen.add(code)
                 clean_title = html.unescape(raw_title).strip()
+                # Clean up any trailing age rating like (UA16+) or (A)
+                clean_title = re.sub(r"\s*\([UA160-9+]+|\s*\(A\)|\s*\(U\)", "", clean_title).strip()
                 movies.append({"code": code, "title": clean_title})
 
-        return movies
-    except Exception as e:
-        print(f"[CATALOG SYNC] Error scraping {venue_code}: {e}")
-        return []
+        return vcode, ccode, movies, 200
 
-def push_venue_movies_to_cloudflare(token: str, venue_code: str, movies: list) -> bool:
+    except Exception:
+        return vcode, ccode, [], 0
+
+
+def push_batch_to_cloudflare(token: str, venues_batch: dict) -> bool:
+    """Push a batch of venue movie lists to Cloudflare Worker KV."""
+    if not venues_batch:
+        return True
+
+    url = f"{CF_WORKER_URL}/api/movies/sync?token={token}"
+    data = json.dumps({"venues": venues_batch}).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=data,
+        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            return resp.status == 200
+    except Exception as e:
+        print(f"[CATALOG SYNC] Failed to push batch of {len(venues_batch)} venues: {e}")
+        return False
+
+
+def push_city_movies_to_cloudflare(token: str, city_code: str, movies: list) -> bool:
+    """Push aggregated city-wide movie list to Cloudflare KV."""
     if not movies:
         return False
 
     url = f"{CF_WORKER_URL}/api/movies/sync?token={token}"
-    data = json.dumps({"venueCode": venue_code, "movies": movies}).encode("utf-8")
+    data = json.dumps({"cityCode": city_code, "movies": movies}).encode("utf-8")
     req = urllib.request.Request(
         url,
         data=data,
@@ -146,46 +206,35 @@ def push_venue_movies_to_cloudflare(token: str, venue_code: str, movies: list) -
 
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
-            return True
+            return resp.status == 200
     except Exception as e:
-        print(f"[CATALOG SYNC] Failed to push movies for {venue_code}: {e}")
+        print(f"[CATALOG SYNC] Failed to push city movies for {city_code}: {e}")
         return False
 
-def sync_city_wide_movies(token: str, city_code: str) -> int:
-    url = f"{CF_WORKER_URL}/api/movies/sync?token={token}"
-    headers = {
-        "x-region-code": city_code,
-        "Cookie": f"Rgn=|Code={city_code}|",
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/124.0.0.0 Safari/537.36"
-        ),
-    }
 
+def scrape_explore_city_movies(city_slug: str) -> list:
+    """Scrape featured/upcoming movies from city's BookMyShow explore page."""
+    url = f"https://in.bookmyshow.com/explore/movies-{city_slug}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Referer": "https://in.bookmyshow.com/",
+    }
     try:
-        res = cffi_requests.get(
-            "https://in.bookmyshow.com/serv/getData?cmd=QUICKBOOK&type=MT",
-            headers=headers,
-            timeout=15,
-            impersonate="chrome124"
-        )
+        res = cffi_requests.get(url, headers=headers, impersonate="chrome124", timeout=8)
         if res.status_code == 200:
-            events = res.json().get("moviesData", {}).get("BookMyShow", {}).get("arrEvents", [])
-            movies = [{"code": e["EventCode"], "title": e["EventTitle"]} for e in events if e.get("EventCode") and e.get("EventTitle")]
-            if movies:
-                data = json.dumps({"cityCode": city_code, "movies": movies}).encode("utf-8")
-                req = urllib.request.Request(
-                    url,
-                    data=data,
-                    headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
-                    method="POST"
-                )
-                with urllib.request.urlopen(req, timeout=15) as resp:
-                    return len(movies)
-    except Exception as e:
-        print(f"[CATALOG SYNC] City sync notice for {city_code}: {e}")
-    return 0
+            matches = re.findall(rf"/movies/{city_slug}/([^/]+)/(ET\d{{8}})", res.text)
+            seen = set()
+            movies = []
+            for slug, code in matches:
+                if code not in seen:
+                    seen.add(code)
+                    title = slug.replace("-", " ").title()
+                    movies.append({"code": code, "title": title})
+            return movies
+    except Exception:
+        pass
+    return []
+
 
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -193,47 +242,129 @@ def main():
         print("Error: TELEGRAM_BOT_TOKEN environment variable is not set.")
         sys.exit(1)
 
-    print(f"[{datetime.datetime.now()}] === Starting Daily Cinema Catalog Sync ===")
+    start_time = time.time()
+    print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] === Starting All-India Cinema Catalog Sync ===")
 
-    venues, cities = get_active_venues_and_cities(token)
-    print(f"[CATALOG SYNC] Found {len(venues)} target cinema hall(s) across {len(cities)} cities.\n")
+    # 1. Load Directory
+    cities, venues_by_city = load_directory()
+    total_venues = sum(len(v) for v in venues_by_city.values())
+    print(f"[CATALOG SYNC] Loaded {len(cities)} cities and {total_venues} cinema halls.")
 
+    # 2. Identify Priority User-Tracked Venues
+    tracked_venues = get_user_tracked_venues(token)
+    if tracked_venues:
+        print(f"[CATALOG SYNC] Found {len(tracked_venues)} active user-tracked cinema hall(s) (Priority 1).")
+
+    # 3. Build Queue (Priority user venues first, then all remaining venues)
+    queue = []
+    seen_venues = set()
+
+    # Priority 1: User-tracked venues
+    for vcode, info in tracked_venues.items():
+        queue.append((info["cityCode"], info["citySlug"], vcode, info["name"]))
+        seen_venues.add(vcode)
+
+    # Priority 2: All remaining venues from all 87 cities
+    for ccode, venues in venues_by_city.items():
+        cinfo = cities.get(ccode, {})
+        cslug = cinfo.get("slug", ccode.lower())
+        for v in venues:
+            vcode = v["code"]
+            if vcode not in seen_venues:
+                queue.append((ccode, cslug, vcode, v["name"]))
+                seen_venues.add(vcode)
+
+    limit = os.getenv("MAX_VENUES_LIMIT")
+    if limit:
+        try:
+            lim_val = int(limit)
+            queue = queue[:lim_val]
+            print(f"[CATALOG SYNC] (Testing mode) Limited queue to first {lim_val} venues.")
+        except ValueError:
+            pass
+
+    print(f"[CATALOG SYNC] Total venues queued for scraping: {len(queue)}")
+    print(f"[CATALOG SYNC] Running concurrent sync with {MAX_WORKERS} workers...\n")
+
+    # 4. Concurrently Scrape Venues and Push in Batches
     synced_venues = 0
-    total_movie_entries = 0
+    total_movie_instances = 0
+    batch = {}
+    city_movies_map = {}  # ccode -> dict of code: title
+    completed_count = 0
+    batch_num = 1
 
-    # 1. Sync specific cinema hall catalogs
-    for idx, v in enumerate(venues, 1):
-        v_code = v["code"]
-        v_name = v["name"]
-        c_slug = v["citySlug"]
-        v_slug = slugify(v_name)
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        future_to_venue = {executor.submit(scrape_venue_movies, item): item for item in queue}
 
-        print(f"[{idx}/{len(venues)}] Scraping movies for {v_name} ({v_code})...")
-        movies = scrape_cinema_movies(c_slug, v_slug, v_code)
+        for future in as_completed(future_to_venue):
+            completed_count += 1
+            vcode, ccode, movies, status = future.result()
 
-        if movies:
-            ok = push_venue_movies_to_cloudflare(token, v_code, movies)
-            if ok:
+            if movies:
+                batch[vcode] = movies
                 synced_venues += 1
-                total_movie_entries += len(movies)
-                print(f"  -> Synced {len(movies)} movies to Cloudflare KV for {v_code}.")
-            else:
-                print(f"  -> Failed to push {len(movies)} movies for {v_code}.")
-        else:
-            print(f"  -> No movies found or 404 for {v_code}.")
+                total_movie_instances += len(movies)
 
-        time.sleep(1.5)  # Polite pacing between requests
+                # Accumulate for city-wide catalog
+                if ccode not in city_movies_map:
+                    city_movies_map[ccode] = {}
+                for m in movies:
+                    city_movies_map[ccode][m["code"]] = m["title"]
 
-    # 2. Sync city-wide catalogs
-    print(f"\n[CATALOG SYNC] Syncing city-wide movie catalogs for {len(cities)} cities...")
-    for c_code, c_slug in cities:
-        count = sync_city_wide_movies(token, c_code)
-        if count > 0:
-            print(f"  -> Synced {count} city-wide movies for {c_code} ({c_slug}).")
-        time.sleep(1.0)
+            # Push batch when threshold reached
+            if len(batch) >= BATCH_SIZE:
+                ok = push_batch_to_cloudflare(token, batch)
+                status_str = "OK" if ok else "FAILED"
+                print(
+                    f"  [{completed_count}/{len(queue)}] Batch #{batch_num} pushed to Cloudflare: "
+                    f"{len(batch)} venues ({status_str})"
+                )
+                batch_num += 1
+                batch = {}
 
-    print(f"\n[{datetime.datetime.now()}] === Cinema Catalog Sync Completed ===")
-    print(f"Summary: Successfully updated {synced_venues}/{len(venues)} cinema halls with {total_movie_entries} movie listings.")
+            # Progress log every 100 venues
+            if completed_count % 100 == 0 or completed_count == len(queue):
+                pct = (completed_count / len(queue)) * 100
+                print(
+                    f"[PROGRESS] {completed_count}/{len(queue)} venues processed ({pct:.1f}%) | "
+                    f"{synced_venues} active cinemas found"
+                )
+
+    # Flush remaining batch
+    if batch:
+        ok = push_batch_to_cloudflare(token, batch)
+        status_str = "OK" if ok else "FAILED"
+        print(f"  Final Batch #{batch_num} pushed to Cloudflare: {len(batch)} venues ({status_str})")
+
+    # 5. Push Aggregated City-Wide Catalogs
+    print(f"\n[CATALOG SYNC] Syncing city-wide movie catalogs for {len(city_movies_map)} cities...")
+    cities_synced = 0
+    for ccode, movies_dict in city_movies_map.items():
+        cinfo = cities.get(ccode, {})
+        cslug = cinfo.get("slug", ccode.lower())
+
+        # Merge with city explore page if available
+        explore_movies = scrape_explore_city_movies(cslug)
+        for em in explore_movies:
+            if em["code"] not in movies_dict:
+                movies_dict[em["code"]] = em["title"]
+
+        final_movies = [{"code": k, "title": v} for k, v in movies_dict.items()]
+        if final_movies:
+            ok = push_city_movies_to_cloudflare(token, ccode, final_movies)
+            if ok:
+                cities_synced += 1
+
+    elapsed = time.time() - start_time
+    print(f"\n[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] === All-India Cinema Catalog Sync Completed ===")
+    print(f"Summary:")
+    print(f"  • Total Venues Scraped: {len(queue)}")
+    print(f"  • Cinema Halls with Active Shows: {synced_venues}")
+    print(f"  • Total Cinema-Movie Listings Mapped: {total_movie_instances}")
+    print(f"  • Cities Updated with Full Catalogs: {cities_synced}/{len(cities)}")
+    print(f"  • Total Time Elapsed: {elapsed:.2f} seconds ({elapsed/60:.1f} minutes)")
+
 
 if __name__ == "__main__":
     main()
