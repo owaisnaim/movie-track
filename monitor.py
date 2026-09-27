@@ -537,19 +537,23 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
                                     "url": booking_url
                                 })
 
-    if len(known_sessions) == 0:
-        print(f"[DYNAMIC] Baseline seeded with {len(current_seen_sessions)} shows for {movie_title}.")
-        sync_dynamic_tracker(token, tracker["id"], list(current_seen_sessions))
-        return False
-
     if new_shows:
-        print(f"[DYNAMIC] 🚨 Found {len(new_shows)} NEW SHOW(S) for {movie_title}!")
+        is_first_drop = len(known_sessions) == 0
+        header_title = "🚨 *SHOWS OPEN ON BOOKMYSHOW!* 🚨" if is_first_drop else "🚨 *NEW SHOWS ADDED ON BOOKMYSHOW!* 🚨"
+        print(f"[DYNAMIC] 🚨 Found {len(new_shows)} show(s) for {movie_title} (first_drop={is_first_drop})!")
+
+        # Sort new shows chronologically
+        new_shows.sort(key=lambda s: (s.get("date", ""), s.get("time", "")))
+
         alert_lines = []
         for s in new_shows[:10]:
             alert_lines.append(f"• *{s['date']}* at *{s['time']}* ({s['screen']})\n  📍 {s['venue']}")
 
+        if len(new_shows) > 10:
+            alert_lines.append(f"_...and {len(new_shows) - 10} more show(s)_")
+
         alert_text = (
-            f"🚨 *NEW SHOWS ADDED ON BOOKMYSHOW!* 🚨\n\n"
+            f"{header_title}\n\n"
             f"🎬 *{movie_title}*\n\n"
             + "\n\n".join(alert_lines) + "\n\n"
             f"🎟️ [Book Instantly on BookMyShow]({new_shows[0]['url']})\n\n"
