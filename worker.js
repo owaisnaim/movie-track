@@ -389,11 +389,6 @@ export default {
       console.error("Fetch handler error:", err);
       return new Response("OK", { status: 200 });
     }
-  },
-
-  // 2. 24/7 Autonomous Scanner (Cloudflare Cron Trigger every 3 mins)
-  async scheduled(event, env, ctx) {
-    ctx.waitUntil(scanAllTrackers(env));
   }
 };
 
