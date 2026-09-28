@@ -926,20 +926,12 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
           const match = title.match(/\(([^)]+)\)$/);
           let tag = match ? match[1].replace(/English\s*|Hindi\s*|Telugu\s*|Tamil\s*/i, "").trim() : "2D";
           if (!tag) tag = "2D";
-          const lower = tag.toLowerCase();
-          if (lower.includes("barco") || lower.includes("hdr") || (v.code === "PRHN" && lower.includes("pcx"))) {
-            tag = "PCX";
-          }
           return tag;
         }).filter(f => f && f.toLowerCase() !== "standard" && f.toLowerCase() !== "standard screen");
 
-        if (v.code === "PRHN" && isAvengers) {
-          formats = ["PCX", "3D", "2D"];
-        }
-
         const formatPriority = f => {
           const l = f.toLowerCase();
-          if (l.includes("pcx") || l.includes("imax") || l.includes("4dx") || l.includes("infinity")) return 0;
+          if (l.includes("imax") || l.includes("4dx") || l.includes("hdr") || l.includes("barco") || l.includes("screenx") || l.includes("ice") || l.includes("mx4d") || l.includes("infinity")) return 0;
           if (l.includes("3d")) return 1;
           return 2;
         };
@@ -955,14 +947,6 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
             fullTitle: title
           };
         });
-
-        if (v.code === "PRHN" && isAvengers) {
-          variants = [
-            { code: "ET00518791", formatTag: "English HDR By Barco", fullTitle: "Avengers Endgame: Encore (English HDR By Barco)" },
-            { code: "ET00516731", formatTag: "English 3D", fullTitle: "Avengers Endgame: Encore (English 3D)" },
-            { code: "ET00514163", formatTag: "English 2D", fullTitle: "Avengers Endgame: Encore (English 2D)" }
-          ];
-        }
 
         matchingTheatres.push({
           code: v.code,
@@ -982,19 +966,7 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
   // 3. Fallback: Query live BookMyShow SHOWTIMES_API
   try {
     const liveTheatres = await fetchTheatresForMovieLive(cityCode, Array.from(variantCodes), env);
-    if (liveTheatres && liveTheatres.length > 0) {
-      for (const lt of liveTheatres) {
-        if (lt.code === "PRHN" && isAvengers) {
-          lt.formats = ["PCX", "3D", "2D"];
-          lt.variants = [
-            { code: "ET00518791", formatTag: "English HDR By Barco", fullTitle: "Avengers Endgame: Encore (English HDR By Barco)" },
-            { code: "ET00516731", formatTag: "English 3D", fullTitle: "Avengers Endgame: Encore (English 3D)" },
-            { code: "ET00514163", formatTag: "English 2D", fullTitle: "Avengers Endgame: Encore (English 2D)" }
-          ];
-        }
-      }
       return liveTheatres;
-    }
   } catch (e) {}
 
   // 4. Zero-guessing: If not yet playing anywhere, return popular venues with empty formats so user can track
@@ -1040,9 +1012,7 @@ async function fetchTheatresForMovieLive(cityCode, eventCodes, env) {
             for (const s of item.showtimes || []) {
               let fmt = s.screenAttr || s.additionalData?.screenName || "2D";
               const fLower = fmt.toLowerCase();
-              if (fLower.includes("barco") || fLower.includes("hdr") || (vCode === "PRHN" && fLower.includes("pcx"))) {
-                fmt = "PCX";
-              } else if (fLower === "standard" || fLower === "standard screen") {
+              if (fLower === "standard" || fLower === "standard screen") {
                 fmt = "2D";
               }
               vEntry.formats.add(fmt);
@@ -1078,53 +1048,29 @@ async function fetchTheatresForMovieLive(cityCode, eventCodes, env) {
 // -------------------------------------------------------------
 
 function formatScreenLabel(tag, venueCode = "") {
-  const lower = (tag || "").toLowerCase();
+  const cleanTag = (tag || "").trim();
+  const lower = cleanTag.toLowerCase();
   
-  if (lower.includes("barco") || lower.includes("hdr") || lower.includes("pcx") || (venueCode === "PRHN" && (lower.includes("screen 6") || lower.includes("large screen")))) {
-    return { emoji: "🌟", label: "PCX / Large Screen (Barco HDR)", isPremium: true };
+  const isPremium = lower.includes("imax") ||
+    lower.includes("4dx") ||
+    lower.includes("hdr") ||
+    lower.includes("barco") ||
+    lower.includes("pcx") ||
+    lower.includes("screenx") ||
+    lower.includes("ice") ||
+    lower.includes("mx4d") ||
+    lower.includes("infinity");
+
+  let emoji = "🎟️";
+  if (isPremium) {
+    emoji = "🌟";
+  } else if (lower.includes("3d")) {
+    emoji = "👓";
   }
-  if (lower.includes("imax 3d")) {
-    return { emoji: "🌟", label: "IMAX 3D", isPremium: true };
-  }
-  if (lower.includes("imax 2d") || lower.includes("imax")) {
-    return { emoji: "🌟", label: "IMAX 2D", isPremium: true };
-  }
-  if (lower.includes("4dx 3d")) {
-    return { emoji: "🌟", label: "4DX 3D", isPremium: true };
-  }
-  if (lower.includes("4dx")) {
-    return { emoji: "🌟", label: "4DX", isPremium: true };
-  }
-  if (lower.includes("mx4d 3d")) {
-    return { emoji: "🌟", label: "MX4D 3D", isPremium: true };
-  }
-  if (lower.includes("mx4d")) {
-    return { emoji: "🌟", label: "MX4D", isPremium: true };
-  }
-  if (lower.includes("infinity vsn 3d") || lower.includes("infinity vision 3d")) {
-    return { emoji: "🌟", label: "Infinity Vision 3D", isPremium: true };
-  }
-  if (lower.includes("infinity")) {
-    return { emoji: "🌟", label: "Infinity Vision (Screen 1)", isPremium: true };
-  }
-  if (lower.includes("screenx")) {
-    return { emoji: "🌟", label: "ScreenX", isPremium: true };
-  }
-  if (lower.includes("ice")) {
-    return { emoji: "🌟", label: "ICE Immersive", isPremium: true };
-  }
-  if (lower.includes("3d")) {
-    const lang = lower.includes("hindi") ? "Hindi" : lower.includes("telugu") ? "Telugu" : lower.includes("kannada") ? "Kannada" : lower.includes("tamil") ? "Tamil" : "English";
-    return { emoji: "👓", label: `${lang} 3D`, isPremium: false };
-  }
-  if (lower.includes("2d")) {
-    const lang = lower.includes("hindi") ? "Hindi" : lower.includes("telugu") ? "Telugu" : lower.includes("kannada") ? "Kannada" : lower.includes("tamil") ? "Tamil" : "English";
-    return { emoji: "🎟️", label: `${lang} 2D`, isPremium: false };
-  }
-  if (!tag || lower === "standard" || lower === "standard screen") {
-    return { emoji: "🎟️", label: "Regular 2D Screen", isPremium: false };
-  }
-  return { emoji: "🎟️", label: tag, isPremium: false };
+
+  // Preserve exact BookMyShow format name without artificial aliases
+  const label = cleanTag || "2D";
+  return { emoji, label, isPremium };
 }
 
 async function sendTheatreShowsSelection(botToken, chatId, cityCode, venueCode, masterCode, messageId = null, env = null) {
@@ -1233,19 +1179,6 @@ async function getShowsForVenueAndMovie(cityCode, venueCode, movieGroup, env) {
   let variants = [];
   const showSummaries = [];
 
-  const isAvengers = movieGroup.baseTitle.toLowerCase().includes("avengers") ||
-    movieGroup.variants.some(v => typeof AVENGERS_ALL !== "undefined" && AVENGERS_ALL.includes(v.code)) ||
-    (typeof AVENGERS_ALL !== "undefined" && AVENGERS_ALL.includes(movieGroup.masterCode));
-
-  if (venueCode === "PRHN" && isAvengers) {
-    variants = [
-      { code: "ET00518791", formatTag: "English HDR By Barco", fullTitle: "Avengers Endgame: Encore (English HDR By Barco)" },
-      { code: "ET00516731", formatTag: "English 3D", fullTitle: "Avengers Endgame: Encore (English 3D)" },
-      { code: "ET00514163", formatTag: "English 2D", fullTitle: "Avengers Endgame: Encore (English 2D)" }
-    ];
-    return { variants, showSummaries, hasPremium: true, hasMultiLang: false, primaryCode: "ET00514163" };
-  }
-
   if (venueCode === "ALL") {
     variants = [...movieGroup.variants];
   } else {
@@ -1294,7 +1227,7 @@ async function getShowsForVenueAndMovie(cityCode, venueCode, movieGroup, env) {
 
   for (const v of variants) {
     const lower = (v.formatTag || "").toLowerCase();
-    if (lower.includes("imax") || lower.includes("4dx") || lower.includes("pcx") || lower.includes("mx4d") || lower.includes("infinity") || venueCode === "PRHN") {
+    if (lower.includes("imax") || lower.includes("4dx") || lower.includes("hdr") || lower.includes("barco") || lower.includes("pcx") || lower.includes("screenx") || lower.includes("ice") || lower.includes("mx4d") || lower.includes("infinity")) {
       hasPremium = true;
     }
     if (lower.includes("english")) hasEnglish = true;
@@ -1495,19 +1428,11 @@ async function sendMovieSelection(botToken, chatId, cityCode, venueCode, page = 
       const match = v.fullTitle?.match(/\(([^)]+)\)$/);
       let tag = match ? match[1].replace(/English\s*|Hindi\s*|Telugu\s*|Tamil\s*/i, "").trim() : "2D";
       if (!tag) tag = "2D";
-      if (venueCode === "PRHN" && (tag.toLowerCase().includes("barco") || tag.toLowerCase().includes("hdr"))) tag = "PCX";
       return tag;
     });
-    const isAvengers = g.baseTitle.toLowerCase().includes("avengers") ||
-      g.variants.some(v => typeof AVENGERS_ALL !== "undefined" && AVENGERS_ALL.includes(v.code));
-    if (venueCode === "PRHN" && isAvengers) {
-      if (!fmtList.includes("PCX")) fmtList.push("PCX");
-      if (!fmtList.includes("3D")) fmtList.push("3D");
-      if (!fmtList.includes("2D")) fmtList.push("2D");
-    }
     const formatPriority = f => {
       const l = f.toLowerCase();
-      if (l.includes("pcx") || l.includes("imax") || l.includes("4dx") || l.includes("infinity")) return 0;
+      if (l.includes("imax") || l.includes("4dx") || l.includes("hdr") || l.includes("barco") || l.includes("screenx") || l.includes("ice") || l.includes("mx4d") || l.includes("infinity")) return 0;
       if (l.includes("3d")) return 1;
       return 2;
     };
@@ -1950,7 +1875,7 @@ async function createTracker(botToken, chatId, eventCode, venueCode, filter, cit
   if (filter === "EXACT") filterDesc = "Exact Selected Format";
   else if (filter === "ALL") filterDesc = "Any Screen / Format";
   else if (filter === "BOTH") filterDesc = "English & Hindi Formats";
-  else if (filter === "PCX") filterDesc = "IMAX / 4DX / PCX Premium";
+  else if (filter === "PREMIUM" || filter === "PCX") filterDesc = "Premium Screens (IMAX / Barco / 4DX)";
   else if (filter === "3D") filterDesc = "3D Shows Only";
   else if (filter === "2D") filterDesc = "2D Shows Only";
 
