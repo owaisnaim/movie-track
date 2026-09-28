@@ -1,6 +1,6 @@
-# Movie Track — BookMyShow Ticket Tracker
+# Movie Tracker — BookMyShow Ticket Tracker
 
-[![Workflow Status](https://img.shields.io/github/actions/workflow/status/owaisnaim/movie-track/movie-tracker.yml?branch=main&label=Ticket%20Monitor&style=flat-square)](https://github.com/owaisnaim/movie-track/actions/workflows/movie-tracker.yml)
+[![Workflow Status](https://img.shields.io/github/actions/workflow/status/owaisnaim/movie-tracker/movie-tracker.yml?branch=main&label=Ticket%20Monitor&style=flat-square)](https://github.com/owaisnaim/movie-tracker/actions/workflows/movie-tracker.yml)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20KV-orange?style=flat-square&logo=cloudflare)](https://workers.cloudflare.com/)
 [![Python](https://img.shields.io/badge/Python-3.12-blue?style=flat-square&logo=python)](https://python.org)
 [![Telegram Bot API](https://img.shields.io/badge/Telegram-Bot%20API-2CA5E0?style=flat-square&logo=telegram)](https://core.telegram.org/bots/api)
@@ -201,8 +201,8 @@ curl https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo
 To run a test scan locally:
 
 ```bash
-git clone https://github.com/owaisnaim/movie-track.git
-cd movie-track
+git clone https://github.com/owaisnaim/movie-tracker.git
+cd movie-tracker
 
 pip install -r requirements.txt
 
@@ -216,7 +216,7 @@ python monitor.py
 ## Project Structure
 
 ```text
-movie-track/
+movie-tracker/
 ├── .github/
 │   └── workflows/
 │       ├── movie-tracker.yml       # Background ticket scanner workflow
