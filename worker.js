@@ -328,6 +328,9 @@ export default {
             for (let t of trackers) {
               if (t.id === payload.trackerId) {
                 t.knownSessions = payload.knownSessions || [];
+                if (payload.isInitialized !== undefined) {
+                  t.isInitialized = payload.isInitialized;
+                }
                 updated = true;
               }
             }
@@ -1877,11 +1880,15 @@ async function createTracker(botToken, chatId, eventCode, venueCode, filter, cit
     isPaused: false,
     createdAt: new Date().toISOString(),
     knownSessions: [],
+    isInitialized: false,
   };
 
   try {
     const shows = await fetchShowsForTracker(tracker, env);
-    tracker.knownSessions = shows.map(s => s.sessionId);
+    if (shows && shows.length > 0) {
+      tracker.knownSessions = shows.map(s => s.sessionId);
+      tracker.isInitialized = true;
+    }
   } catch (e) {}
 
   if (env && env.TRACKER_DB) {
@@ -1892,13 +1899,17 @@ async function createTracker(botToken, chatId, eventCode, venueCode, filter, cit
   }
 
   const existingCount = tracker.knownSessions?.length || 0;
+  const existingDisplay = tracker.isInitialized
+    ? `${existingCount} (monitoring for new show drops)`
+    : `Syncing baseline on first scan (silent)`;
+
   const successText =
     `✅ *Ticket Tracker Activated!*\n\n` +
     `• City: *${city.name}*\n` +
     `• Theatre: *${tracker.venueName}*\n` +
     `• Movie: *${tracker.movieTitle}*\n` +
     `• Screen Format: *${formatName}*\n` +
-    `• Existing Shows: *${existingCount}* (monitoring for new show drops)\n\n` +
+    `• Existing Shows: *${existingDisplay}*\n\n` +
     `🔔 *You will receive an instant notification the moment a NEW show drops!*`;
 
   const keyboard = {
@@ -1937,6 +1948,12 @@ async function scanAllTrackers(env) {
 
       try {
         const currentShows = await fetchShowsForTracker(tracker, env);
+        if (tracker.isInitialized === false) {
+          tracker.knownSessions = currentShows.map(s => s.sessionId);
+          tracker.isInitialized = true;
+          updated = true;
+          continue;
+        }
         const knownSet = new Set(tracker.knownSessions || []);
         const newShows = currentShows.filter(s => !knownSet.has(s.sessionId));
 
@@ -2165,13 +2182,17 @@ async function sendTrackerList(botToken, chatId, env) {
     const displayTitle = (t.movieTitle || t.eventCode).replace(/\s*\([^)]*\)$/, "").replace(/[\(\)]+$/g, "").trim();
     const fmt = getTrackerFormatDesc(t);
     const existingCount = t.knownSessions?.length || 0;
+    const isInit = t.isInitialized !== false;
+    const showsDisplay = (!isInit && existingCount === 0)
+      ? "Syncing baseline on first scan"
+      : `${existingCount} (monitoring for new drops)`;
 
     const card =
       `🎬 *${displayTitle}*\n` +
       `• Status: *${status}*\n` +
       `• Theatre: ${t.venueName || t.venueCode}\n` +
       `• Screen Format: ${fmt}\n` +
-      `• Existing Shows: ${existingCount} (monitoring for new drops)`;
+      `• Existing Shows: ${showsDisplay}`;
 
     await sendTelegram(botToken, chatId, card, { inline_keyboard: buttons });
   }
@@ -2190,7 +2211,11 @@ async function sendStatusReport(botToken, chatId, env) {
     const displayTitle = (t.movieTitle || t.eventCode).replace(/\s*\([^)]*\)$/, "").replace(/[\(\)]+$/g, "").trim();
     const fmt = getTrackerFormatDesc(t);
     const existingCount = t.knownSessions?.length || 0;
-    text += `• *${displayTitle}* (${status})\n  Theatre: ${t.venueName}\n  Format: ${fmt}\n  Existing Shows: ${existingCount}\n\n`;
+    const isInit = t.isInitialized !== false;
+    const showsDisplay = (!isInit && existingCount === 0)
+      ? "Syncing baseline"
+      : `${existingCount}`;
+    text += `• *${displayTitle}* (${status})\n  Theatre: ${t.venueName}\n  Format: ${fmt}\n  Existing Shows: ${showsDisplay}\n\n`;
   }
   text += "💡 Use /list to pause, resume, or remove trackers.";
   await sendTelegram(botToken, chatId, text);

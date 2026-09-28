@@ -384,9 +384,13 @@ def get_dynamic_trackers(token: str) -> list:
         print(f"[DYNAMIC] Notice: Could not fetch dynamic trackers ({e})")
         return []
 
-def sync_dynamic_tracker(token: str, tracker_id: str, known_sessions: list):
+def sync_dynamic_tracker(token: str, tracker_id: str, known_sessions: list, is_initialized: bool = True):
     url = f"https://movie-track-bot.mustardshrek.workers.dev/api/trackers/sync?token={token}"
-    data = json.dumps({"trackerId": tracker_id, "knownSessions": known_sessions}).encode("utf-8")
+    data = json.dumps({
+        "trackerId": tracker_id,
+        "knownSessions": known_sessions,
+        "isInitialized": is_initialized
+    }).encode("utf-8")
     req = urllib.request.Request(
         url,
         data=data,
@@ -440,8 +444,12 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
     movie_title = tracker.get("movieTitle", "Movie")
     screen_filter = tracker.get("filter", "ANY")
     known_sessions = set(str(sid) for sid in tracker.get("knownSessions", []))
+    is_initialized = tracker.get("isInitialized")
+    if is_initialized is None:
+        # Backward compatibility: if tracker already has known sessions, treat as initialized
+        is_initialized = len(known_sessions) > 0
 
-    print(f"\n[DYNAMIC] 🔍 Checking tracker: {movie_title} in {city_code} ({venue_name}) | Filter: {screen_filter}")
+    print(f"\n[DYNAMIC] 🔍 Checking tracker: {movie_title} in {city_code} ({venue_name}) | Filter: {screen_filter} | Initialized: {is_initialized}")
 
     headers = {
         "User-Agent": (
@@ -459,6 +467,8 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
 
     new_shows = []
     current_seen_sessions = set()
+    matching_sessions = set()
+    fetch_successful = False
 
     for event_code in event_codes:
         url = f"{API_URL}?eventCode={event_code}&isDesktop=true&regionCode={city_code}&lat={city_lat}&lon={city_lon}"
@@ -468,6 +478,7 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
             if res.status_code != 200:
                 print(f"[DYNAMIC] HTTP {res.status_code} for {event_code}")
                 continue
+            fetch_successful = True
             initial_data = res.json()
         except Exception as e:
             print(f"[DYNAMIC] Error fetching event {event_code}: {e}")
@@ -528,6 +539,8 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
                                 if "3d" in screen_attr or "3d" in screen_name:
                                     continue
 
+                            matching_sessions.add(session_id)
+
                             if session_id not in known_sessions:
                                 show_time = str(show.get("title") or show_add.get("showTime", "Detected")).strip()
                                 d_str = f"{date_code[:4]}-{date_code[4:6]}-{date_code[6:8]}" if len(date_code) == 8 else (date_code or "Today")
@@ -540,6 +553,16 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
                                     "venue": v_name,
                                     "url": booking_url
                                 })
+
+    if not fetch_successful:
+        print(f"[DYNAMIC] Notice: Could not fetch showtimes for {movie_title} (network/HTTP issue). Will retry next run.")
+        return False
+
+    # Silent baseline capture on first scan:
+    if not is_initialized:
+        print(f"[DYNAMIC] 🎯 Initializing baseline for {movie_title}: recorded {len(matching_sessions)} existing shows (silent baseline, no false alarm).")
+        sync_dynamic_tracker(token, tracker["id"], list(matching_sessions), is_initialized=True)
+        return False
 
     if new_shows:
         is_first_drop = len(known_sessions) == 0
@@ -566,10 +589,10 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
 
         send_telegram_msg(token, chat_id, alert_text)
         updated_known = list(known_sessions.union({s["sessionId"] for s in new_shows}))
-        sync_dynamic_tracker(token, tracker["id"], updated_known)
+        sync_dynamic_tracker(token, tracker["id"], updated_known, is_initialized=True)
         return True
 
-    print(f"[DYNAMIC] No new shows for {movie_title} ({len(current_seen_sessions)} active).")
+    print(f"[DYNAMIC] No new shows for {movie_title} ({len(matching_sessions)} active matching shows).")
     return False
 
 def main():
