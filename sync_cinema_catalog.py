@@ -181,48 +181,32 @@ def scrape_venue_movies(item):
         return vcode, ccode, [], 0
 
 
-def push_venue_movies_to_cloudflare(token: str, venue_code: str, movies: list) -> bool:
-    """Push a single venue's movie list directly to Cloudflare Worker KV."""
-    if not movies:
-        return True
-
+def push_city_bundle_to_cloudflare(token: str, city_code: str, venues_map: dict, city_movies: list) -> bool:
+    """Push an entire city's scraped venues and aggregated movies in a single atomic HTTP POST."""
     url = f"{CF_WORKER_URL}/api/movies/sync?token={token}"
-    data = json.dumps({"venueCode": venue_code, "movies": movies}).encode("utf-8")
+    payload = {
+        "cityCode": city_code,
+        "venues": venues_map,
+        "movies": city_movies
+    }
+    data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         url,
         data=data,
-        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
         method="POST"
     )
 
-    try:
-        with urllib.request.urlopen(req, timeout=12) as resp:
-            return resp.status == 200
-    except Exception as e:
-        print(f"[CATALOG SYNC] Failed to push {venue_code}: {e}")
-        return False
-
-
-def push_city_movies_to_cloudflare(token: str, city_code: str, movies: list) -> bool:
-    """Push aggregated city-wide movie list to Cloudflare KV."""
-    if not movies:
-        return False
-
-    url = f"{CF_WORKER_URL}/api/movies/sync?token={token}"
-    data = json.dumps({"cityCode": city_code, "movies": movies}).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=data,
-        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
-        method="POST"
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return resp.status == 200
-    except Exception as e:
-        print(f"[CATALOG SYNC] Failed to push city movies for {city_code}: {e}")
-        return False
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                return resp.status == 200
+        except Exception as e:
+            if attempt == 2:
+                print(f"[CATALOG SYNC] Failed to push city {city_code} bundle after 3 attempts: {e}")
+                return False
+            time.sleep(1)
+    return False
 
 
 def scrape_explore_city_movies(city_slug: str) -> list:
@@ -263,102 +247,114 @@ def main():
     total_venues = sum(len(v) for v in venues_by_city.values())
     print(f"[CATALOG SYNC] Loaded {len(cities)} cities and {total_venues} cinema halls.")
 
-    # 2. Identify Priority User-Tracked Venues
+    # 2. Identify Priority User-Tracked Venues & Cities
     tracked_venues = get_user_tracked_venues(token)
+    priority_cities = set()
     if tracked_venues:
-        print(f"[CATALOG SYNC] Found {len(tracked_venues)} active user-tracked cinema hall(s) (Priority 1).")
+        print(f"[CATALOG SYNC] Found {len(tracked_venues)} active user-tracked cinema hall(s).")
+        for vcode, info in tracked_venues.items():
+            if info.get("cityCode"):
+                priority_cities.add(info["cityCode"])
 
-    # 3. Build Queue (Priority user venues first, then all remaining venues)
-    queue = []
-    seen_venues = set()
+    # Core high-traffic cities (Kanpur, Hyderabad, Mumbai, NCR, Bangalore, etc.)
+    core_cities = ["KANP", "HYD", "MUMBAI", "NCR", "BANG", "CHD", "PUNE", "KOLK", "CHEN"]
+    for c in core_cities:
+        priority_cities.add(c)
 
-    # Priority 1: User-tracked venues
-    for vcode, info in tracked_venues.items():
-        queue.append((info["cityCode"], info["citySlug"], vcode, info["name"]))
-        seen_venues.add(vcode)
+    # 3. Order Cities: Priority cities first, then remaining cities
+    ordered_cities = []
+    for ccode in priority_cities:
+        if ccode in venues_by_city and ccode not in ordered_cities:
+            ordered_cities.append(ccode)
 
-    # Priority 2: All remaining venues from all 87 cities
-    for ccode, venues in venues_by_city.items():
-        cinfo = cities.get(ccode, {})
-        cslug = cinfo.get("slug", ccode.lower())
-        for v in venues:
-            vcode = v["code"]
-            if vcode not in seen_venues:
-                queue.append((ccode, cslug, vcode, v["name"]))
-                seen_venues.add(vcode)
+    for ccode in venues_by_city.keys():
+        if ccode not in ordered_cities:
+            ordered_cities.append(ccode)
 
-    limit = os.getenv("MAX_VENUES_LIMIT")
-    if limit:
+    target_city = os.getenv("TARGET_CITY")
+    if target_city:
+        ordered_cities = [c for c in ordered_cities if c.upper() == target_city.upper()]
+        print(f"[CATALOG SYNC] Filtered to single target city: {target_city}")
+
+    limit_cities = os.getenv("MAX_CITIES_LIMIT")
+    if limit_cities:
         try:
-            lim_val = int(limit)
-            queue = queue[:lim_val]
-            print(f"[CATALOG SYNC] (Testing mode) Limited queue to first {lim_val} venues.")
+            lim_val = int(limit_cities)
+            ordered_cities = ordered_cities[:lim_val]
+            print(f"[CATALOG SYNC] Limited run to first {lim_val} cities.")
         except ValueError:
             pass
 
-    print(f"[CATALOG SYNC] Total venues queued for scraping: {len(queue)}")
-    print(f"[CATALOG SYNC] Running concurrent sync with {MAX_WORKERS} workers...\n")
+    print(f"[CATALOG SYNC] Total cities queued for sync: {len(ordered_cities)}")
+    print(f"[CATALOG SYNC] Running city-batched sync (max 6 workers per city)...\n")
 
-    # 4. Concurrently Scrape Venues and Push Directly to Cloudflare KV
-    synced_venues = 0
+    synced_cities = 0
+    total_active_venues = 0
     total_movie_instances = 0
-    city_movies_map = {}  # ccode -> dict of code: title
-    completed_count = 0
 
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_to_venue = {executor.submit(scrape_venue_movies, item): item for item in queue}
-
-        for future in as_completed(future_to_venue):
-            completed_count += 1
-            vcode, ccode, movies, status = future.result()
-
-            if movies:
-                ok = push_venue_movies_to_cloudflare(token, vcode, movies)
-                if ok:
-                    synced_venues += 1
-                    total_movie_instances += len(movies)
-
-                    # Accumulate for city-wide catalog
-                    if ccode not in city_movies_map:
-                        city_movies_map[ccode] = {}
-                    for m in movies:
-                        city_movies_map[ccode][m["code"]] = m["title"]
-
-            # Progress log every 50 venues
-            if completed_count % 50 == 0 or completed_count == len(queue):
-                pct = (completed_count / len(queue)) * 100
-                print(
-                    f"[PROGRESS] {completed_count}/{len(queue)} venues processed ({pct:.1f}%) | "
-                    f"{synced_venues} active cinemas synced"
-                )
-
-    # 5. Push Aggregated City-Wide Catalogs
-    print(f"\n[CATALOG SYNC] Syncing city-wide movie catalogs for {len(city_movies_map)} cities...")
-    cities_synced = 0
-    for ccode, movies_dict in city_movies_map.items():
+    for idx, ccode in enumerate(ordered_cities, 1):
+        venues = venues_by_city.get(ccode, [])
         cinfo = cities.get(ccode, {})
         cslug = cinfo.get("slug", ccode.lower())
+        cname = cinfo.get("name", ccode)
 
-        # Merge with city explore page if available
-        explore_movies = scrape_explore_city_movies(cslug)
-        for em in explore_movies:
-            if em["code"] not in movies_dict:
-                movies_dict[em["code"]] = em["title"]
+        city_start = time.time()
+        venue_items = [(ccode, cslug, v["code"], v["name"]) for v in venues]
 
-        final_movies = [{"code": k, "title": v} for k, v in movies_dict.items()]
-        if final_movies:
-            ok = push_city_movies_to_cloudflare(token, ccode, final_movies)
-            if ok:
-                cities_synced += 1
+        city_venues_map = {}
+        city_movies_dict = {}
+        active_in_city = 0
+
+        # Scrape all venues in this city concurrently
+        with ThreadPoolExecutor(max_workers=min(6, len(venue_items) or 1)) as executor:
+            futures = {executor.submit(scrape_venue_movies, it): it for it in venue_items}
+            for fut in as_completed(futures):
+                vcode, _, movies, status = fut.result()
+                city_venues_map[vcode] = movies
+                if movies:
+                    active_in_city += 1
+                    total_movie_instances += len(movies)
+                    for m in movies:
+                        city_movies_dict[m["code"]] = m["title"]
+
+        # Merge with city explore page if needed
+        try:
+            explore_movies = scrape_explore_city_movies(cslug)
+            for em in explore_movies:
+                if em["code"] not in city_movies_dict:
+                    city_movies_dict[em["code"]] = em["title"]
+        except Exception:
+            pass
+
+        final_city_movies = [{"code": k, "title": v} for k, v in city_movies_dict.items()]
+
+        # Push entire city bundle in 1 single HTTP request
+        ok = push_city_bundle_to_cloudflare(token, ccode, city_venues_map, final_city_movies)
+        city_elapsed = time.time() - city_start
+
+        if ok:
+            synced_cities += 1
+            total_active_venues += active_in_city
+            print(
+                f"[{idx}/{len(ordered_cities)}] {cname} ({ccode}): "
+                f"{len(venues)} venues scraped -> {active_in_city} active ({len(final_city_movies)} unique movies) "
+                f"synced in {city_elapsed:.2f}s [OK]"
+            )
+        else:
+            print(
+                f"[{idx}/{len(ordered_cities)}] {cname} ({ccode}): "
+                f"{len(venues)} venues scraped but push to Cloudflare failed [ERR]"
+            )
+
+        time.sleep(0.05)
 
     elapsed = time.time() - start_time
     print(f"\n[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] === All-India Cinema Catalog Sync Completed ===")
     print(f"Summary:")
-    print(f"  • Total Venues Scraped: {len(queue)}")
-    print(f"  • Cinema Halls with Active Shows: {synced_venues}")
-    print(f"  • Total Cinema-Movie Listings Mapped: {total_movie_instances}")
-    print(f"  • Cities Updated with Full Catalogs: {cities_synced}/{len(cities)}")
-    print(f"  • Total Time Elapsed: {elapsed:.2f} seconds ({elapsed/60:.1f} minutes)")
+    print(f"  * Total Cities Synced: {synced_cities}/{len(ordered_cities)}")
+    print(f"  * Total Active Cinema Halls: {total_active_venues}")
+    print(f"  * Total Movie Screenings Mapped: {total_movie_instances}")
+    print(f"  * Total Time Elapsed: {elapsed:.2f} seconds ({elapsed/60:.1f} minutes)")
 
 
 if __name__ == "__main__":
