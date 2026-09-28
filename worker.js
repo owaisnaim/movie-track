@@ -1840,13 +1840,34 @@ async function createTracker(botToken, chatId, eventCode, venueCode, filter, cit
     }
   }
 
+  let formatName = "";
+  const fmtMatch = movieTitle.match(/\(([^)]+)\)$/);
+  if (filter === "EXACT") {
+    formatName = fmtMatch ? `${fmtMatch[1].trim()} (Exact Match)` : "Exact Selected Format";
+  } else if (filter === "ALL") {
+    formatName = "All Formats / Screens";
+  } else if (filter === "BOTH") {
+    formatName = "Both English & Hindi Shows";
+  } else if (filter === "PREMIUM" || filter === "PCX") {
+    formatName = "Premium Screens (IMAX / Barco / 4DX)";
+  } else if (filter === "3D") {
+    formatName = "3D Shows Only";
+  } else if (filter === "2D") {
+    formatName = "2D Shows Only";
+  } else {
+    formatName = filter;
+  }
+
+  const cleanTitle = (movieTitle || "").replace(/\s*\([^)]*\)$/, "").replace(/[\(\)]+$/g, "").trim();
+
   const tracker = {
     id: trackerId,
     chatId: chatId,
     eventCode: finalEventCode,
     venueCode: venueCode,
     venueName: venueDisplayName,
-    movieTitle: movieTitle,
+    movieTitle: cleanTitle || movieTitle,
+    formatName: formatName,
     filter: filter,
     cityCode: cityCode,
     cityName: city.name,
@@ -1861,7 +1882,6 @@ async function createTracker(botToken, chatId, eventCode, venueCode, filter, cit
   try {
     const shows = await fetchShowsForTracker(tracker, env);
     tracker.knownSessions = shows.map(s => s.sessionId);
-    if (shows[0]?.movieTitle) tracker.movieTitle = shows[0].movieTitle;
   } catch (e) {}
 
   if (env && env.TRACKER_DB) {
@@ -1871,20 +1891,14 @@ async function createTracker(botToken, chatId, eventCode, venueCode, filter, cit
     await clearSession(env, chatId);
   }
 
-  let filterDesc = filter;
-  if (filter === "EXACT") filterDesc = "Exact Selected Format";
-  else if (filter === "ALL") filterDesc = "Any Screen / Format";
-  else if (filter === "BOTH") filterDesc = "English & Hindi Formats";
-  else if (filter === "PREMIUM" || filter === "PCX") filterDesc = "Premium Screens (IMAX / Barco / 4DX)";
-  else if (filter === "3D") filterDesc = "3D Shows Only";
-  else if (filter === "2D") filterDesc = "2D Shows Only";
-
+  const existingCount = tracker.knownSessions?.length || 0;
   const successText =
     `✅ *Ticket Tracker Activated!*\n\n` +
     `• City: *${city.name}*\n` +
     `• Theatre: *${tracker.venueName}*\n` +
     `• Movie: *${tracker.movieTitle}*\n` +
-    `• Screen Filter: *${filterDesc}*\n\n` +
+    `• Screen Format: *${formatName}*\n` +
+    `• Existing Shows: *${existingCount}* (monitoring for new show drops)\n\n` +
     `🔔 *You will receive an instant notification the moment a NEW show drops!*`;
 
   const keyboard = {
@@ -2109,6 +2123,25 @@ async function deleteTracker(env, trackerId) {
 // LIST & STATUS REPORTS
 // -------------------------------------------------------------
 
+function getTrackerFormatDesc(t) {
+  if (t.formatName) return t.formatName;
+  const match = (t.movieTitle || "").match(/\(([^)]+)\)$/);
+  if (match) return `${match[1].trim()} (Exact Match)`;
+
+  if (t.filter === "EXACT") {
+    const catTitle = (typeof MOVIES_CATALOG !== "undefined" && MOVIES_CATALOG[t.eventCode]) || "";
+    const catMatch = catTitle.match(/\(([^)]+)\)$/);
+    if (catMatch) return `${catMatch[1].trim()} (Exact Match)`;
+    return "Exact Selected Format";
+  }
+  if (t.filter === "ALL") return "All Formats / Screens";
+  if (t.filter === "BOTH") return "Both English & Hindi Shows";
+  if (t.filter === "PREMIUM" || t.filter === "PCX") return "Premium Screens (IMAX / Barco / 4DX)";
+  if (t.filter === "3D") return "3D Shows Only";
+  if (t.filter === "2D") return "2D Shows Only";
+  return t.filter || "All Formats";
+}
+
 async function sendTrackerList(botToken, chatId, env) {
   const trackers = await getTrackersForUser(env, chatId);
   if (!trackers || trackers.length === 0) {
@@ -2129,12 +2162,16 @@ async function sendTrackerList(botToken, chatId, env) {
       ]
     ];
 
+    const displayTitle = (t.movieTitle || t.eventCode).replace(/\s*\([^)]*\)$/, "").replace(/[\(\)]+$/g, "").trim();
+    const fmt = getTrackerFormatDesc(t);
+    const existingCount = t.knownSessions?.length || 0;
+
     const card =
-      `🎬 *${t.movieTitle || t.eventCode}*\n` +
+      `🎬 *${displayTitle}*\n` +
       `• Status: *${status}*\n` +
       `• Theatre: ${t.venueName || t.venueCode}\n` +
-      `• Screen Filter: ${t.filter}\n` +
-      `• Shows Known: ${t.knownSessions?.length || 0}`;
+      `• Screen Format: ${fmt}\n` +
+      `• Existing Shows: ${existingCount} (monitoring for new drops)`;
 
     await sendTelegram(botToken, chatId, card, { inline_keyboard: buttons });
   }
@@ -2150,7 +2187,10 @@ async function sendStatusReport(botToken, chatId, env) {
   let text = "📊 *Live Tracker Status Summary:*\n\n";
   for (const t of trackers) {
     const status = t.isPaused ? "⏸️ Paused" : "🟢 Active";
-    text += `• *${t.movieTitle || t.eventCode}* (${status})\n  Theatre: ${t.venueName}\n  Shows Known: ${t.knownSessions?.length || 0}\n\n`;
+    const displayTitle = (t.movieTitle || t.eventCode).replace(/\s*\([^)]*\)$/, "").replace(/[\(\)]+$/g, "").trim();
+    const fmt = getTrackerFormatDesc(t);
+    const existingCount = t.knownSessions?.length || 0;
+    text += `• *${displayTitle}* (${status})\n  Theatre: ${t.venueName}\n  Format: ${fmt}\n  Existing Shows: ${existingCount}\n\n`;
   }
   text += "💡 Use /list to pause, resume, or remove trackers.";
   await sendTelegram(botToken, chatId, text);
