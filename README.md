@@ -45,21 +45,22 @@ The system uses a decoupled two-tier architecture designed to run continuously o
 +--------------------------------------------------------------------------------+
 |                     CLOUDFLARE WORKER + KV (Control Plane)                     |
 |   - Handles Telegram Webhook requests without server infrastructure            |
-|   - Serves multi-step setup flow: City -> Cinema -> Movie -> Screen Format     |
+|   - Serves multi-step setup flow: City -> Movie -> Cinema Hall -> Screen/Format|
 |   - Stores user tracker configurations in Cloudflare KV (TRACKER_DB)           |
 |   - Exposes authenticated APIs: /api/trackers and /api/trackers/sync           |
 +---------------------------------------+----------------------------------------+
                                         |
-                         (Every 5 Mins Background Poll)
+                   (Periodic Poll via Cron / External Webhook)
                                         |
                                         v
 +--------------------------------------------------------------------------------+
 |                        GITHUB ACTIONS (Execution Engine)                       |
 |   - Scheduled runner (movie-tracker.yml) executing on Ubuntu                   |
-|   - Bypasses Cloudflare WAF using curl_cffi with Chrome 124 TLS impersonation  |
+|   - Bypasses BookMyShow WAF using curl_cffi with Chrome TLS impersonation      |
 |   - Pulls active tracker configs from Cloudflare KV                            |
 |   - Queries BookMyShow showtime APIs and detects newly opened sessions         |
-|   - Dispatches Telegram notifications to tracker owners                        |
+|   - Performs silent baseline initialization for newly created trackers         |
+|   - Dispatches instant Telegram notifications when genuine new shows drop      |
 |   - Syncs verified session IDs to KV to eliminate duplicate alerts             |
 +--------------------------------------------------------------------------------+
 ```
@@ -68,31 +69,26 @@ The system uses a decoupled two-tier architecture designed to run continuously o
 
 ## Features
 
-- **Autonomous 24/7 Monitoring**: Runs continuously in the background using GitHub Actions scheduled workflows and Cloudflare Workers.
+- **Autonomous 24/7 Monitoring**: Runs continuously in the background using GitHub Actions scheduled workflows or external cron services (e.g., cron-job.org).
 - **WAF Bypass**: Uses `curl_cffi` with Chrome 124 TLS fingerprint impersonation (JA3/JA4) to query BookMyShow endpoints without triggering Cloudflare anti-bot blocks or HTTP 429 rate limits.
+- **Silent Baseline Initialization (Zero False Alarms)**: Newly created trackers for ongoing movies capture the existing showtimes silently on their first scan. You will never receive false alarms for shows that were already open before tracker creation.
+- **Zero-Guessing Movie Catalog**: Automatically syncs confirmed active BookMyShow movies by city into Cloudflare KV, ensuring only movies actually running or upcoming in your city are selectable.
+- **Exact Official BMS Screen Formats**: Matches official BookMyShow attributes (e.g. `PCX Infinity Vis 3D`, `Infinity Vision 2D`, `IMAX 3D`, `4DX 3D`, `Screen 1`) without artificial labels or clutter.
 - **640+ Cinema Halls**: Pre-mapped database covering major metro areas including Kanpur, Lucknow, Hyderabad, Mumbai, NCR (Delhi/Gurgaon/Noida), Bengaluru, Pune, and Kolkata.
-- **Language and Format Granularity**:
-  - Distinct tracking for English, Hindi, and regional language releases across 3D and 2D formats.
-  - Option to track both English and Hindi versions simultaneously.
-  - Screen filters: PCX, IMAX, Screen 1, 3D Only, 2D Only, or All Screens.
-- **Baseline Seeding**: When a tracker is created, existing shows are seeded as the baseline. Alerts only trigger when genuine new showtimes are published.
-- **Deduplication**: Recorded session IDs are synchronized with Cloudflare KV so duplicate notifications are never sent.
 - **Multi-User Isolation**: Independent users can track different cinemas and movies simultaneously; alerts route directly to each user's Telegram chat ID.
 
 ---
 
 ## How It Works
 
-1. **Tracker Creation**: The user sends `/start` in Telegram and selects their city, cinema hall, movie, language, and screen format.
-2. **State Storage**: The Cloudflare Worker stores the tracker in Cloudflare KV (`TRACKER_DB`).
-3. **Scheduled Check**: Every 5 minutes, GitHub Actions runs `monitor.py`:
-   - Retrieves active trackers from Cloudflare KV via `GET /api/trackers?token=...`.
-   - Resolves target coordinates and headers for the selected city.
-   - Queries the BookMyShow showtime API for matching schedules.
-   - Applies the configured screen format filters.
-4. **Alerting**: When a new session ID is found:
-   - Sends a Telegram notification with date, time, screen, venue, and a direct booking link.
-   - Syncs the updated session IDs back to Cloudflare KV via `POST /api/trackers/sync?token=...`.
+1. **Tracker Creation**: The user sends `/start` in Telegram and selects City $\rightarrow$ Movie $\rightarrow$ Cinema Hall $\rightarrow$ Screen & Format.
+2. **State Storage**: The Cloudflare Worker saves the tracker to Cloudflare KV (`TRACKER_DB`) with `isInitialized: false`.
+3. **Scheduled Scan**: `monitor.py` is triggered periodically by GitHub Actions (via cron schedule or external webhook):
+   - Retrieves active dynamic trackers from Cloudflare KV via `GET /api/trackers?token=...`.
+   - Queries BookMyShow's showtime endpoints with residential/datacenter headers.
+   - Filters shows matching the cinema hall and target screen format.
+4. **Silent Baseline Capture**: On a tracker's very first scan, all pre-existing shows are recorded silently into Cloudflare KV (`isInitialized: true`). No false alarm is sent to Telegram.
+5. **Instant Alerting**: On subsequent scans, any brand-new show ID triggers an immediate Telegram notification with date, time, screen, cinema, and a direct booking link, and syncs the new session ID to KV via `POST /api/trackers/sync?token=...`.
 
 ---
 
@@ -196,7 +192,7 @@ curl https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo
 2. Add the repository secrets:
    - `TELEGRAM_BOT_TOKEN`: Your Telegram Bot API token.
    - `TELEGRAM_CHAT_ID`: Your Telegram numeric chat ID.
-3. The workflow file [`.github/workflows/movie-tracker.yml`](.github/workflows/movie-tracker.yml) will run every 5 minutes automatically.
+3. The workflow file [`.github/workflows/movie-tracker.yml`](.github/workflows/movie-tracker.yml) can be run via GitHub's scheduled cron, manual dispatch, or an external cron service (e.g. cron-job.org every 10 minutes).
 
 ---
 
@@ -223,10 +219,11 @@ python monitor.py
 movie-track/
 ├── .github/
 │   └── workflows/
-│       ├── movie-tracker.yml       # 5-minute background ticket scanner
+│       ├── movie-tracker.yml       # Background ticket scanner workflow
 │       └── test-telegram.yml       # Diagnostic test for Telegram messaging
-├── monitor.py                      # Core scraper and alert dispatch engine
-├── worker.js                       # Cloudflare Worker handling Telegram webhooks and KV state
+├── monitor.py                      # Core scraper, baseline initializer, and alert engine
+├── worker.js                       # Cloudflare Worker handling Telegram webhooks, UI, and KV state
+├── sync_cinema_catalog.py          # Cinema hall catalog and venue synchronization utility
 ├── requirements.txt                # Python dependencies (curl_cffi)
 ├── telegram_notify.py              # Fallback notification helper
 ├── telegram_test.py                # Credential testing utility
