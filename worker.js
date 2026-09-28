@@ -127,7 +127,32 @@ const VENUE_MOVIES_MAP = {"CSWO": ["ET00518793", "ET00516224", "ET00507738", "ET
 const MOVIES_CATALOG = {"ET00504928": "Heart of the Beast (English 2D)", "ET00506465": "VIBE", "ET00417686": "Mirzapur: The Movie", "ET00514345": "Primetime", "ET00507738": "Hanuman Ansh", "ET00518014": "Forgotten Island (English 3D)", "ET00498183": "Resident Evil (English 2D)", "ET00464392": "Daayra", "ET00512660": "Marham: Poetry & Music - Live on Stage", "ET00444235": "The Vvaan - Force of the Forrest", "ET00516734": "Avengers Endgame: Encore (English IMAX 2D)", "ET00519042": "Avengers Endgame: Encore (Hindi MX4D 3D)", "ET00505232": "Jayanti 2", "ET00516728": "Avengers Endgame: Encore (English MS-Infinity Vsn 3d)", "ET00516520": "Tujhya Aaila", "ET00518079": "Bandkhor", "ET00508081": "Runner", "ET00516731": "Avengers Endgame: Encore (English 3D)", "ET00513462": "Chatni", "ET00506305": "Mitrata", "ET00488644": "Love Lottery", "ET00518039": "Dorothy", "ET00518793": "Heart of the Beast (Hindi 3D)", "ET00489902": "Village Rockstars 2", "ET00518871": "Heart of the Beast (Marathi)", "ET00513554": "Mahakavya Shri Ramayan Katha", "ET00517503": "Resident Evil (Hindi 2D)", "ET00512696": "Pradhama Drishtiya Kuttakkar", "ET00502630": "Spider-Man: Brand New Day (Hindi 3D)", "ET00511400": "The Magic Faraway Tree", "ET00452034": "The Odyssey", "ET00509404": "Dahaan: The Evil Within", "ET00516729": "Avengers Endgame: Encore (English 4DX 3D)", "ET00516853": "Dhoomakethu", "ET00516813": "Meesaya Murukku 2", "ET00498186": "Resident Evil (Hindi 3D)", "ET00436621": "The Paradise (Telugu 2D)", "ET00516224": "Avengers Endgame: Encore (English MS - Infinity Vision)", "ET00518791": "Avengers Endgame: Encore (English HDR By Barco)", "ET00436631": "The Paradise (Hindi)", "ET00514533": "Avengers Endgame: Encore (Hindi 2D)", "ET00517490": "Om Ka Hari", "ET00517726": "Avengers Endgame: Encore (Hindi 3D)", "ET00516253": "Aasha", "ET00515640": "Devghar On Rent", "ET00442702": "Mandaadi (Malayalam)", "ET00509388": "Pidha Pachhi", "ET00518417": "Forgotten Island (Telugu 3D)", "ET00502386": "PAW Patrol: The Dino Movie", "ET00502829": "Bethlehem Kudumba Unit (Malayalam)", "ET00506419": "Fall 2: Deadpoint", "ET00517400": "Resident Evil (Hindi)", "ET00518868": "Forgotten Island (Kannada 3D)", "ET00517533": "Resident Evil (Telugu 3D)", "ET00502600": "Spider-Man: Brand New Day (English 3D)", "ET00516735": "Avengers Endgame: Encore (Hindi 2D)", "ET00513865": "4 Rivers 6 Ranges Chushi Gangdruk", "ET00514369": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne", "ET00498770": "Forgotten Island (Hindi 3D)", "ET00452562": "Na Ik Duje Ton Ghat Singh Vs Kaur 2 Na Ik Duje Ton Wake", "ET00517757": "Lutt Mubarak", "ET00514163": "Avengers Endgame: Encore (English 2D)", "ET00448286": "Adventure of Iceberg 7D - Combo", "ET00021991": "Roller Coaster 7D - Combo", "ET00448287": "Adventure of Jetcat 7D - Combo", "ET00510578": "Citylights", "ET00513356": "Spark", "ET00501839": "Common Man", "ET00412717": "Premada Oorali", "ET00495643": "Jadi: The Untold Side of If", "ET00378770": "Toxic: A Fairy Tale for Grown-ups", "ET00506432": "Haiwaan", "ET00511528": "America America 2", "ET00514267": "Heggana Muddu", "ET00516901": "Avengers Endgame: Encore (Kannada 3D)", "ET00514744": "Toss (Kannada)", "ET00517027": "Mahakavi", "ET00515244": "Bethlehem Kudumba Unit (Telugu 2D)", "ET00518216": "Rudrabhishekam", "ET00518866": "Heart of the Beast (Kannada)", "ET00419437": "Bingo", "ET00514426": "Toss (Telugu)", "ET00513616": "Amartha", "ET00518364": "Doctor 24/7", "ET00514378": "Video", "ET00518066": "Lenin Pandiyan", "ET00493836": "Insidious: Out of The Further", "ET00436633": "The Paradise (Tamil)", "ET00514261": "Mandaadi (Telugu 2D)", "ET00514535": "Avengers Endgame: Encore (Telugu 2D)", "ET00508816": "Happy Journey", "ET00518242": "The Paradise (Telugu)", "ET00436673": "Demon Slayer: Kimetsu no Yaiba Infinity Castle", "ET00505185": "Minions & Monsters", "ET00464932": "Secret Soldier", "ET00498185": "Resident Evil (Tamil 3D)", "ET00518043": "Avengers Endgame: Encore (Telugu 3D)", "ET00517748": "Anumana Pakshi", "ET00480372": "The Sheep Detectives", "ET00507281": "Kalyanam Kamaniyam Jeevitam", "ET00487933": "Irumudi", "ET00475599": "Jai Kishen", "ET00514373": "Mitti De Putt", "ET00501011": "Jindagi Once More", "ET00505635": "Tom & Cherry", "ET00470536": "Firki", "ET00519018": "Ha Tuj Maro Prem Chhe", "ET00517111": "Avengers Endgame: Encore (Telugu 2D)", "ET00514748": "Manjar", "ET00508355": "The Uprising", "ET00510603": "Psycho Ranga", "ET00517346": "Avengers Endgame: Encore (Tamil 3D)", "ET00518010": "Avengers Endgame: Encore (Tamil 2D)", "ET00515005": "The Dark Heaven", "ET00439318": "Awarapan 2", "ET00516472": "Aaram", "ET00447840": "Spider-Man: Brand New Day (2D)"};
 
 // Multi-lingual sibling code mapping for cross-language tracking
-const MULTILINGUAL_SIBLINGS = {"ET00516731": ["ET00516731", "ET00514163", "ET00516734", "ET00517726"], "ET00514163": ["ET00516731", "ET00514163", "ET00516734", "ET00517726", "ET00519042", "ET00518791", "ET00516224", "ET00516729", "ET00516728"], "ET00518791": ["ET00516731", "ET00514163", "ET00516734", "ET00517726", "ET00519042", "ET00518791", "ET00516224", "ET00516729", "ET00516728"], "ET00516734": ["ET00516731", "ET00514163", "ET00516734", "ET00517726", "ET00519042"], "ET00519042": ["ET00516731", "ET00514163", "ET00516734", "ET00517726", "ET00519042"], "ET00517726": ["ET00516731", "ET00514163", "ET00516734", "ET00517726"], "ET00514533": ["ET00516731", "ET00514163", "ET00516734", "ET00517726"], "ET00516735": ["ET00516731", "ET00514163", "ET00516734", "ET00517726"], "ET00516224": ["ET00516731", "ET00514163", "ET00516734", "ET00517726"], "ET00516728": ["ET00516731", "ET00514163", "ET00516734", "ET00517726"], "ET00498183": ["ET00498183", "ET00498186", "ET00517503"], "ET00498186": ["ET00498183", "ET00498186", "ET00517503"], "ET00517503": ["ET00498183", "ET00498186", "ET00517503"], "ET00517400": ["ET00498183", "ET00498186", "ET00517503"], "ET00504928": ["ET00504928", "ET00518793"], "ET00518793": ["ET00504928", "ET00518793"], "ET00518014": ["ET00518014", "ET00498770"], "ET00498770": ["ET00518014", "ET00498770"], "ET00502600": ["ET00502600", "ET00502630"], "ET00502630": ["ET00502600", "ET00502630"], "ET00436621": ["ET00436621", "ET00436631"], "ET00436631": ["ET00436621", "ET00436631"]};
+const AVENGERS_ALL = ["ET00514163", "ET00516731", "ET00518791", "ET00516734", "ET00517726", "ET00519042", "ET00516224", "ET00516729", "ET00516728", "ET00514533", "ET00516735"];
+const MULTILINGUAL_SIBLINGS = {
+  "ET00516731": AVENGERS_ALL,
+  "ET00514163": AVENGERS_ALL,
+  "ET00518791": AVENGERS_ALL,
+  "ET00516734": AVENGERS_ALL,
+  "ET00519042": AVENGERS_ALL,
+  "ET00517726": AVENGERS_ALL,
+  "ET00514533": AVENGERS_ALL,
+  "ET00516735": AVENGERS_ALL,
+  "ET00516224": AVENGERS_ALL,
+  "ET00516728": AVENGERS_ALL,
+  "ET00516729": AVENGERS_ALL,
+  "ET00498183": ["ET00498183", "ET00498186", "ET00517503"],
+  "ET00498186": ["ET00498183", "ET00498186", "ET00517503"],
+  "ET00517503": ["ET00498183", "ET00498186", "ET00517503"],
+  "ET00517400": ["ET00498183", "ET00498186", "ET00517503"],
+  "ET00504928": ["ET00504928", "ET00518793"],
+  "ET00518793": ["ET00504928", "ET00518793"],
+  "ET00518014": ["ET00518014", "ET00498770"],
+  "ET00498770": ["ET00518014", "ET00498770"],
+  "ET00502600": ["ET00502600", "ET00502630"],
+  "ET00502630": ["ET00502600", "ET00502630"],
+  "ET00436621": ["ET00436621", "ET00436631"],
+  "ET00436631": ["ET00436621", "ET00436631"]
+};
 // Fallback trending movies
 const POPULAR_MOVIES = [
   {
@@ -675,7 +700,7 @@ async function getMovieGroup(cityCode, masterCode, env) {
   for (const c of siblings) {
     const t = await resolveMovieTitle(c, null, cityCode, env);
     const mFmt = t.match(/\(([^)]+)\)$/);
-    variants.push({ code: c, formatTag: mFmt ? mFmt[1].trim() : "Standard", fullTitle: t });
+    variants.push({ code: c, formatTag: mFmt ? mFmt[1].trim() : "2D", fullTitle: t });
   }
   return { masterCode, baseTitle: base || title, variants };
 }
@@ -772,7 +797,12 @@ async function sendMovieTheatreSelection(botToken, chatId, cityCode, masterCode,
   ]);
 
   for (const th of slice) {
-    const fmtStr = th.formats && th.formats.length > 0 ? ` (${th.formats.slice(0, 3).join(", ")})` : "";
+    const cleanFormats = (th.formats || []).filter(f => {
+      if (!f) return false;
+      const l = f.trim().toLowerCase();
+      return l !== "standard" && l !== "standard screen";
+    });
+    const fmtStr = cleanFormats.length > 0 ? ` (${cleanFormats.slice(0, 3).join(", ")})` : "";
     const rawLabel = `${th.name}${fmtStr}`;
     const label = rawLabel.length > 36 ? rawLabel.slice(0, 34) + "…" : rawLabel;
     buttons.push([
@@ -841,13 +871,14 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
                 const c = m.code || m;
                 const title = m.title || (typeof MOVIES_CATALOG !== "undefined" ? MOVIES_CATALOG[c] : "") || "";
                 const match = title.match(/\(([^)]+)\)$/);
-                let tag = match ? match[1].replace(/English\s*|Hindi\s*|Telugu\s*|Tamil\s*/i, "").trim() : "Standard";
+                let tag = match ? match[1].replace(/English\s*|Hindi\s*|Telugu\s*|Tamil\s*/i, "").trim() : "2D";
+                if (!tag) tag = "2D";
                 const lower = tag.toLowerCase();
                 if (lower.includes("barco") || lower.includes("hdr") || (v.code === "PRHN" && lower.includes("pcx"))) {
                   tag = "PCX";
                 }
                 return tag;
-              });
+              }).filter(f => f && f.toLowerCase() !== "standard" && f.toLowerCase() !== "standard screen");
               const formatPriority = f => {
                 const l = f.toLowerCase();
                 if (l.includes("pcx") || l.includes("imax") || l.includes("4dx") || l.includes("infinity")) return 0;
@@ -858,14 +889,14 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
               return {
                 code: v.code,
                 name: v.name || v.title || v.code,
-                formats: uniqueFormats,
+                formats: uniqueFormats.length > 0 ? uniqueFormats : ["2D"],
                 variants: matched.map(m => {
                   const c = m.code || m;
                   const title = m.title || (typeof MOVIES_CATALOG !== "undefined" ? MOVIES_CATALOG[c] : "") || movieGroup.baseTitle;
                   const match = title.match(/\(([^)]+)\)$/);
                   return {
                     code: c,
-                    formatTag: match ? match[1].trim() : "Standard",
+                    formatTag: match ? match[1].trim() : "2D",
                     fullTitle: title
                   };
                 })
@@ -896,12 +927,18 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
 
   // 4. Default fallback: Return popular venues in city
   if (matchingTheatres.length > 0) return matchingTheatres;
-  return allVenues.slice(0, 10).map(v => ({
-    code: v.code,
-    name: v.name || v.title || v.code,
-    formats: movieGroup.variants.map(varnt => varnt.formatTag),
-    variants: movieGroup.variants
-  }));
+  return allVenues.slice(0, 10).map(v => {
+    let rawFormats = movieGroup.variants.map(varnt => varnt.formatTag).filter(f => f && f.toLowerCase() !== "standard" && f.toLowerCase() !== "standard screen");
+    if (v.code === "PRHN" && !rawFormats.includes("PCX")) {
+      rawFormats.unshift("PCX");
+    }
+    return {
+      code: v.code,
+      name: v.name || v.title || v.code,
+      formats: rawFormats.length > 0 ? rawFormats : ["2D"],
+      variants: movieGroup.variants
+    };
+  });
 }
 
 async function fetchTheatresForMovieLive(cityCode, eventCodes, env) {
@@ -934,7 +971,13 @@ async function fetchTheatresForMovieLive(cityCode, eventCodes, env) {
             }
             const vEntry = venuesMap.get(vCode);
             for (const s of item.showtimes || []) {
-              const fmt = s.screenAttr || s.additionalData?.screenName || "Standard";
+              let fmt = s.screenAttr || s.additionalData?.screenName || "2D";
+              const fLower = fmt.toLowerCase();
+              if (fLower.includes("barco") || fLower.includes("hdr") || (vCode === "PRHN" && fLower.includes("pcx"))) {
+                fmt = "PCX";
+              } else if (fLower === "standard" || fLower === "standard screen") {
+                fmt = "2D";
+              }
               vEntry.formats.add(fmt);
               const sTime = s.title || s.additionalData?.showTime;
               if (sTime && !vEntry.shows.includes(sTime)) vEntry.shows.push(`${sTime} (${fmt})`);
@@ -944,7 +987,7 @@ async function fetchTheatresForMovieLive(cityCode, eventCodes, env) {
               const mFmt = title.match(/\(([^)]+)\)$/);
               vEntry.variants.push({
                 code: ev,
-                formatTag: mFmt ? mFmt[1].trim() : "Standard",
+                formatTag: mFmt ? mFmt[1].trim() : "2D",
                 fullTitle: title
               });
             }
@@ -970,7 +1013,7 @@ async function fetchTheatresForMovieLive(cityCode, eventCodes, env) {
 function formatScreenLabel(tag, venueCode = "") {
   const lower = (tag || "").toLowerCase();
   
-  if (lower.includes("barco") || lower.includes("hdr") || (venueCode === "PRHN" && lower.includes("pcx"))) {
+  if (lower.includes("barco") || lower.includes("hdr") || lower.includes("pcx") || (venueCode === "PRHN" && (lower.includes("screen 6") || lower.includes("large screen")))) {
     return { emoji: "🌟", label: "PCX / Large Screen (Barco HDR)", isPremium: true };
   }
   if (lower.includes("imax 3d")) {
@@ -1004,14 +1047,17 @@ function formatScreenLabel(tag, venueCode = "") {
     return { emoji: "🌟", label: "ICE Immersive", isPremium: true };
   }
   if (lower.includes("3d")) {
-    const lang = lower.includes("hindi") ? "Hindi" : lower.includes("telugu") ? "Telugu" : "English";
+    const lang = lower.includes("hindi") ? "Hindi" : lower.includes("telugu") ? "Telugu" : lower.includes("kannada") ? "Kannada" : lower.includes("tamil") ? "Tamil" : "English";
     return { emoji: "👓", label: `${lang} 3D`, isPremium: false };
   }
   if (lower.includes("2d")) {
-    const lang = lower.includes("hindi") ? "Hindi" : lower.includes("telugu") ? "Telugu" : "English";
-    return { emoji: "🎟️", label: `${lang} 2D (Standard)`, isPremium: false };
+    const lang = lower.includes("hindi") ? "Hindi" : lower.includes("telugu") ? "Telugu" : lower.includes("kannada") ? "Kannada" : lower.includes("tamil") ? "Tamil" : "English";
+    return { emoji: "🎟️", label: `${lang} 2D`, isPremium: false };
   }
-  return { emoji: "🎟️", label: tag ? `${tag} (Standard)` : "Standard Screen", isPremium: false };
+  if (!tag || lower === "standard" || lower === "standard screen") {
+    return { emoji: "🎟️", label: "Regular 2D Screen", isPremium: false };
+  }
+  return { emoji: "🎟️", label: tag, isPremium: false };
 }
 
 async function sendTheatreShowsSelection(botToken, chatId, cityCode, venueCode, masterCode, messageId = null, env = null) {
@@ -1129,7 +1175,7 @@ async function getShowsForVenueAndMovie(cityCode, venueCode, movieGroup, env) {
           const mFmt = mTitle.match(/\(([^)]+)\)$/);
           return {
             code: c,
-            formatTag: mFmt ? mFmt[1].trim() : "Standard",
+            formatTag: mFmt ? mFmt[1].trim() : "2D",
             fullTitle: mTitle
           };
         });
@@ -1346,7 +1392,8 @@ async function sendMovieSelection(botToken, chatId, cityCode, venueCode, page = 
   for (const g of slice) {
     const fmtList = g.variants.map(v => {
       const match = v.fullTitle?.match(/\(([^)]+)\)$/);
-      let tag = match ? match[1].replace(/English\s*|Hindi\s*|Telugu\s*|Tamil\s*/i, "").trim() : "Standard";
+      let tag = match ? match[1].replace(/English\s*|Hindi\s*|Telugu\s*|Tamil\s*/i, "").trim() : "2D";
+      if (!tag) tag = "2D";
       if (venueCode === "PRHN" && (tag.toLowerCase().includes("barco") || tag.toLowerCase().includes("hdr"))) tag = "PCX";
       return tag;
     });
@@ -1356,7 +1403,9 @@ async function sendMovieSelection(botToken, chatId, cityCode, venueCode, page = 
       if (l.includes("3d")) return 1;
       return 2;
     };
-    const uniqueFmts = Array.from(new Set(fmtList)).sort((a, b) => formatPriority(a) - formatPriority(b));
+    const uniqueFmts = Array.from(new Set(fmtList))
+      .filter(f => f && f.toLowerCase() !== "standard" && f.toLowerCase() !== "standard screen")
+      .sort((a, b) => formatPriority(a) - formatPriority(b));
     const fmtStr = uniqueFmts.length > 1 ? ` (${uniqueFmts.slice(0, 3).join(", ")})` : "";
     const rawLabel = `${g.baseTitle}${fmtStr}`;
     const title = rawLabel.length > 36 ? rawLabel.slice(0, 34) + "…" : rawLabel;
@@ -1911,7 +1960,7 @@ async function fetchShowsForTracker(tracker, env) {
                   sessionId: sid,
                   date: d ? `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}` : "Today",
                   time: s.title || s.additionalData?.showTime || "Show",
-                  screen: s.screenAttr || s.additionalData?.screenName || "Standard",
+                  screen: s.screenAttr || s.additionalData?.screenName || "2D",
                   venueName: venueName,
                   movieTitle: movieTitle,
                   bookingUrl: `https://in.bookmyshow.com/cinemas/${city.slug}/${vCode || "tickets"}/buytickets/${vCode}/${d}`
