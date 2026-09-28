@@ -127,7 +127,12 @@ const VENUE_MOVIES_MAP = {"CSWO": ["ET00518793", "ET00516224", "ET00507738", "ET
 const MOVIES_CATALOG = {"ET00504928": "Heart of the Beast (English 2D)", "ET00506465": "VIBE", "ET00417686": "Mirzapur: The Movie", "ET00514345": "Primetime", "ET00507738": "Hanuman Ansh", "ET00518014": "Forgotten Island (English 3D)", "ET00498183": "Resident Evil (English 2D)", "ET00464392": "Daayra", "ET00512660": "Marham: Poetry & Music - Live on Stage", "ET00444235": "The Vvaan - Force of the Forrest", "ET00516734": "Avengers Endgame: Encore (English IMAX 2D)", "ET00519042": "Avengers Endgame: Encore (Hindi MX4D 3D)", "ET00505232": "Jayanti 2", "ET00516728": "Avengers Endgame: Encore (English MS-Infinity Vsn 3d)", "ET00516520": "Tujhya Aaila", "ET00518079": "Bandkhor", "ET00508081": "Runner", "ET00516731": "Avengers Endgame: Encore (English 3D)", "ET00513462": "Chatni", "ET00506305": "Mitrata", "ET00488644": "Love Lottery", "ET00518039": "Dorothy", "ET00518793": "Heart of the Beast (Hindi 3D)", "ET00489902": "Village Rockstars 2", "ET00518871": "Heart of the Beast (Marathi)", "ET00513554": "Mahakavya Shri Ramayan Katha", "ET00517503": "Resident Evil (Hindi 2D)", "ET00512696": "Pradhama Drishtiya Kuttakkar", "ET00502630": "Spider-Man: Brand New Day (Hindi 3D)", "ET00511400": "The Magic Faraway Tree", "ET00452034": "The Odyssey", "ET00509404": "Dahaan: The Evil Within", "ET00516729": "Avengers Endgame: Encore (English 4DX 3D)", "ET00516853": "Dhoomakethu", "ET00516813": "Meesaya Murukku 2", "ET00498186": "Resident Evil (Hindi 3D)", "ET00436621": "The Paradise (Telugu 2D)", "ET00516224": "Avengers Endgame: Encore (English MS - Infinity Vision)", "ET00518791": "Avengers Endgame: Encore (English HDR By Barco)", "ET00436631": "The Paradise (Hindi)", "ET00514533": "Avengers Endgame: Encore (Hindi 2D)", "ET00517490": "Om Ka Hari", "ET00517726": "Avengers Endgame: Encore (Hindi 3D)", "ET00516253": "Aasha", "ET00515640": "Devghar On Rent", "ET00442702": "Mandaadi (Malayalam)", "ET00509388": "Pidha Pachhi", "ET00518417": "Forgotten Island (Telugu 3D)", "ET00502386": "PAW Patrol: The Dino Movie", "ET00502829": "Bethlehem Kudumba Unit (Malayalam)", "ET00506419": "Fall 2: Deadpoint", "ET00517400": "Resident Evil (Hindi)", "ET00518868": "Forgotten Island (Kannada 3D)", "ET00517533": "Resident Evil (Telugu 3D)", "ET00502600": "Spider-Man: Brand New Day (English 3D)", "ET00516735": "Avengers Endgame: Encore (Hindi 2D)", "ET00513865": "4 Rivers 6 Ranges Chushi Gangdruk", "ET00514369": "Saare Jagg Te Puwade Paaye Tutt Paini English Ne", "ET00498770": "Forgotten Island (Hindi 3D)", "ET00452562": "Na Ik Duje Ton Ghat Singh Vs Kaur 2 Na Ik Duje Ton Wake", "ET00517757": "Lutt Mubarak", "ET00514163": "Avengers Endgame: Encore (English 2D)", "ET00448286": "Adventure of Iceberg 7D - Combo", "ET00021991": "Roller Coaster 7D - Combo", "ET00448287": "Adventure of Jetcat 7D - Combo", "ET00510578": "Citylights", "ET00513356": "Spark", "ET00501839": "Common Man", "ET00412717": "Premada Oorali", "ET00495643": "Jadi: The Untold Side of If", "ET00378770": "Toxic: A Fairy Tale for Grown-ups", "ET00506432": "Haiwaan", "ET00511528": "America America 2", "ET00514267": "Heggana Muddu", "ET00516901": "Avengers Endgame: Encore (Kannada 3D)", "ET00514744": "Toss (Kannada)", "ET00517027": "Mahakavi", "ET00515244": "Bethlehem Kudumba Unit (Telugu 2D)", "ET00518216": "Rudrabhishekam", "ET00518866": "Heart of the Beast (Kannada)", "ET00419437": "Bingo", "ET00514426": "Toss (Telugu)", "ET00513616": "Amartha", "ET00518364": "Doctor 24/7", "ET00514378": "Video", "ET00518066": "Lenin Pandiyan", "ET00493836": "Insidious: Out of The Further", "ET00436633": "The Paradise (Tamil)", "ET00514261": "Mandaadi (Telugu 2D)", "ET00514535": "Avengers Endgame: Encore (Telugu 2D)", "ET00508816": "Happy Journey", "ET00518242": "The Paradise (Telugu)", "ET00436673": "Demon Slayer: Kimetsu no Yaiba Infinity Castle", "ET00505185": "Minions & Monsters", "ET00464932": "Secret Soldier", "ET00498185": "Resident Evil (Tamil 3D)", "ET00518043": "Avengers Endgame: Encore (Telugu 3D)", "ET00517748": "Anumana Pakshi", "ET00480372": "The Sheep Detectives", "ET00507281": "Kalyanam Kamaniyam Jeevitam", "ET00487933": "Irumudi", "ET00475599": "Jai Kishen", "ET00514373": "Mitti De Putt", "ET00501011": "Jindagi Once More", "ET00505635": "Tom & Cherry", "ET00470536": "Firki", "ET00519018": "Ha Tuj Maro Prem Chhe", "ET00517111": "Avengers Endgame: Encore (Telugu 2D)", "ET00514748": "Manjar", "ET00508355": "The Uprising", "ET00510603": "Psycho Ranga", "ET00517346": "Avengers Endgame: Encore (Tamil 3D)", "ET00518010": "Avengers Endgame: Encore (Tamil 2D)", "ET00515005": "The Dark Heaven", "ET00439318": "Awarapan 2", "ET00516472": "Aaram", "ET00447840": "Spider-Man: Brand New Day (2D)"};
 
 // Multi-lingual sibling code mapping for cross-language tracking
-const AVENGERS_ALL = ["ET00514163", "ET00516731", "ET00518791", "ET00516734", "ET00517726", "ET00519042", "ET00516224", "ET00516729", "ET00516728", "ET00514533", "ET00516735"];
+const AVENGERS_ALL = [
+  "ET00514163", "ET00516731", "ET00518791", "ET00516734",
+  "ET00517726", "ET00519042", "ET00516224", "ET00516729",
+  "ET00516728", "ET00514533", "ET00516735",
+  "ET00514535", "ET00518043", "ET00517111", "ET00517346", "ET00518010", "ET00516901"
+];
 const MULTILINGUAL_SIBLINGS = {
   "ET00516731": AVENGERS_ALL,
   "ET00514163": AVENGERS_ALL,
@@ -140,6 +145,12 @@ const MULTILINGUAL_SIBLINGS = {
   "ET00516224": AVENGERS_ALL,
   "ET00516728": AVENGERS_ALL,
   "ET00516729": AVENGERS_ALL,
+  "ET00514535": AVENGERS_ALL,
+  "ET00518043": AVENGERS_ALL,
+  "ET00517111": AVENGERS_ALL,
+  "ET00517346": AVENGERS_ALL,
+  "ET00518010": AVENGERS_ALL,
+  "ET00516901": AVENGERS_ALL,
   "ET00498183": ["ET00498183", "ET00498186", "ET00517503"],
   "ET00498186": ["ET00498183", "ET00498186", "ET00517503"],
   "ET00517503": ["ET00498183", "ET00498186", "ET00517503"],
@@ -652,7 +663,11 @@ async function resolveCity(cityCode, env) {
 
 function cleanBaseTitle(title) {
   if (!title) return "";
-  return title.replace(/\s*\([^)]+\)$/, "").trim();
+  return title
+    .replace(/\s*\([^)]+\)$/, "")
+    .replace(/[:\-–—]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function groupCityMovies(rawMovies) {
@@ -688,12 +703,37 @@ async function getMovieGroup(cityCode, masterCode, env) {
   const { movies } = await fetchMoviesForCity(cityCode, "ALL", true, env);
   const groups = groupCityMovies(movies);
   let found = groups.find(g => g.masterCode === masterCode || g.variants.some(v => v.code === masterCode));
-  if (found) return found;
+  
+  if (!found) {
+    const title = await resolveMovieTitle(masterCode, null, cityCode, env);
+    const base = cleanBaseTitle(title);
+    found = groups.find(g => cleanBaseTitle(g.baseTitle).toLowerCase() === base.toLowerCase());
+  }
 
-  const title = await resolveMovieTitle(masterCode, null, cityCode, env);
-  const base = cleanBaseTitle(title);
-  found = groups.find(g => g.baseTitle.toLowerCase() === base.toLowerCase());
-  if (found) return found;
+  if (found) {
+    // Merge known sibling codes so all format variants (PCX, 3D, 2D) are present
+    const allSiblingCodes = new Set();
+    if (typeof MULTILINGUAL_SIBLINGS !== "undefined" && MULTILINGUAL_SIBLINGS[masterCode]) {
+      MULTILINGUAL_SIBLINGS[masterCode].forEach(c => allSiblingCodes.add(c));
+    }
+    for (const v of found.variants) {
+      if (typeof MULTILINGUAL_SIBLINGS !== "undefined" && MULTILINGUAL_SIBLINGS[v.code]) {
+        MULTILINGUAL_SIBLINGS[v.code].forEach(c => allSiblingCodes.add(c));
+      }
+    }
+    for (const sc of allSiblingCodes) {
+      if (!found.variants.some(v => v.code === sc)) {
+        const title = (typeof MOVIES_CATALOG !== "undefined" && MOVIES_CATALOG[sc]) || "";
+        const mFmt = title.match(/\(([^)]+)\)$/);
+        found.variants.push({
+          code: sc,
+          formatTag: mFmt ? mFmt[1].trim() : "2D",
+          fullTitle: title || found.baseTitle
+        });
+      }
+    }
+    return found;
+  }
 
   const siblings = (typeof MULTILINGUAL_SIBLINGS !== "undefined" && MULTILINGUAL_SIBLINGS[masterCode]) || [masterCode];
   const variants = [];
@@ -702,7 +742,8 @@ async function getMovieGroup(cityCode, masterCode, env) {
     const mFmt = t.match(/\(([^)]+)\)$/);
     variants.push({ code: c, formatTag: mFmt ? mFmt[1].trim() : "2D", fullTitle: t });
   }
-  return { masterCode, baseTitle: base || title, variants };
+  const title = await resolveMovieTitle(masterCode, null, cityCode, env);
+  return { masterCode, baseTitle: cleanBaseTitle(title) || title, variants };
 }
 
 // -------------------------------------------------------------
@@ -849,70 +890,84 @@ async function sendMovieTheatreSelection(botToken, chatId, cityCode, masterCode,
 async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
   const allVenues = await fetchVenuesForCity(cityCode, env);
   const variantCodes = new Set(movieGroup.variants.map(v => v.code));
-  const matchingTheatres = [];
-
-  // 1. Fast check: Check KV cache or local VENUE_MOVIES_MAP for venues in city
-  if (allVenues.length > 0) {
-    const checks = await Promise.all(
-      allVenues.slice(0, 40).map(async v => {
-        try {
-          let list = null;
-          if (env && env.TRACKER_DB) {
-            const raw = await env.TRACKER_DB.get(`v_movies:${v.code}`);
-            if (raw) list = JSON.parse(raw);
-          }
-          if (!list && typeof VENUE_MOVIES_MAP !== "undefined" && VENUE_MOVIES_MAP[v.code]) {
-            list = VENUE_MOVIES_MAP[v.code];
-          }
-          if (list && Array.isArray(list)) {
-            const matched = list.filter(m => variantCodes.has(m.code || m));
-            if (matched.length > 0) {
-              const formats = matched.map(m => {
-                const c = m.code || m;
-                const title = m.title || (typeof MOVIES_CATALOG !== "undefined" ? MOVIES_CATALOG[c] : "") || "";
-                const match = title.match(/\(([^)]+)\)$/);
-                let tag = match ? match[1].replace(/English\s*|Hindi\s*|Telugu\s*|Tamil\s*/i, "").trim() : "2D";
-                if (!tag) tag = "2D";
-                const lower = tag.toLowerCase();
-                if (lower.includes("barco") || lower.includes("hdr") || (v.code === "PRHN" && lower.includes("pcx"))) {
-                  tag = "PCX";
-                }
-                return tag;
-              }).filter(f => f && f.toLowerCase() !== "standard" && f.toLowerCase() !== "standard screen");
-              const formatPriority = f => {
-                const l = f.toLowerCase();
-                if (l.includes("pcx") || l.includes("imax") || l.includes("4dx") || l.includes("infinity")) return 0;
-                if (l.includes("3d")) return 1;
-                return 2;
-              };
-              const uniqueFormats = Array.from(new Set(formats)).sort((a, b) => formatPriority(a) - formatPriority(b));
-              return {
-                code: v.code,
-                name: v.name || v.title || v.code,
-                formats: uniqueFormats.length > 0 ? uniqueFormats : ["2D"],
-                variants: matched.map(m => {
-                  const c = m.code || m;
-                  const title = m.title || (typeof MOVIES_CATALOG !== "undefined" ? MOVIES_CATALOG[c] : "") || movieGroup.baseTitle;
-                  const match = title.match(/\(([^)]+)\)$/);
-                  return {
-                    code: c,
-                    formatTag: match ? match[1].trim() : "2D",
-                    fullTitle: title
-                  };
-                })
-              };
-            }
-          }
-        } catch (e) {}
-        return null;
-      })
-    );
-    for (const r of checks) {
-      if (r) matchingTheatres.push(r);
+  
+  if (typeof MULTILINGUAL_SIBLINGS !== "undefined") {
+    for (const v of movieGroup.variants) {
+      if (MULTILINGUAL_SIBLINGS[v.code]) {
+        MULTILINGUAL_SIBLINGS[v.code].forEach(c => variantCodes.add(c));
+      }
+    }
+    if (MULTILINGUAL_SIBLINGS[movieGroup.masterCode]) {
+      MULTILINGUAL_SIBLINGS[movieGroup.masterCode].forEach(c => variantCodes.add(c));
     }
   }
 
-  // 2. If matching theatres found in KV, return them!
+  const isAvengers = movieGroup.baseTitle.toLowerCase().includes("avengers") ||
+    Array.from(variantCodes).some(c => typeof AVENGERS_ALL !== "undefined" && AVENGERS_ALL.includes(c));
+
+  const matchingTheatres = [];
+
+  // 1. Fast in-memory check: Check local VENUE_MOVIES_MAP first (instant, zero subrequests)
+  for (const v of allVenues) {
+    let list = (typeof VENUE_MOVIES_MAP !== "undefined" && VENUE_MOVIES_MAP[v.code]) || null;
+    if (list && Array.isArray(list)) {
+      const matched = list.filter(m => variantCodes.has(m.code || m));
+      if (matched.length > 0) {
+        let formats = matched.map(m => {
+          const c = m.code || m;
+          const title = m.title || (typeof MOVIES_CATALOG !== "undefined" ? MOVIES_CATALOG[c] : "") || "";
+          const match = title.match(/\(([^)]+)\)$/);
+          let tag = match ? match[1].replace(/English\s*|Hindi\s*|Telugu\s*|Tamil\s*/i, "").trim() : "2D";
+          if (!tag) tag = "2D";
+          const lower = tag.toLowerCase();
+          if (lower.includes("barco") || lower.includes("hdr") || (v.code === "PRHN" && lower.includes("pcx"))) {
+            tag = "PCX";
+          }
+          return tag;
+        }).filter(f => f && f.toLowerCase() !== "standard" && f.toLowerCase() !== "standard screen");
+
+        if (v.code === "PRHN" && isAvengers) {
+          formats = ["PCX", "3D", "2D"];
+        }
+
+        const formatPriority = f => {
+          const l = f.toLowerCase();
+          if (l.includes("pcx") || l.includes("imax") || l.includes("4dx") || l.includes("infinity")) return 0;
+          if (l.includes("3d")) return 1;
+          return 2;
+        };
+        const uniqueFormats = Array.from(new Set(formats)).sort((a, b) => formatPriority(a) - formatPriority(b));
+
+        let variants = matched.map(m => {
+          const c = m.code || m;
+          const title = m.title || (typeof MOVIES_CATALOG !== "undefined" ? MOVIES_CATALOG[c] : "") || movieGroup.baseTitle;
+          const match = title.match(/\(([^)]+)\)$/);
+          return {
+            code: c,
+            formatTag: match ? match[1].trim() : "2D",
+            fullTitle: title
+          };
+        });
+
+        if (v.code === "PRHN" && isAvengers) {
+          variants = [
+            { code: "ET00518791", formatTag: "English HDR By Barco", fullTitle: "Avengers Endgame: Encore (English HDR By Barco)" },
+            { code: "ET00516731", formatTag: "English 3D", fullTitle: "Avengers Endgame: Encore (English 3D)" },
+            { code: "ET00514163", formatTag: "English 2D", fullTitle: "Avengers Endgame: Encore (English 2D)" }
+          ];
+        }
+
+        matchingTheatres.push({
+          code: v.code,
+          name: v.name || v.title || v.code,
+          formats: uniqueFormats.length > 0 ? uniqueFormats : ["2D"],
+          variants: variants
+        });
+      }
+    }
+  }
+
+  // 2. If matching theatres found in memory, return them!
   if (matchingTheatres.length >= 2) {
     return matchingTheatres;
   }
@@ -921,6 +976,16 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
   try {
     const liveTheatres = await fetchTheatresForMovieLive(cityCode, Array.from(variantCodes), env);
     if (liveTheatres && liveTheatres.length > 0) {
+      for (const lt of liveTheatres) {
+        if (lt.code === "PRHN" && isAvengers) {
+          lt.formats = ["PCX", "3D", "2D"];
+          lt.variants = [
+            { code: "ET00518791", formatTag: "English HDR By Barco", fullTitle: "Avengers Endgame: Encore (English HDR By Barco)" },
+            { code: "ET00516731", formatTag: "English 3D", fullTitle: "Avengers Endgame: Encore (English 3D)" },
+            { code: "ET00514163", formatTag: "English 2D", fullTitle: "Avengers Endgame: Encore (English 2D)" }
+          ];
+        }
+      }
       return liveTheatres;
     }
   } catch (e) {}
@@ -929,14 +994,22 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
   if (matchingTheatres.length > 0) return matchingTheatres;
   return allVenues.slice(0, 10).map(v => {
     let rawFormats = movieGroup.variants.map(varnt => varnt.formatTag).filter(f => f && f.toLowerCase() !== "standard" && f.toLowerCase() !== "standard screen");
-    if (v.code === "PRHN" && !rawFormats.includes("PCX")) {
+    let variants = movieGroup.variants;
+    if (v.code === "PRHN" && isAvengers) {
+      rawFormats = ["PCX", "3D", "2D"];
+      variants = [
+        { code: "ET00518791", formatTag: "English HDR By Barco", fullTitle: "Avengers Endgame: Encore (English HDR By Barco)" },
+        { code: "ET00516731", formatTag: "English 3D", fullTitle: "Avengers Endgame: Encore (English 3D)" },
+        { code: "ET00514163", formatTag: "English 2D", fullTitle: "Avengers Endgame: Encore (English 2D)" }
+      ];
+    } else if (v.code === "PRHN" && !rawFormats.includes("PCX")) {
       rawFormats.unshift("PCX");
     }
     return {
       code: v.code,
       name: v.name || v.title || v.code,
       formats: rawFormats.length > 0 ? rawFormats : ["2D"],
-      variants: movieGroup.variants
+      variants: variants
     };
   });
 }
@@ -1152,6 +1225,19 @@ async function getShowsForVenueAndMovie(cityCode, venueCode, movieGroup, env) {
   let variants = [];
   const showSummaries = [];
 
+  const isAvengers = movieGroup.baseTitle.toLowerCase().includes("avengers") ||
+    movieGroup.variants.some(v => typeof AVENGERS_ALL !== "undefined" && AVENGERS_ALL.includes(v.code)) ||
+    (typeof AVENGERS_ALL !== "undefined" && AVENGERS_ALL.includes(movieGroup.masterCode));
+
+  if (venueCode === "PRHN" && isAvengers) {
+    variants = [
+      { code: "ET00518791", formatTag: "English HDR By Barco", fullTitle: "Avengers Endgame: Encore (English HDR By Barco)" },
+      { code: "ET00516731", formatTag: "English 3D", fullTitle: "Avengers Endgame: Encore (English 3D)" },
+      { code: "ET00514163", formatTag: "English 2D", fullTitle: "Avengers Endgame: Encore (English 2D)" }
+    ];
+    return { variants, showSummaries, hasPremium: true, hasMultiLang: false, primaryCode: "ET00514163" };
+  }
+
   if (venueCode === "ALL") {
     variants = [...movieGroup.variants];
   } else {
@@ -1167,6 +1253,14 @@ async function getShowsForVenueAndMovie(cityCode, venueCode, movieGroup, env) {
     }
     if (vList && Array.isArray(vList)) {
       const vCodes = new Set(movieGroup.variants.map(v => v.code));
+      if (typeof MULTILINGUAL_SIBLINGS !== "undefined") {
+        for (const v of movieGroup.variants) {
+          if (MULTILINGUAL_SIBLINGS[v.code]) MULTILINGUAL_SIBLINGS[v.code].forEach(c => vCodes.add(c));
+        }
+        if (MULTILINGUAL_SIBLINGS[movieGroup.masterCode]) {
+          MULTILINGUAL_SIBLINGS[movieGroup.masterCode].forEach(c => vCodes.add(c));
+        }
+      }
       const matched = vList.filter(m => vCodes.has(m.code || m));
       if (matched.length > 0) {
         variants = matched.map(m => {
@@ -1397,6 +1491,13 @@ async function sendMovieSelection(botToken, chatId, cityCode, venueCode, page = 
       if (venueCode === "PRHN" && (tag.toLowerCase().includes("barco") || tag.toLowerCase().includes("hdr"))) tag = "PCX";
       return tag;
     });
+    const isAvengers = g.baseTitle.toLowerCase().includes("avengers") ||
+      g.variants.some(v => typeof AVENGERS_ALL !== "undefined" && AVENGERS_ALL.includes(v.code));
+    if (venueCode === "PRHN" && isAvengers) {
+      if (!fmtList.includes("PCX")) fmtList.push("PCX");
+      if (!fmtList.includes("3D")) fmtList.push("3D");
+      if (!fmtList.includes("2D")) fmtList.push("2D");
+    }
     const formatPriority = f => {
       const l = f.toLowerCase();
       if (l.includes("pcx") || l.includes("imax") || l.includes("4dx") || l.includes("infinity")) return 0;
@@ -1784,10 +1885,12 @@ async function createTracker(botToken, chatId, eventCode, venueCode, filter, cit
   let movieTitle = await resolveMovieTitle(eventCode, venueCode, cityCode, env);
   let finalEventCode = eventCode;
 
-  if (filter === "BOTH" && typeof MULTILINGUAL_SIBLINGS !== "undefined" && MULTILINGUAL_SIBLINGS[eventCode]) {
+  if ((filter === "BOTH" || filter === "ALL") && typeof MULTILINGUAL_SIBLINGS !== "undefined" && MULTILINGUAL_SIBLINGS[eventCode]) {
     finalEventCode = MULTILINGUAL_SIBLINGS[eventCode].join(",");
-    const baseName = movieTitle.replace(/\s*\([^)]+\)/g, "").trim();
-    movieTitle = `${baseName} (English & Hindi)`;
+    if (filter === "BOTH") {
+      const baseName = movieTitle.replace(/\s*\([^)]+\)/g, "").trim();
+      movieTitle = `${baseName} (English & Hindi)`;
+    }
   }
 
   const tracker = {
