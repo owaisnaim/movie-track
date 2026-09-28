@@ -16,7 +16,7 @@ Configure tracking for any cinema hall and movie directly within Telegram, and r
 - [Architecture Overview](#architecture-overview)
 - [Features](#features)
 - [How It Works](#how-it-works)
-- [Telegram Bot Commands](#telegram-bot-commands)
+- [Telegram Bot Usage](#telegram-bot-usage)
 - [Interactive Bot Flow](#interactive-bot-flow)
 - [Setup and Deployment](#setup-and-deployment)
   - [1. Create Telegram Bot](#1-create-telegram-bot)
@@ -96,17 +96,16 @@ The system uses a decoupled two-tier architecture designed to run continuously o
 
 ---
 
-## Telegram Bot Commands
+## Telegram Bot Usage
+
+The bot is designed to be zero-friction and driven entirely via `/start` with an interactive, button-based interface:
 
 | Command | Description |
 | :--- | :--- |
-| `/start` | Start the 4-step interactive wizard to add a new tracker |
-| `/mytrackers` | List all active trackers with pause, resume, and delete options |
-| `/pause` | Temporarily pause active monitoring |
-| `/resume` | Resume paused monitoring |
-| `/delete` | Remove a tracker from your account and KV storage |
-| `/status` | View system status, active tracker counts, and diagnostics |
-| `/help` | Display usage instructions and available commands |
+| `/start` | Launch the interactive ticket tracker wizard or view and manage active trackers |
+
+> [!TIP]
+> **No manual commands needed**: Everything from city selection, movie picking, cinema choosing, screen format filtering, pausing, resuming, and deleting trackers is handled seamlessly through clickable inline buttons. You can also paste any BookMyShow movie link directly into the chat to configure a tracker instantly.
 
 ---
 
@@ -114,21 +113,20 @@ The system uses a decoupled two-tier architecture designed to run continuously o
 
 ```text
 Step 1: Choose City
-[ Kanpur ]  [ Lucknow ]  [ Hyderabad ]  [ Mumbai ]  [ NCR (Delhi) ]  [ Bengaluru ]
+[ Kanpur ]  [ Lucknow ]  [ Hyderabad ]  [ Mumbai ]  [ NCR (Delhi) ]  [ Bengaluru ] ...
 
-Step 2: Choose Cinema Hall
-[ INOX: Z Square, Bada Chauraha ]  [ PVR: Deep, Kanpur ]  [ Miraj: Gurudev ] ...
+Step 2: Choose Movie
+[ Avengers: Endgame ]  [ Interstellar ]  [ Dune: Part Two ] ...
 
-Step 3: Choose Movie & Language
-[ Avengers Endgame: Encore (English 3D) ]
-[ Avengers Endgame: Encore (Hindi 2D) ]
-[ Track Both English & Hindi Shows ]
+Step 3: Choose Cinema Hall
+[ Prasads Multiplex, Hyderabad ]  [ PVR: Next Galleria ]  [ INOX: GVK One ] ...
 
-Step 4: Choose Screen Filter
-[ All Screens ]  [ PCX / Large Screen Only ]  [ 3D Only ]  [ 2D Only ]
+Step 4: Choose Screen & Format
+[ Exact Match: English 3D (PCX Infinity Vis 3D) ]  [ All Formats ]
 
-Confirmation:
-Tracker activated for Avengers Endgame: Encore (English 3D) at INOX: Z Square, Kanpur. Monitoring 24/7.
+Confirmation & Management:
+Tracker activated! Existing Shows: 22 (monitoring for new drops).
+[ 📋 View My Trackers ]  [ ⏸️ Pause ]  [ ▶️ Resume ]  [ 🗑️ Delete ]
 ```
 
 ---
