@@ -1,4 +1,4 @@
-# Movie Tracker — BookMyShow Ticket Tracker
+# Movie Tracker - BookMyShow Ticket Tracker
 
 [![Workflow Status](https://img.shields.io/github/actions/workflow/status/owaisnaim/movie-tracker/movie-tracker.yml?branch=main&label=Ticket%20Monitor&style=flat-square)](https://github.com/owaisnaim/movie-tracker/actions/workflows/movie-tracker.yml)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20KV-orange?style=flat-square&logo=cloudflare)](https://workers.cloudflare.com/)
