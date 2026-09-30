@@ -13,6 +13,13 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
+# Route through SOCKS5 proxy (Tor) when running on GitHub Actions to bypass
+# BMS/Akamai IP blocks on Azure datacenter ranges.
+_socks_proxy = os.getenv("SOCKS_PROXY")
+CFFI_PROXIES = {"http": _socks_proxy, "https": _socks_proxy} if _socks_proxy else None
+if _socks_proxy:
+    print(f"[PROXY] Using SOCKS5 proxy: {_socks_proxy}")
+
 VENUE = "PRHN"
 REGION_CODE = "HYD"
 REGION_NAME = "hyderabad"
@@ -262,7 +269,7 @@ def fetch_api(event_code: str, date_code: str = "") -> dict:
             return json.loads(resp.read().decode("utf-8"))
     except Exception as urllib_err:
         print(f"Notice: urllib fetch failed ({urllib_err}), trying curl_cffi fallback...")
-        res = cffi_requests.get(url, headers=API_HEADERS, timeout=20, impersonate="chrome124")
+        res = cffi_requests.get(url, headers=API_HEADERS, timeout=20, impersonate="chrome124", proxies=CFFI_PROXIES)
         if res.status_code != 200:
             raise RuntimeError(f"HTTP {res.status_code} for {url}")
         return res.json()
@@ -411,7 +418,8 @@ def sync_city_movies_to_cloudflare(token: str, city_code: str = "HYD"):
             "https://in.bookmyshow.com/serv/getData?cmd=QUICKBOOK&type=MT",
             headers={"x-region-code": city_code, "Cookie": f"Rgn=|Code={city_code}|"},
             timeout=10,
-            impersonate="chrome120"
+            impersonate="chrome120",
+            proxies=CFFI_PROXIES
         )
         if res.status_code == 200:
             events = res.json().get("moviesData", {}).get("BookMyShow", {}).get("arrEvents", [])
@@ -485,8 +493,10 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
             "https://in.bookmyshow.com/serv/getData?cmd=QUICKBOOK&type=MT",
             headers={"User-Agent": headers["User-Agent"], "x-region-code": city_code,
                      "Cookie": f"Rgn=|Code={city_code}|"},
-            timeout=10, impersonate="chrome120"
+            timeout=10, impersonate="chrome120", proxies=CFFI_PROXIES
         )
+        if qb_res.status_code != 200:
+            print(f"[DYNAMIC] Notice: QUICKBOOK returned HTTP {qb_res.status_code}, skipping event code discovery.")
         if qb_res.status_code == 200:
             qb_events = (qb_res.json()
                          .get("moviesData", {})
@@ -525,7 +535,7 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
         url = f"{API_URL}?eventCode={event_code}&isDesktop=true&regionCode={city_code}&lat={city_lat}&lon={city_lon}"
 
         try:
-            res = cffi_requests.get(url, headers=headers, timeout=20, impersonate="chrome124")
+            res = cffi_requests.get(url, headers=headers, timeout=20, impersonate="chrome124", proxies=CFFI_PROXIES)
             if res.status_code != 200:
                 print(f"[DYNAMIC] HTTP {res.status_code} for {event_code}")
                 continue
@@ -541,7 +551,7 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
         for date_code in dates_to_check:
             date_url = f"{url}&dateCode={date_code}" if date_code else url
             try:
-                d_res = cffi_requests.get(date_url, headers=headers, timeout=20, impersonate="chrome124")
+                d_res = cffi_requests.get(date_url, headers=headers, timeout=20, impersonate="chrome124", proxies=CFFI_PROXIES)
                 if d_res.status_code != 200:
                     continue
                 date_data = d_res.json()
