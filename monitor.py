@@ -459,22 +459,20 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
 
     print(f"\n[DYNAMIC] 🔍 Checking tracker: {movie_title} in {city_code} ({venue_name}) | Filter: {screen_filter} | Initialized: {is_initialized}")
 
+    # Use the Android app identity — Akamai may apply more lenient rules for
+    # mobile app traffic (BMS can't afford to break their own app on corporate/
+    # CI datacenter IPs), unlike the strict web scraping rules.
     headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/131.0.0.0 Safari/537.36"
-        ),
+        "User-Agent": "BookMyShow/6.5.1 (Android; 14; sdk_gphone64_x86_64)",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-IN,en;q=0.9",
-        "x-app-code": "WEB",
+        "x-app-code": "AND",
         "x-region-code": city_code,
         "x-region-slug": city_slug,
         "x-geohash": "tep",
         "x-latitude": city_lat,
         "x-longitude": city_lon,
         "x-location-selection": "manual",
-        "Referer": "https://in.bookmyshow.com/",
         "Cookie": f"Rgn=|Code={city_code}|",
     }
 
@@ -491,8 +489,12 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
     try:
         qb_res = cffi_requests.get(
             "https://in.bookmyshow.com/serv/getData?cmd=QUICKBOOK&type=MT",
-            headers={"User-Agent": headers["User-Agent"], "x-region-code": city_code,
-                     "Cookie": f"Rgn=|Code={city_code}|"},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                "x-app-code": "WEB",
+                "x-region-code": city_code,
+                "Cookie": f"Rgn=|Code={city_code}|",
+            },
             timeout=10, impersonate="chrome120", proxies=CFFI_PROXIES
         )
         if qb_res.status_code != 200:

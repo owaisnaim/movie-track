@@ -34,20 +34,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Start Tor proxy
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y -q tor
-          sudo service tor start
-          sleep 5
-          echo "Tor proxy ready on socks5h://127.0.0.1:9050"
-
       - name: Check BookMyShow
         id: check
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          SOCKS_PROXY: "socks5h://127.0.0.1:9050"
         run: python monitor.py
 
       - name: Notify Telegram on New Show
