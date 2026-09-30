@@ -458,9 +458,14 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
             "Chrome/131.0.0.0 Safari/537.36"
         ),
         "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-IN,en;q=0.9",
         "x-app-code": "WEB",
         "x-region-code": city_code,
         "x-region-slug": city_slug,
+        "x-geohash": "tep",
+        "x-latitude": city_lat,
+        "x-longitude": city_lon,
+        "x-location-selection": "manual",
         "Referer": "https://in.bookmyshow.com/",
         "Cookie": f"Rgn=|Code={city_code}|",
     }
