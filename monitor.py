@@ -475,6 +475,52 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
     matching_sessions = set()
     fetch_successful = False
 
+    # ── Dynamic event code discovery ──────────────────────────────────────────
+    # Query QUICKBOOK to find ALL current event codes for this movie title.
+    # BMS frequently re-lists movies under new event codes; relying only on the
+    # stored code means new listings are silently missed. We merge discovered
+    # codes with the stored ones so nothing is ever skipped.
+    try:
+        qb_res = cffi_requests.get(
+            "https://in.bookmyshow.com/serv/getData?cmd=QUICKBOOK&type=MT",
+            headers={"User-Agent": headers["User-Agent"], "x-region-code": city_code,
+                     "Cookie": f"Rgn=|Code={city_code}|"},
+            timeout=10, impersonate="chrome120"
+        )
+        if qb_res.status_code == 200:
+            qb_events = (qb_res.json()
+                         .get("moviesData", {})
+                         .get("BookMyShow", {})
+                         .get("arrEvents", []))
+            title_lower = movie_title.lower()
+            # Build set of significant words (>2 chars) from the tracker title,
+            # excluding format/language tags so "English 3D" or "(Hindi)" don't
+            # prevent a match against the base BMS listing title.
+            FORMAT_WORDS = {"english", "hindi", "telugu", "tamil", "dubbed",
+                            "3d", "2d", "4dx", "imax", "pcx", "atmos", "version", "vsn"}
+            title_words = set(w for w in title_lower.replace(":", " ").split()
+                              if len(w) > 2 and w not in FORMAT_WORDS)
+            for ev in qb_events:
+                ev_title = ev.get("EventTitle", "").lower()
+                ev_code  = ev.get("EventCode", "").strip()
+                if not ev_code or ev_code in event_codes:
+                    continue
+                ev_words = set(w for w in ev_title.replace(":", " ").split()
+                               if len(w) > 2 and w not in FORMAT_WORDS)
+                # STRICT: every significant word in the tracker title must appear
+                # in the BMS listing. "encore" won't be in "Avengers: Endgame"
+                # (original), so that listing is safely excluded.
+                # Secondary safety net: even if a wrong code slips through, the
+                # venue filter (e.g. PRHN) means only sessions at the exact
+                # tracked cinema are ever considered — no cross-movie alerts.
+                if title_words and title_words.issubset(ev_words):
+                    print(f"[DYNAMIC] 🔎 Discovered new event code {ev_code} "
+                          f"('{ev.get('EventTitle')}') for '{movie_title}'")
+                    event_codes.append(ev_code)
+    except Exception as qb_err:
+        print(f"[DYNAMIC] Notice: QUICKBOOK discovery skipped ({qb_err})")
+    # ─────────────────────────────────────────────────────────────────────────
+
     for event_code in event_codes:
         url = f"{API_URL}?eventCode={event_code}&isDesktop=true&regionCode={city_code}&lat={city_lat}&lon={city_lon}"
 
