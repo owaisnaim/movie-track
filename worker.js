@@ -356,25 +356,16 @@ export default {
       try {
         const payload = await request.json(); // { cityCode, movies, venues } or { venueCode, movies }
         if (env.TRACKER_DB && payload) {
-          if (payload.venueCode && Array.isArray(payload.movies)) {
-            await env.TRACKER_DB.put(`v_movies:${payload.venueCode}`, JSON.stringify(payload.movies), { expirationTtl: 86400 * 7 });
-          }
-          if (payload.venues && typeof payload.venues === "object") {
-            for (const [vCode, mList] of Object.entries(payload.venues)) {
-              if (Array.isArray(mList)) {
-                await env.TRACKER_DB.put(`v_movies:${vCode}`, JSON.stringify(mList), { expirationTtl: 86400 * 7 });
-              }
-            }
+          const ttl = 86400 * 7;
+          // Atomic city-bundled write: Saves 99% of daily KV writes
+          if (payload.cityCode && payload.venues && typeof payload.venues === "object") {
+            await env.TRACKER_DB.put(`v_movies_city:${payload.cityCode}`, JSON.stringify(payload.venues), { expirationTtl: ttl });
           }
           if (payload.cityCode && Array.isArray(payload.movies)) {
-            await env.TRACKER_DB.put(`movies:${payload.cityCode}`, JSON.stringify(payload.movies), { expirationTtl: 86400 * 7 });
+            await env.TRACKER_DB.put(`movies:${payload.cityCode}`, JSON.stringify(payload.movies), { expirationTtl: ttl });
           }
-          if (!payload.venueCode && !payload.venues && !payload.cityCode) {
-            for (const [cCode, mList] of Object.entries(payload)) {
-              if (Array.isArray(mList) && mList.length > 0) {
-                await env.TRACKER_DB.put(`movies:${cCode}`, JSON.stringify(mList), { expirationTtl: 86400 * 7 });
-              }
-            }
+          if (payload.venueCode && Array.isArray(payload.movies)) {
+            await env.TRACKER_DB.put(`v_movies:${payload.venueCode}`, JSON.stringify(payload.movies), { expirationTtl: ttl });
           }
         }
         return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
@@ -915,10 +906,19 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
 
   const matchingTheatres = [];
 
+  // Preload city-bundled venues map once (saves up to 150 KV read calls per request!)
+  let cityVenuesMap = null;
+  if (env && env.TRACKER_DB && cityCode) {
+    try {
+      const cityRaw = await env.TRACKER_DB.get(`v_movies_city:${cityCode}`);
+      if (cityRaw) cityVenuesMap = JSON.parse(cityRaw);
+    } catch (e) {}
+  }
+
   // 1. Check KV first (dynamic live BMS schedule), then local VENUE_MOVIES_MAP
   for (const v of allVenues) {
-    let list = null;
-    if (env && env.TRACKER_DB) {
+    let list = cityVenuesMap ? cityVenuesMap[v.code] : null;
+    if (!list && env && env.TRACKER_DB) {
       try {
         const raw = await env.TRACKER_DB.get(`v_movies:${v.code}`);
         if (raw) list = JSON.parse(raw);
@@ -1574,19 +1574,27 @@ async function handleMovieSearchInput(botToken, chatId, cityCode, text, env) {
 async function fetchMoviesForCity(cityCode, venueCode = "ALL", showAllCity = false, env = null) {
   // 1. Check KV cache for venue-specific movies first (dynamic updates take precedence)
   if (venueCode !== "ALL" && !showAllCity && env && env.TRACKER_DB) {
-    const cached = await env.TRACKER_DB.get(`v_movies:${venueCode}`);
-    if (cached !== null && cached !== undefined) {
-      try {
-        const arr = JSON.parse(cached);
-        if (Array.isArray(arr)) {
-          const resolved = arr.map(item => {
-            if (typeof item === "string") return { code: item, title: MOVIES_CATALOG[item] || item };
-            return item;
-          });
-          return { movies: resolved, isVenueSpecific: true };
+    try {
+      let arr = null;
+      if (cityCode) {
+        const cityRaw = await env.TRACKER_DB.get(`v_movies_city:${cityCode}`);
+        if (cityRaw) {
+          const cvMap = JSON.parse(cityRaw);
+          if (cvMap && cvMap[venueCode]) arr = cvMap[venueCode];
         }
-      } catch (e) {}
-    }
+      }
+      if (!arr) {
+        const cached = await env.TRACKER_DB.get(`v_movies:${venueCode}`);
+        if (cached) arr = JSON.parse(cached);
+      }
+      if (Array.isArray(arr)) {
+        const resolved = arr.map(item => {
+          if (typeof item === "string") return { code: item, title: MOVIES_CATALOG[item] || item };
+          return item;
+        });
+        return { movies: resolved, isVenueSpecific: true };
+      }
+    } catch (e) {}
   }
 
   // 2. Check local preloaded venue mapping
@@ -1621,14 +1629,24 @@ async function fetchMoviesForCity(cityCode, venueCode = "ALL", showAllCity = fal
 async function resolveMovieTitle(eventCode, venueCode, cityCode, env) {
   // 1. Check venue-specific KV cache first (highest fidelity live from BMS)
   if (env && env.TRACKER_DB && venueCode && venueCode !== "ALL") {
-    const vRaw = await env.TRACKER_DB.get(`v_movies:${venueCode}`);
-    if (vRaw) {
-      try {
-        const list = JSON.parse(vRaw);
+    try {
+      let list = null;
+      if (cityCode) {
+        const cityRaw = await env.TRACKER_DB.get(`v_movies_city:${cityCode}`);
+        if (cityRaw) {
+          const cvMap = JSON.parse(cityRaw);
+          if (cvMap && cvMap[venueCode]) list = cvMap[venueCode];
+        }
+      }
+      if (!list) {
+        const vRaw = await env.TRACKER_DB.get(`v_movies:${venueCode}`);
+        if (vRaw) list = JSON.parse(vRaw);
+      }
+      if (Array.isArray(list)) {
         const found = list.find(m => (m.code || m) === eventCode);
         if (found && found.title) return found.title;
-      } catch (e) {}
-    }
+      }
+    } catch (e) {}
   }
 
   // 2. Check city-wide KV cache
