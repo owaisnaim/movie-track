@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -13,12 +14,30 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-# Route through SOCKS5 proxy (Tor) when running on GitHub Actions to bypass
-# BMS/Akamai IP blocks on Azure datacenter ranges.
-_socks_proxy = os.getenv("SOCKS_PROXY")
-CFFI_PROXIES = {"http": _socks_proxy, "https": _socks_proxy} if _socks_proxy else None
-if _socks_proxy:
-    print(f"[PROXY] Using SOCKS5 proxy: {_socks_proxy}")
+def slugify(text: str) -> str:
+    """Create a URL-safe slug matching BookMyShow format."""
+    return re.sub(r"[^a-zA-Z0-9]+", "-", text.lower()).strip("-")
+
+FORMAT_WORDS = {
+    "english", "hindi", "telugu", "tamil", "kannada", "malayalam", "bengali", "marathi", "gujarati",
+    "3d", "2d", "4dx", "imax", "pcx", "atmos", "hdr", "barco", "laser",
+    "vsn", "vision", "re-release", "rerelease", "dubbed", "subbed"
+}
+
+def normalize_title(title: str) -> set:
+    clean = re.sub(r"[^a-zA-Z0-9\s]", " ", title.lower())
+    words = [w for w in clean.split() if len(w) > 2]
+    core = [w for w in words if w not in FORMAT_WORDS]
+    return set(core if core else words)
+
+def match_movie(target_title: str, candidate_title: str) -> bool:
+    target_words = normalize_title(target_title)
+    cand_clean = re.sub(r"[^a-zA-Z0-9\s]", " ", candidate_title.lower())
+    cand_words = set(cand_clean.split())
+    if not target_words:
+        return False
+    return target_words.issubset(cand_words)
+
 
 VENUE = "PRHN"
 REGION_CODE = "HYD"
@@ -411,26 +430,37 @@ def sync_dynamic_tracker(token: str, tracker_id: str, known_sessions: list, is_i
         print(f"[DYNAMIC] Failed to sync tracker {tracker_id}: {e}")
         return False
 
-def sync_city_movies_to_cloudflare(token: str, city_code: str = "HYD"):
-    url = f"https://movie-track-bot.mustardshrek.workers.dev/api/movies/sync?token={token}"
+def fetch_bms_html(url: str, headers: dict) -> tuple[int, str]:
+    """Fetch BMS HTML page with browser impersonation, and optional Tier-2 scraping proxy fallback."""
     try:
-        res = cffi_requests.get(
-            "https://in.bookmyshow.com/serv/getData?cmd=QUICKBOOK&type=MT",
-            headers={"x-region-code": city_code, "Cookie": f"Rgn=|Code={city_code}|"},
-            timeout=10,
-            impersonate="chrome120",
-            proxies=CFFI_PROXIES
-        )
-        if res.status_code == 200:
-            events = res.json().get("moviesData", {}).get("BookMyShow", {}).get("arrEvents", [])
-            movies = [{"code": e["EventCode"], "title": e["EventTitle"]} for e in events if e.get("EventCode") and e.get("EventTitle")]
-            if movies:
-                data = json.dumps({"cityCode": city_code, "movies": movies}).encode("utf-8")
-                req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}, method="POST")
-                with urllib.request.urlopen(req, timeout=10) as resp:
-                    print(f"[DYNAMIC] Synced {len(movies)} latest movies for {city_code} to Cloudflare KV.")
+        res = cffi_requests.get(url, headers=headers, timeout=15, impersonate="chrome124", allow_redirects=True)
+        if res.status_code == 200 and "window.__INITIAL_STATE__" in res.text:
+            return 200, res.text
+        if res.status_code != 200:
+            print(f"[FETCH] Direct fetch HTTP {res.status_code} for {url}")
     except Exception as e:
-        print(f"[DYNAMIC] Movie sync notice: {e}")
+        print(f"[FETCH] Direct fetch error for {url}: {e}")
+
+    # Tier-2 Fallback: If SCRAPING_API_KEY is configured in environment
+    scraping_key = os.getenv("SCRAPING_API_KEY")
+    if scraping_key:
+        print(f"[FETCH] Attempting Tier-2 Scraping Proxy for {url}...")
+        try:
+            proxy_url = f"https://api.scrapingant.com/v2/general?url={urllib.parse.quote(url)}&x-api-key={scraping_key}&browser=false"
+            res = cffi_requests.get(proxy_url, timeout=25)
+            if res.status_code == 200:
+                return 200, res.text
+            print(f"[FETCH] Scraping proxy returned HTTP {res.status_code}")
+        except Exception as e:
+            print(f"[FETCH] Scraping proxy failed: {e}")
+
+    return 0, ""
+
+
+def sync_city_movies_to_cloudflare(token: str, city_code: str = "HYD"):
+    """Catalog sync is now managed twice daily by sync_cinema_catalog.py."""
+    return True
+
 
 def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
     if tracker.get("isPaused", False):
@@ -443,194 +473,165 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
 
     city_code = tracker.get("cityCode", "HYD")
     city_slug = tracker.get("citySlug", "hyderabad")
-    city_lat = str(tracker.get("lat") or "17.385")
-    city_lon = str(tracker.get("lon") or "78.487")
-    venue_code = tracker.get("venueCode", "ALL")
-    venue_name = tracker.get("venueName", "All Theatres")
-    raw_event_code = tracker.get("eventCode", "")
-    event_codes = [c.strip() for c in str(raw_event_code).split(",") if c.strip()]
+    venue_code = tracker.get("venueCode", "PRHN")
+    venue_name = tracker.get("venueName", "Prasads Multiplex")
     movie_title = tracker.get("movieTitle", "Movie")
     screen_filter = tracker.get("filter", "ANY")
     known_sessions = set(str(sid) for sid in tracker.get("knownSessions", []))
     is_initialized = tracker.get("isInitialized")
     if is_initialized is None:
-        # Backward compatibility: if tracker already has known sessions, treat as initialized
         is_initialized = len(known_sessions) > 0
 
     print(f"\n[DYNAMIC] 🔍 Checking tracker: {movie_title} in {city_code} ({venue_name}) | Filter: {screen_filter} | Initialized: {is_initialized}")
 
-    # Use the Android app identity — Akamai may apply more lenient rules for
-    # mobile app traffic (BMS can't afford to break their own app on corporate/
-    # CI datacenter IPs), unlike the strict web scraping rules.
+    venue_slug = slugify(venue_name)
+    base_url = f"https://in.bookmyshow.com/cinemas/{city_slug}/{venue_slug}/{venue_code}"
+
     headers = {
-        "User-Agent": "BookMyShow/6.5.1 (Android; 14; sdk_gphone64_x86_64)",
-        "Accept": "application/json, text/plain, */*",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/131.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-IN,en;q=0.9",
-        "x-app-code": "AND",
         "x-region-code": city_code,
         "x-region-slug": city_slug,
-        "x-geohash": "tep",
-        "x-latitude": city_lat,
-        "x-longitude": city_lon,
-        "x-location-selection": "manual",
         "Cookie": f"Rgn=|Code={city_code}|",
+        "Referer": "https://in.bookmyshow.com/",
     }
 
-    new_shows = []
-    current_seen_sessions = set()
-    matching_sessions = set()
-    fetch_successful = False
+    status, html_content = fetch_bms_html(base_url, headers)
+    if status != 200 or not html_content:
+        print(f"[DYNAMIC] Notice: Could not fetch cinema page for {venue_name}. Will retry next run.")
+        return False
 
-    # ── Dynamic event code discovery ──────────────────────────────────────────
-    # Query QUICKBOOK to find ALL current event codes for this movie title.
-    # BMS frequently re-lists movies under new event codes; relying only on the
-    # stored code means new listings are silently missed. We merge discovered
-    # codes with the stored ones so nothing is ever skipped.
+    # Extract React initial state
     try:
-        qb_res = cffi_requests.get(
-            "https://in.bookmyshow.com/serv/getData?cmd=QUICKBOOK&type=MT",
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-                "x-app-code": "WEB",
-                "x-region-code": city_code,
-                "Cookie": f"Rgn=|Code={city_code}|",
-            },
-            timeout=10, impersonate="chrome120", proxies=CFFI_PROXIES
-        )
-        if qb_res.status_code != 200:
-            print(f"[DYNAMIC] Notice: QUICKBOOK returned HTTP {qb_res.status_code}, skipping event code discovery.")
-        if qb_res.status_code == 200:
-            qb_events = (qb_res.json()
-                         .get("moviesData", {})
-                         .get("BookMyShow", {})
-                         .get("arrEvents", []))
-            title_lower = movie_title.lower()
-            # Build set of significant words (>2 chars) from the tracker title,
-            # excluding format/language tags so "English 3D" or "(Hindi)" don't
-            # prevent a match against the base BMS listing title.
-            FORMAT_WORDS = {"english", "hindi", "telugu", "tamil", "dubbed",
-                            "3d", "2d", "4dx", "imax", "pcx", "atmos", "version", "vsn"}
-            title_words = set(w for w in title_lower.replace(":", " ").split()
-                              if len(w) > 2 and w not in FORMAT_WORDS)
-            for ev in qb_events:
-                ev_title = ev.get("EventTitle", "").lower()
-                ev_code  = ev.get("EventCode", "").strip()
-                if not ev_code or ev_code in event_codes:
-                    continue
-                ev_words = set(w for w in ev_title.replace(":", " ").split()
-                               if len(w) > 2 and w not in FORMAT_WORDS)
-                # STRICT: every significant word in the tracker title must appear
-                # in the BMS listing. "encore" won't be in "Avengers: Endgame"
-                # (original), so that listing is safely excluded.
-                # Secondary safety net: even if a wrong code slips through, the
-                # venue filter (e.g. PRHN) means only sessions at the exact
-                # tracked cinema are ever considered — no cross-movie alerts.
-                if title_words and title_words.issubset(ev_words):
-                    print(f"[DYNAMIC] 🔎 Discovered new event code {ev_code} "
-                          f"('{ev.get('EventTitle')}') for '{movie_title}'")
-                    event_codes.append(ev_code)
-    except Exception as qb_err:
-        print(f"[DYNAMIC] Notice: QUICKBOOK discovery skipped ({qb_err})")
-    # ─────────────────────────────────────────────────────────────────────────
+        idx = html_content.find("window.__INITIAL_STATE__ = ")
+        raw = html_content[idx + 27:]
+        data, _ = json.JSONDecoder().raw_decode(raw)
+        queries = data.get("venueShowtimesFunctionalApi", {}).get("queries", {})
+    except Exception as e:
+        print(f"[DYNAMIC] Notice: Failed to decode initial state for {venue_name} ({e}).")
+        return False
 
-    for event_code in event_codes:
-        url = f"{API_URL}?eventCode={event_code}&isDesktop=true&regionCode={city_code}&lat={city_lat}&lon={city_lon}"
+    first_query_data = None
+    first_date_code = None
+    for qk, qv in queries.items():
+        if "getShowtimesByVenue" in qk:
+            first_query_data = qv.get("data", {})
+            parts = qk.split("-")
+            if len(parts) >= 3:
+                first_date_code = parts[-1]
+            break
 
-        try:
-            res = cffi_requests.get(url, headers=headers, timeout=20, impersonate="chrome124", proxies=CFFI_PROXIES)
-            if res.status_code != 200:
-                print(f"[DYNAMIC] HTTP {res.status_code} for {event_code}")
-                continue
-            fetch_successful = True
-            initial_data = res.json()
-        except Exception as e:
-            print(f"[DYNAMIC] Error fetching event {event_code}: {e}")
-            continue
+    if not first_query_data:
+        print(f"[DYNAMIC] Notice: No showtimes query found in state for {venue_name}.")
+        return False
 
-        active_dates = extract_dates(initial_data)
-        dates_to_check = active_dates if active_dates else [""]
+    # Extract all active dates from ShowDatesArray
+    dates_array = first_query_data.get("ShowDatesArray", [])
+    active_dates = [d.get("DateCode") for d in dates_array if not d.get("isDisabled") and d.get("DateCode")]
+    if not active_dates and first_date_code:
+        active_dates = [first_date_code]
 
-        for date_code in dates_to_check:
-            date_url = f"{url}&dateCode={date_code}" if date_code else url
-            try:
-                d_res = cffi_requests.get(date_url, headers=headers, timeout=20, impersonate="chrome124", proxies=CFFI_PROXIES)
-                if d_res.status_code != 200:
-                    continue
-                date_data = d_res.json()
-            except Exception:
+    matching_sessions = set()
+    new_shows = []
+
+    def parse_events(events_list, date_code):
+        matched_shows = []
+        for ev in events_list:
+            ev_title = (ev.get("EventTitle") or "").strip()
+            if not match_movie(movie_title, ev_title):
                 continue
 
-            for widget in date_data.get("data", {}).get("showtimeWidgets", []):
-                if widget.get("type") != "groupList":
-                    continue
-                for group in widget.get("data", []):
-                    for item in group.get("data", []):
-                        item_vcode = item.get("additionalData", {}).get("venueCode", "")
-                        if venue_code != "ALL" and item_vcode != venue_code:
+            childs = ev.get("ChildEvents", []) or []
+            for ch in childs:
+                dim = (ch.get("EventDimension") or "").strip()
+                shows = ch.get("ShowTimes", []) or []
+                for sh in shows:
+                    session_id = str(sh.get("SessionId", "")).strip()
+                    if not session_id:
+                        continue
+                    show_time = str(sh.get("ShowTime", "")).strip()
+                    screen_name = str(sh.get("ScreenName", "")).strip()
+                    screen_attr = str(sh.get("Attributes", "") or dim).strip()
+
+                    # Apply screen filter
+                    attr_lower = screen_attr.lower()
+                    name_lower = screen_name.lower()
+                    dim_lower = dim.lower()
+
+                    if screen_filter in ("EXACT", "ALL", "ANY"):
+                        pass
+                    elif screen_filter == "PCX":
+                        is_pcx = (
+                            "pcx" in attr_lower or "pcx" in name_lower or "pcx" in dim_lower
+                            or "infinity" in attr_lower or "infinity" in name_lower
+                            or "screen 1" in name_lower
+                            or "imax" in attr_lower or "4dx" in attr_lower
+                        )
+                        if not is_pcx:
+                            continue
+                    elif screen_filter == "3D":
+                        if "3d" not in attr_lower and "3d" not in name_lower and "3d" not in dim_lower:
+                            continue
+                    elif screen_filter == "2D":
+                        if "3d" in attr_lower or "3d" in name_lower or "3d" in dim_lower:
                             continue
 
-                        v_name = item.get("additionalData", {}).get("venueName") or venue_name
+                    matching_sessions.add(session_id)
 
-                        for show in item.get("showtimes", []):
-                            show_add = show.get("additionalData", {})
-                            session_id = str(show_add.get("sessionId", "")).strip()
-                            if not session_id:
-                                continue
+                    d_str = f"{date_code[:4]}-{date_code[4:6]}-{date_code[6:8]}" if len(date_code) == 8 else date_code
+                    booking_url = f"https://in.bookmyshow.com/cinemas/{city_slug}/{venue_slug}/buytickets/{venue_code}/{date_code}"
 
-                            current_seen_sessions.add(session_id)
+                    if session_id not in known_sessions:
+                        matched_shows.append({
+                            "sessionId": session_id,
+                            "date": d_str,
+                            "time": show_time,
+                            "screen": screen_attr or screen_name or "Standard",
+                            "venue": venue_name,
+                            "url": booking_url,
+                            "movieTitle": ev_title,
+                        })
+        return matched_shows
 
-                            screen_attr = str(show.get("screenAttr") or show_add.get("attributes") or "").lower()
-                            screen_name = str(show_add.get("screenName", "")).lower()
+    # 1. Parse initial day (already in memory, zero extra HTTP calls)
+    events_first = first_query_data.get("showDetailsTransformed", {}).get("Event", [])
+    new_shows.extend(parse_events(events_first, first_date_code or active_dates[0]))
 
-                            if screen_filter in ("EXACT", "ALL", "ANY"):
-                                pass  # Specific format event code selected by user: track all shows!
-                            elif screen_filter == "PCX":
-                                is_pcx = (
-                                    "pcx" in screen_attr
-                                    or "infinity" in screen_attr
-                                    or "screen 1" in screen_name
-                                    or "imax" in screen_attr
-                                    or "4dx" in screen_attr
-                                    or "mx4d" in screen_attr
-                                )
-                                if not is_pcx:
-                                    continue
-                            elif screen_filter == "3D":
-                                if "3d" not in screen_attr and "3d" not in screen_name:
-                                    continue
-                            elif screen_filter == "2D":
-                                if "3d" in screen_attr or "3d" in screen_name:
-                                    continue
-
-                            matching_sessions.add(session_id)
-
-                            if session_id not in known_sessions:
-                                show_time = str(show.get("title") or show_add.get("showTime", "Detected")).strip()
-                                d_str = f"{date_code[:4]}-{date_code[4:6]}-{date_code[6:8]}" if len(date_code) == 8 else (date_code or "Today")
-                                booking_url = f"https://in.bookmyshow.com/cinemas/{city_slug}/{item_vcode}/buytickets/{item_vcode}/{date_code}"
-                                new_shows.append({
-                                    "sessionId": session_id,
-                                    "date": d_str,
-                                    "time": show_time,
-                                    "screen": show.get("screenAttr") or show_add.get("screenName") or "Standard",
-                                    "venue": v_name,
-                                    "url": booking_url
-                                })
-
-    if not fetch_successful:
-        print(f"[DYNAMIC] Notice: Could not fetch showtimes for {movie_title} (network/HTTP issue). Will retry next run.")
-        return False
+    # 2. Parse subsequent active upcoming dates
+    for date_code in active_dates:
+        if date_code == first_date_code:
+            continue
+        date_url = f"{base_url}/{date_code}"
+        d_status, d_html = fetch_bms_html(date_url, headers)
+        if d_status == 200 and d_html:
+            try:
+                idx = d_html.find("window.__INITIAL_STATE__ = ")
+                raw = d_html[idx + 27:]
+                d_data, _ = json.JSONDecoder().raw_decode(raw)
+                d_queries = d_data.get("venueShowtimesFunctionalApi", {}).get("queries", {})
+                for qk, qv in d_queries.items():
+                    if f"getShowtimesByVenue-{venue_code}-{date_code}" in qk or "getShowtimesByVenue" in qk:
+                        d_events = qv.get("data", {}).get("showDetailsTransformed", {}).get("Event", [])
+                        new_shows.extend(parse_events(d_events, date_code))
+                        break
+            except Exception as e:
+                print(f"[DYNAMIC] Notice: Could not parse date {date_code} for {venue_name} ({e})")
 
     # Silent baseline capture on first scan:
     if not is_initialized:
-        print(f"[DYNAMIC] 🎯 Initializing baseline for {movie_title}: recorded {len(matching_sessions)} existing shows (silent baseline, no false alarm).")
+        print(f"[DYNAMIC] 🎯 Initializing baseline for {movie_title}: recorded {len(matching_sessions)} existing shows across {len(active_dates)} date(s) (silent baseline, no false alarm).")
         sync_dynamic_tracker(token, tracker["id"], list(matching_sessions), is_initialized=True)
         return False
 
     if new_shows:
         is_first_drop = len(known_sessions) == 0
         header_title = "🚨 *SHOWS OPEN ON BOOKMYSHOW!* 🚨" if is_first_drop else "🚨 *NEW SHOWS ADDED ON BOOKMYSHOW!* 🚨"
-        print(f"[DYNAMIC] 🚨 Found {len(new_shows)} show(s) for {movie_title} (first_drop={is_first_drop})!")
+        print(f"[DYNAMIC] 🚨 Found {len(new_shows)} new show(s) for {movie_title} across {len(active_dates)} active date(s) (first_drop={is_first_drop})!")
 
         # Sort new shows chronologically
         new_shows.sort(key=lambda s: (s.get("date", ""), s.get("time", "")))
@@ -655,7 +656,7 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
         sync_dynamic_tracker(token, tracker["id"], updated_known, is_initialized=True)
         return True
 
-    print(f"[DYNAMIC] No new shows for {movie_title} ({len(matching_sessions)} active matching shows).")
+    print(f"[DYNAMIC] No new shows for {movie_title} ({len(matching_sessions)} active matching shows across {len(active_dates)} date(s)).")
     return False
 
 def main():
