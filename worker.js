@@ -411,7 +411,12 @@ async function handleTelegramUpdate(update, env) {
     }
 
     await answerCallbackQuery(botToken, cb.id);
-    await handleCallbackData(botToken, chatId, messageId, data, env);
+    try {
+      await handleCallbackData(botToken, chatId, messageId, data, env);
+    } catch (err) {
+      console.error("handleCallbackData error:", err);
+      await sendTelegram(botToken, chatId, "⚠️ An error occurred while processing your request. Please try again or type /start.");
+    }
     return;
   }
 
@@ -832,9 +837,11 @@ async function sendMovieTheatreSelection(botToken, chatId, cityCode, masterCode,
 
   const buttons = [];
   // "All Theatres" option
-  buttons.push([
-    { text: `⭐ All Theatres in ${city.name} (${totalTheatres} cinemas)`, callback_data: `th_shows:${cityCode}:ALL:${masterCode}` }
-  ]);
+  if (totalTheatres > 0) {
+    buttons.push([
+      { text: `⭐ All Theatres in ${city.name} (${totalTheatres} cinemas)`, callback_data: `th_shows:${cityCode}:ALL:${masterCode}` }
+    ]);
+  }
 
   for (const th of slice) {
     const cleanFormats = (th.formats || []).filter(f => {
@@ -867,17 +874,35 @@ async function sendMovieTheatreSelection(botToken, chatId, cityCode, masterCode,
     buttons.push(navRow);
   }
 
+  if (totalTheatres === 0) {
+    buttons.push([
+      { text: `🏛️ Browse All Theatres in ${city.name}`, callback_data: `thp:${cityCode}:0:${masterCode}` }
+    ]);
+  }
+
   // Back button
   buttons.push([
     { text: `« Back to Movies (${city.name})`, callback_data: `c:${cityCode}` }
   ]);
 
+  const hasLiveShows = theatres.some(th => th.formats && th.formats.length > 0);
+  let statusText = "";
+  if (totalTheatres === 0) {
+    statusText = `No theatres found in ${city.name}. Use the button below to browse all cinemas:`;
+  } else if (hasLiveShows) {
+    statusText = `Showing at *${totalTheatres}* theatre(s) in ${city.name}.\n` +
+      `Select a cinema below to view all screen formats & shows:`;
+  } else {
+    statusText = `ℹ️ *Advance Tracking Mode*\n` +
+      `Bookings have not opened yet across cinemas in ${city.name}.\n` +
+      `Select any cinema below to receive an instant alert the second tickets drop:`;
+  }
+
   const text =
     `🏛️ *Step 3/4: Choose Theatre for ${movieTitle}*\n\n` +
     `• City: *${city.name}*\n` +
     `• Movie: *${movieTitle}*\n\n` +
-    `Showing at *${totalTheatres}* theatre(s) in ${city.name}.\n` +
-    `Select a cinema below to view all screen formats & shows:`;
+    statusText;
 
   if (messageId) {
     await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
@@ -901,12 +926,9 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
     }
   }
 
-  const isAvengers = movieGroup.baseTitle.toLowerCase().includes("avengers") ||
-    Array.from(variantCodes).some(c => typeof AVENGERS_ALL !== "undefined" && AVENGERS_ALL.includes(c));
-
   const matchingTheatres = [];
 
-  // Preload city-bundled venues map once (saves up to 150 KV read calls per request!)
+  // Preload city-bundled venues map once (1 single KV read for the entire city!)
   let cityVenuesMap = null;
   if (env && env.TRACKER_DB && cityCode) {
     try {
@@ -915,15 +937,10 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
     } catch (e) {}
   }
 
-  // 1. Check KV first (dynamic live BMS schedule), then local VENUE_MOVIES_MAP
+  // 1. Check KV cityVenuesMap first, then local in-memory VENUE_MOVIES_MAP
+  // CRITICAL: NEVER do env.TRACKER_DB.get in a loop here! Cloudflare Workers Free limits subrequests to 50 per invocation.
   for (const v of allVenues) {
     let list = cityVenuesMap ? cityVenuesMap[v.code] : null;
-    if (!list && env && env.TRACKER_DB) {
-      try {
-        const raw = await env.TRACKER_DB.get(`v_movies:${v.code}`);
-        if (raw) list = JSON.parse(raw);
-      } catch (e) {}
-    }
     if (!list && typeof VENUE_MOVIES_MAP !== "undefined" && VENUE_MOVIES_MAP[v.code]) {
       list = VENUE_MOVIES_MAP[v.code];
     }
@@ -976,11 +993,13 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
   // 3. Fallback: Query live BookMyShow SHOWTIMES_API
   try {
     const liveTheatres = await fetchTheatresForMovieLive(cityCode, Array.from(variantCodes), env);
+    if (liveTheatres && liveTheatres.length > 0) {
       return liveTheatres;
+    }
   } catch (e) {}
 
-  // 4. Zero-guessing: If not yet playing anywhere, return popular venues with empty formats so user can track
-  return allVenues.slice(0, 10).map(v => {
+  // 4. Advance Tracking Fallback: Return all city venues with empty formats so user can pick any theatre
+  return allVenues.map(v => {
     return {
       code: v.code,
       name: v.name || v.title || v.code,
@@ -1193,7 +1212,16 @@ async function getShowsForVenueAndMovie(cityCode, venueCode, movieGroup, env) {
     variants = [...movieGroup.variants];
   } else {
     let vList = null;
-    if (env && env.TRACKER_DB) {
+    if (cityCode && env && env.TRACKER_DB) {
+      try {
+        const cityRaw = await env.TRACKER_DB.get(`v_movies_city:${cityCode}`);
+        if (cityRaw) {
+          const cvMap = JSON.parse(cityRaw);
+          if (cvMap && cvMap[venueCode]) vList = cvMap[venueCode];
+        }
+      } catch (e) {}
+    }
+    if (!vList && env && env.TRACKER_DB) {
       try {
         const raw = await env.TRACKER_DB.get(`v_movies:${venueCode}`);
         if (raw) vList = JSON.parse(raw);
