@@ -356,25 +356,16 @@ export default {
       try {
         const payload = await request.json(); // { cityCode, movies, venues } or { venueCode, movies }
         if (env.TRACKER_DB && payload) {
-          if (payload.venueCode && Array.isArray(payload.movies)) {
-            await env.TRACKER_DB.put(`v_movies:${payload.venueCode}`, JSON.stringify(payload.movies), { expirationTtl: 86400 * 7 });
-          }
-          if (payload.venues && typeof payload.venues === "object") {
-            for (const [vCode, mList] of Object.entries(payload.venues)) {
-              if (Array.isArray(mList)) {
-                await env.TRACKER_DB.put(`v_movies:${vCode}`, JSON.stringify(mList), { expirationTtl: 86400 * 7 });
-              }
-            }
+          const ttl = 86400 * 7;
+          // Atomic city-bundled write: Saves 99% of daily KV writes
+          if (payload.cityCode && payload.venues && typeof payload.venues === "object") {
+            await env.TRACKER_DB.put(`v_movies_city:${payload.cityCode}`, JSON.stringify(payload.venues), { expirationTtl: ttl });
           }
           if (payload.cityCode && Array.isArray(payload.movies)) {
-            await env.TRACKER_DB.put(`movies:${payload.cityCode}`, JSON.stringify(payload.movies), { expirationTtl: 86400 * 7 });
+            await env.TRACKER_DB.put(`movies:${payload.cityCode}`, JSON.stringify(payload.movies), { expirationTtl: ttl });
           }
-          if (!payload.venueCode && !payload.venues && !payload.cityCode) {
-            for (const [cCode, mList] of Object.entries(payload)) {
-              if (Array.isArray(mList) && mList.length > 0) {
-                await env.TRACKER_DB.put(`movies:${cCode}`, JSON.stringify(mList), { expirationTtl: 86400 * 7 });
-              }
-            }
+          if (payload.venueCode && Array.isArray(payload.movies)) {
+            await env.TRACKER_DB.put(`v_movies:${payload.venueCode}`, JSON.stringify(payload.movies), { expirationTtl: ttl });
           }
         }
         return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
@@ -454,12 +445,19 @@ async function handleTelegramUpdate(update, env) {
     await sendStatusReport(botToken, chatId, env);
     return;
   }
+  if (cmd === "/clear" || cmd === "/delete_all" || cmd === "/delete") {
+    await clearSession(env, chatId);
+    await deleteAllTrackersForUser(env, chatId);
+    await sendTelegram(botToken, chatId, "🗑️ *All trackers for your account have been deleted.*");
+    return;
+  }
   if (cmd === "/help") {
     await sendTelegram(botToken, chatId,
       "🤖 *Movie Ticket Tracker Bot Commands:*\n\n" +
       "• /start — Track tickets (City ➔ Movie ➔ Theatre ➔ Screen)\n" +
-      "• /list — View and manage your active trackers\n" +
+      "• /list — View and manage your active trackers (Pause / Resume / Delete)\n" +
       "• /status — Check live status of all tracked shows\n" +
+      "• /clear — Delete all your active trackers immediately\n" +
       "• /help — Show this help menu\n\n" +
       "💡 *Tip:* You can also paste any BookMyShow movie link directly into this chat anytime!"
     );
@@ -908,10 +906,19 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
 
   const matchingTheatres = [];
 
+  // Preload city-bundled venues map once (saves up to 150 KV read calls per request!)
+  let cityVenuesMap = null;
+  if (env && env.TRACKER_DB && cityCode) {
+    try {
+      const cityRaw = await env.TRACKER_DB.get(`v_movies_city:${cityCode}`);
+      if (cityRaw) cityVenuesMap = JSON.parse(cityRaw);
+    } catch (e) {}
+  }
+
   // 1. Check KV first (dynamic live BMS schedule), then local VENUE_MOVIES_MAP
   for (const v of allVenues) {
-    let list = null;
-    if (env && env.TRACKER_DB) {
+    let list = cityVenuesMap ? cityVenuesMap[v.code] : null;
+    if (!list && env && env.TRACKER_DB) {
       try {
         const raw = await env.TRACKER_DB.get(`v_movies:${v.code}`);
         if (raw) list = JSON.parse(raw);
@@ -1567,19 +1574,27 @@ async function handleMovieSearchInput(botToken, chatId, cityCode, text, env) {
 async function fetchMoviesForCity(cityCode, venueCode = "ALL", showAllCity = false, env = null) {
   // 1. Check KV cache for venue-specific movies first (dynamic updates take precedence)
   if (venueCode !== "ALL" && !showAllCity && env && env.TRACKER_DB) {
-    const cached = await env.TRACKER_DB.get(`v_movies:${venueCode}`);
-    if (cached !== null && cached !== undefined) {
-      try {
-        const arr = JSON.parse(cached);
-        if (Array.isArray(arr)) {
-          const resolved = arr.map(item => {
-            if (typeof item === "string") return { code: item, title: MOVIES_CATALOG[item] || item };
-            return item;
-          });
-          return { movies: resolved, isVenueSpecific: true };
+    try {
+      let arr = null;
+      if (cityCode) {
+        const cityRaw = await env.TRACKER_DB.get(`v_movies_city:${cityCode}`);
+        if (cityRaw) {
+          const cvMap = JSON.parse(cityRaw);
+          if (cvMap && cvMap[venueCode]) arr = cvMap[venueCode];
         }
-      } catch (e) {}
-    }
+      }
+      if (!arr) {
+        const cached = await env.TRACKER_DB.get(`v_movies:${venueCode}`);
+        if (cached) arr = JSON.parse(cached);
+      }
+      if (Array.isArray(arr)) {
+        const resolved = arr.map(item => {
+          if (typeof item === "string") return { code: item, title: MOVIES_CATALOG[item] || item };
+          return item;
+        });
+        return { movies: resolved, isVenueSpecific: true };
+      }
+    } catch (e) {}
   }
 
   // 2. Check local preloaded venue mapping
@@ -1614,14 +1629,24 @@ async function fetchMoviesForCity(cityCode, venueCode = "ALL", showAllCity = fal
 async function resolveMovieTitle(eventCode, venueCode, cityCode, env) {
   // 1. Check venue-specific KV cache first (highest fidelity live from BMS)
   if (env && env.TRACKER_DB && venueCode && venueCode !== "ALL") {
-    const vRaw = await env.TRACKER_DB.get(`v_movies:${venueCode}`);
-    if (vRaw) {
-      try {
-        const list = JSON.parse(vRaw);
+    try {
+      let list = null;
+      if (cityCode) {
+        const cityRaw = await env.TRACKER_DB.get(`v_movies_city:${cityCode}`);
+        if (cityRaw) {
+          const cvMap = JSON.parse(cityRaw);
+          if (cvMap && cvMap[venueCode]) list = cvMap[venueCode];
+        }
+      }
+      if (!list) {
+        const vRaw = await env.TRACKER_DB.get(`v_movies:${venueCode}`);
+        if (vRaw) list = JSON.parse(vRaw);
+      }
+      if (Array.isArray(list)) {
         const found = list.find(m => (m.code || m) === eventCode);
         if (found && found.title) return found.title;
-      } catch (e) {}
-    }
+      }
+    } catch (e) {}
   }
 
   // 2. Check city-wide KV cache
@@ -1805,17 +1830,27 @@ async function handleCallbackData(botToken, chatId, messageId, data, env) {
 
   // Tracker Controls
   if (action === "t_pause") {
-    await setTrackerPaused(env, parts[1], true);
-    await editTelegramMessage(botToken, chatId, messageId, "⏸️ *Tracker Paused.* No alerts will be sent.");
+    const updated = await setTrackerPaused(env, parts[1], true, chatId);
+    if (updated) {
+      const { text, buttons } = renderTrackerCard(updated);
+      await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
+    } else {
+      await editTelegramMessage(botToken, chatId, messageId, "⏸️ *Tracker Paused.* No alerts will be sent.");
+    }
     return;
   }
   if (action === "t_res") {
-    await setTrackerPaused(env, parts[1], false);
-    await editTelegramMessage(botToken, chatId, messageId, "▶️ *Tracker Resumed.* Monitoring active.");
+    const updated = await setTrackerPaused(env, parts[1], false, chatId);
+    if (updated) {
+      const { text, buttons } = renderTrackerCard(updated);
+      await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
+    } else {
+      await editTelegramMessage(botToken, chatId, messageId, "▶️ *Tracker Resumed.* Monitoring active.");
+    }
     return;
   }
   if (action === "t_del") {
-    await deleteTracker(env, parts[1]);
+    await deleteTracker(env, parts[1], chatId);
     await editTelegramMessage(botToken, chatId, messageId, "🗑️ *Tracker Deleted.*");
     return;
   }
@@ -2100,39 +2135,108 @@ async function getTrackersForUser(env, chatId) {
   return raw ? JSON.parse(raw) : [];
 }
 
-async function setTrackerPaused(env, trackerId, isPaused) {
-  if (!env.TRACKER_DB) return;
-  const list = await env.TRACKER_DB.list({ prefix: "trackers:" });
-  for (const k of list.keys) {
-    const raw = await env.TRACKER_DB.get(k.name);
-    if (!raw) continue;
-    let trackers = JSON.parse(raw);
-    let matched = false;
-    for (let t of trackers) {
-      if (t.id === trackerId) {
-        t.isPaused = isPaused;
-        matched = true;
+async function setTrackerPaused(env, trackerId, isPaused, chatId = null) {
+  if (!env.TRACKER_DB) return null;
+  try {
+    if (chatId) {
+      const raw = await env.TRACKER_DB.get(`trackers:${chatId}`);
+      if (raw) {
+        let trackers = JSON.parse(raw);
+        if (Array.isArray(trackers)) {
+          let updatedTracker = null;
+          for (let t of trackers) {
+            if (t.id === trackerId) {
+              t.isPaused = isPaused;
+              updatedTracker = t;
+            }
+          }
+          if (updatedTracker) {
+            await env.TRACKER_DB.put(`trackers:${chatId}`, JSON.stringify(trackers));
+            return updatedTracker;
+          }
+        }
       }
     }
-    if (matched) {
-      await env.TRACKER_DB.put(k.name, JSON.stringify(trackers));
-      break;
+
+    const list = await env.TRACKER_DB.list({ prefix: "trackers:" });
+    for (const k of list.keys) {
+      const raw = await env.TRACKER_DB.get(k.name);
+      if (!raw) continue;
+      try {
+        let trackers = JSON.parse(raw);
+        if (!Array.isArray(trackers)) continue;
+        let updatedTracker = null;
+        for (let t of trackers) {
+          if (t.id === trackerId) {
+            t.isPaused = isPaused;
+            updatedTracker = t;
+          }
+        }
+        if (updatedTracker) {
+          await env.TRACKER_DB.put(k.name, JSON.stringify(trackers));
+          return updatedTracker;
+        }
+      } catch (e) {}
     }
+  } catch (err) {
+    console.error("setTrackerPaused error:", err);
   }
+  return null;
 }
 
-async function deleteTracker(env, trackerId) {
-  if (!env.TRACKER_DB) return;
-  const list = await env.TRACKER_DB.list({ prefix: "trackers:" });
-  for (const k of list.keys) {
-    const raw = await env.TRACKER_DB.get(k.name);
-    if (!raw) continue;
-    let trackers = JSON.parse(raw);
-    const filtered = trackers.filter(t => t.id !== trackerId);
-    if (filtered.length !== trackers.length) {
-      await env.TRACKER_DB.put(k.name, JSON.stringify(filtered));
-      break;
+async function deleteTracker(env, trackerId, chatId = null) {
+  if (!env.TRACKER_DB) return false;
+  try {
+    if (chatId) {
+      const raw = await env.TRACKER_DB.get(`trackers:${chatId}`);
+      if (raw) {
+        let trackers = JSON.parse(raw);
+        if (Array.isArray(trackers)) {
+          const filtered = trackers.filter(t => t.id !== trackerId);
+          if (filtered.length !== trackers.length) {
+            if (filtered.length === 0) {
+              await env.TRACKER_DB.delete(`trackers:${chatId}`);
+            } else {
+              await env.TRACKER_DB.put(`trackers:${chatId}`, JSON.stringify(filtered));
+            }
+            return true;
+          }
+        }
+      }
     }
+
+    const list = await env.TRACKER_DB.list({ prefix: "trackers:" });
+    for (const k of list.keys) {
+      const raw = await env.TRACKER_DB.get(k.name);
+      if (!raw) continue;
+      try {
+        let trackers = JSON.parse(raw);
+        if (!Array.isArray(trackers)) continue;
+        const filtered = trackers.filter(t => t.id !== trackerId);
+        if (filtered.length !== trackers.length) {
+          if (filtered.length === 0) {
+            await env.TRACKER_DB.delete(k.name);
+          } else {
+            await env.TRACKER_DB.put(k.name, JSON.stringify(filtered));
+          }
+          return true;
+        }
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.error("deleteTracker error:", err);
+  }
+  return false;
+}
+
+async function deleteAllTrackersForUser(env, chatId) {
+  if (!env.TRACKER_DB || !chatId) return false;
+  try {
+    await env.TRACKER_DB.delete(`trackers:${chatId}`);
+    return true;
+  } catch (err) {
+    console.error("deleteAllTrackersForUser error:", err);
+    return false;
   }
 }
 
@@ -2159,6 +2263,35 @@ function getTrackerFormatDesc(t) {
   return t.filter || "All Formats";
 }
 
+function renderTrackerCard(t) {
+  const status = t.isPaused ? "Paused ⏸️" : "Active 🟢";
+  const buttons = [
+    [
+      t.isPaused
+        ? { text: "▶️ Resume", callback_data: `t_res:${t.id}` }
+        : { text: "⏸️ Pause", callback_data: `t_pause:${t.id}` },
+      { text: "🗑️ Delete", callback_data: `t_del:${t.id}` }
+    ]
+  ];
+
+  const displayTitle = (t.movieTitle || t.eventCode).replace(/\s*\([^)]*\)$/, "").replace(/[\(\)]+$/g, "").trim();
+  const fmt = getTrackerFormatDesc(t);
+  const existingCount = t.knownSessions?.length || 0;
+  const isInit = t.isInitialized !== false;
+  const showsDisplay = (!isInit && existingCount === 0)
+    ? "Syncing baseline on first scan"
+    : `${existingCount} (monitoring for new drops)`;
+
+  const card =
+    `🎬 *${displayTitle}*\n` +
+    `• Status: *${status}*\n` +
+    `• Theatre: ${t.venueName || t.venueCode}\n` +
+    `• Screen Format: ${fmt}\n` +
+    `• Existing Shows: ${showsDisplay}`;
+
+  return { text: card, buttons };
+}
+
 async function sendTrackerList(botToken, chatId, env) {
   const trackers = await getTrackersForUser(env, chatId);
   if (!trackers || trackers.length === 0) {
@@ -2169,32 +2302,8 @@ async function sendTrackerList(botToken, chatId, env) {
   }
 
   for (const t of trackers) {
-    const status = t.isPaused ? "Paused ⏸️" : "Active 🟢";
-    const buttons = [
-      [
-        t.isPaused
-          ? { text: "▶️ Resume", callback_data: `t_res:${t.id}` }
-          : { text: "⏸️ Pause", callback_data: `t_pause:${t.id}` },
-        { text: "🗑️ Delete", callback_data: `t_del:${t.id}` }
-      ]
-    ];
-
-    const displayTitle = (t.movieTitle || t.eventCode).replace(/\s*\([^)]*\)$/, "").replace(/[\(\)]+$/g, "").trim();
-    const fmt = getTrackerFormatDesc(t);
-    const existingCount = t.knownSessions?.length || 0;
-    const isInit = t.isInitialized !== false;
-    const showsDisplay = (!isInit && existingCount === 0)
-      ? "Syncing baseline on first scan"
-      : `${existingCount} (monitoring for new drops)`;
-
-    const card =
-      `🎬 *${displayTitle}*\n` +
-      `• Status: *${status}*\n` +
-      `• Theatre: ${t.venueName || t.venueCode}\n` +
-      `• Screen Format: ${fmt}\n` +
-      `• Existing Shows: ${showsDisplay}`;
-
-    await sendTelegram(botToken, chatId, card, { inline_keyboard: buttons });
+    const { text, buttons } = renderTrackerCard(t);
+    await sendTelegram(botToken, chatId, text, { inline_keyboard: buttons });
   }
 }
 

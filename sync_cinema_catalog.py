@@ -257,19 +257,22 @@ def main():
                 priority_cities.add(info["cityCode"])
 
     # Core high-traffic cities (Kanpur, Hyderabad, Mumbai, NCR, Bangalore, etc.)
-    core_cities = ["KANP", "HYD", "MUMBAI", "NCR", "BANG", "CHD", "PUNE", "KOLK", "CHEN"]
+    core_cities = ["HYD", "KANP", "MUMBAI", "NCR", "BANG", "CHD", "PUNE", "KOLK", "CHEN", "AHD", "KOCH", "JAIP"]
     for c in core_cities:
         priority_cities.add(c)
 
-    # 3. Order Cities: Priority cities first, then remaining cities
+    # 3. Order Cities: Priority cities first (active user-tracked + top metros)
     ordered_cities = []
     for ccode in priority_cities:
         if ccode in venues_by_city and ccode not in ordered_cities:
             ordered_cities.append(ccode)
 
-    for ccode in venues_by_city.keys():
-        if ccode not in ordered_cities:
-            ordered_cities.append(ccode)
+    # Only append remaining long-tail cities if explicitly enabled via SYNC_ALL_CITIES=true
+    sync_all = os.getenv("SYNC_ALL_CITIES", "false").lower() == "true"
+    if sync_all:
+        for ccode in venues_by_city.keys():
+            if ccode not in ordered_cities:
+                ordered_cities.append(ccode)
 
     target_city = os.getenv("TARGET_CITY")
     if target_city:
