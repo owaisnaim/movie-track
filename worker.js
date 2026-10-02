@@ -1239,8 +1239,36 @@ async function getShowsForVenueAndMovie(cityCode, venueCode, movieGroup, env) {
       }
     }
 
-    // Zero-guessing: Do NOT fabricate variants when matched.length === 0.
-    // variants remains [] to indicate shows have not opened yet at this specific venue.
+    // Ultimate fallback: if KV had stale/partial data for this venue that didn't include
+    // this movie's codes, vList was set (non-null) so the VENUE_MOVIES_MAP branch above was
+    // skipped. We retry against the static map here so known venues never show "not opened".
+    if (variants.length === 0 && typeof VENUE_MOVIES_MAP !== "undefined" && VENUE_MOVIES_MAP[venueCode]) {
+      const staticList = VENUE_MOVIES_MAP[venueCode];
+      if (Array.isArray(staticList)) {
+        const vCodes2 = new Set(movieGroup.variants.map(v => v.code));
+        if (typeof MULTILINGUAL_SIBLINGS !== "undefined") {
+          for (const v of movieGroup.variants) {
+            if (MULTILINGUAL_SIBLINGS[v.code]) MULTILINGUAL_SIBLINGS[v.code].forEach(c => vCodes2.add(c));
+          }
+          if (MULTILINGUAL_SIBLINGS[movieGroup.masterCode]) {
+            MULTILINGUAL_SIBLINGS[movieGroup.masterCode].forEach(c => vCodes2.add(c));
+          }
+        }
+        const matched2 = staticList.filter(m => vCodes2.has(m.code || m));
+        if (matched2.length > 0) {
+          variants = matched2.map(m => {
+            const c = m.code || m;
+            const mTitle = m.title || (typeof MOVIES_CATALOG !== "undefined" ? MOVIES_CATALOG[c] : "") || movieGroup.baseTitle;
+            const mFmt = mTitle.match(/\(([^)]+)\)$/);
+            return {
+              code: c,
+              formatTag: mFmt ? mFmt[1].trim() : "2D",
+              fullTitle: mTitle
+            };
+          });
+        }
+      }
+    }
   }
 
   let hasPremium = false;
