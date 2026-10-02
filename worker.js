@@ -874,28 +874,19 @@ async function sendMovieTheatreSelection(botToken, chatId, cityCode, masterCode,
     buttons.push(navRow);
   }
 
-  if (totalTheatres === 0) {
-    buttons.push([
-      { text: `🏛️ Browse All Theatres in ${city.name}`, callback_data: `thp:${cityCode}:0:${masterCode}` }
-    ]);
-  }
-
   // Back button
   buttons.push([
     { text: `« Back to Movies (${city.name})`, callback_data: `c:${cityCode}` }
   ]);
 
-  const hasLiveShows = theatres.some(th => th.formats && th.formats.length > 0);
   let statusText = "";
   if (totalTheatres === 0) {
-    statusText = `No theatres found in ${city.name}. Use the button below to browse all cinemas:`;
-  } else if (hasLiveShows) {
+    statusText = `❌ *No Theatres Available*\n\n` +
+      `No theatres in *${city.name}* are currently showing *${movieTitle}*.\n\n` +
+      `Please select a different movie from the list:`;
+  } else {
     statusText = `Showing at *${totalTheatres}* theatre(s) in ${city.name}.\n` +
       `Select a cinema below to view all screen formats & shows:`;
-  } else {
-    statusText = `ℹ️ *Advance Tracking Mode*\n` +
-      `Bookings have not opened yet across cinemas in ${city.name}.\n` +
-      `Select any cinema below to receive an instant alert the second tickets drop:`;
   }
 
   const text =
@@ -998,15 +989,8 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
     }
   } catch (e) {}
 
-  // 4. Advance Tracking Fallback: Return all city venues with empty formats so user can pick any theatre
-  return allVenues.map(v => {
-    return {
-      code: v.code,
-      name: v.name || v.title || v.code,
-      formats: [],
-      variants: []
-    };
-  });
+  // 4. A user should only see the theatres that have that movie. If none found, return empty array.
+  return [];
 }
 
 async function fetchTheatresForMovieLive(cityCode, eventCodes, env) {
