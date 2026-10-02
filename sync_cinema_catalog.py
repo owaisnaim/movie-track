@@ -201,6 +201,20 @@ def push_city_bundle_to_cloudflare(token: str, city_code: str, venues_map: dict,
         try:
             with urllib.request.urlopen(req, timeout=20) as resp:
                 return resp.status == 200
+        except urllib.error.HTTPError as e:
+            err_msg = ""
+            try:
+                err_msg = e.read().decode("utf-8", errors="replace").strip()
+            except Exception:
+                pass
+            if "KV put() limit exceeded" in err_msg:
+                print(f"[CATALOG SYNC] ⚠️ Cloudflare KV daily write limit (1,000 writes/day) reached for today. Will reset automatically at 00:00 UTC (05:30 AM IST).")
+                return False
+            if attempt == 2:
+                detail = f" ({err_msg})" if err_msg else ""
+                print(f"[CATALOG SYNC] Failed to push city {city_code} bundle after 3 attempts: {e}{detail}")
+                return False
+            time.sleep(1)
         except Exception as e:
             if attempt == 2:
                 print(f"[CATALOG SYNC] Failed to push city {city_code} bundle after 3 attempts: {e}")
