@@ -367,7 +367,11 @@ async function handleTelegramUpdate(update, env) {
   const configuredChatId = String(env.TELEGRAM_CHAT_ID || "").trim().replace(/['"]/g, "");
 
   // Optional whitelist if explicitly configured in env.ALLOWED_CHAT_IDS
-  const allowedList = env.ALLOWED_CHAT_IDS ? env.ALLOWED_CHAT_IDS.split(",").map(s => s.trim()) : null;
+  // Record user interaction for user analytics and admin broadcasts
+  const activeChatId = String(update.callback_query?.message?.chat?.id || update.message?.chat?.id || "");
+  if (activeChatId) {
+    await recordUserInteraction(env, activeChatId);
+  }
 
   // A. Handle Button Clicks
   if (update.callback_query) {
@@ -412,6 +416,14 @@ async function handleTelegramUpdate(update, env) {
     await sendCitySelection(botToken, chatId, null, env);
     return;
   }
+  if (cmd === "/admin") {
+    if (String(chatId) === configuredChatId && configuredChatId.length > 0) {
+      await clearSession(env, chatId);
+      await sendAdminDashboard(botToken, chatId, null, env);
+    }
+    return;
+  }
+
   if (cmd === "/list") {
     await clearSession(env, chatId);
     await sendTrackerList(botToken, chatId, env);
@@ -443,6 +455,21 @@ async function handleTelegramUpdate(update, env) {
 
   // Check if user has an active pending session (City search/request, Theatre search, Custom movie)
   const session = await getSession(env, chatId);
+
+  if (session && session.step === "AWAITING_ADMIN_BROADCAST") {
+    if (String(chatId) === configuredChatId && configuredChatId.length > 0) {
+      if (text.toLowerCase() === "/cancel") {
+        await clearSession(env, chatId);
+        await sendTelegram(botToken, chatId, "❌ Broadcast cancelled.");
+        await sendAdminDashboard(botToken, chatId, null, env);
+      } else {
+        await handleAdminBroadcastInput(botToken, chatId, text, env);
+      }
+    } else {
+      await clearSession(env, chatId);
+    }
+    return;
+  }
 
   if (session && (session.step === "AWAITING_CITY_REQUEST" || session.step === "AWAITING_CITY_QUERY")) {
     await handleCityRequestInput(botToken, chatId, text, env);
@@ -545,6 +572,13 @@ async function sendCitySelection(botToken, chatId, messageId = null, env = null)
   buttons.push([
     { text: "📋 View Active Trackers", callback_data: "act:list" }
   ]);
+
+  const configuredChatId = String(env?.TELEGRAM_CHAT_ID || "").trim().replace(/['"]/g, "");
+  if (configuredChatId && String(chatId) === configuredChatId) {
+    buttons.push([
+      { text: "👑 Admin Dashboard", callback_data: "act:admin_panel" }
+    ]);
+  }
 
   const text =
     "📍 *Step 1/4: Choose Your City*\n\n" +
@@ -1980,6 +2014,69 @@ async function handleCallbackData(botToken, chatId, messageId, data, env) {
     return;
   }
 
+  // Admin Actions
+  const configuredChatId = String(env?.TELEGRAM_CHAT_ID || "").trim().replace(/['"]/g, "");
+  const isAdmin = (String(chatId) === configuredChatId && configuredChatId.length > 0);
+
+  if (action === "act" && parts[1] === "admin_panel") {
+    if (isAdmin) {
+      await clearSession(env, chatId);
+      await sendAdminDashboard(botToken, chatId, messageId, env);
+    }
+    return;
+  }
+
+  if (action === "act" && parts[1] === "admin_all_trackers") {
+    if (isAdmin) {
+      const page = parseInt(parts[2], 10) || 0;
+      await sendAdminAllTrackers(botToken, chatId, messageId, env, page);
+    }
+    return;
+  }
+
+  if (action === "act" && parts[1] === "admin_custom_cities") {
+    if (isAdmin) {
+      await sendAdminCustomCities(botToken, chatId, messageId, env);
+    }
+    return;
+  }
+
+  if (action === "act" && parts[1] === "admin_broadcast") {
+    if (isAdmin) {
+      await setSession(env, chatId, { step: "AWAITING_ADMIN_BROADCAST" });
+      await editTelegramMessage(botToken, chatId, messageId,
+        "📢 *Admin Broadcast Center*\n\n" +
+        "Please type the announcement message you wish to broadcast to *all registered users*.\n\n" +
+        "_Tip: Send /cancel to discard and return._",
+        {
+          inline_keyboard: [
+            [{ text: "« Cancel & Back to Dashboard", callback_data: "act:admin_panel" }]
+          ]
+        }
+      );
+    }
+    return;
+  }
+
+  if (action === "adm_del_trk") {
+    if (isAdmin) {
+      const targetTrackerId = parts[1];
+      const targetUserChatId = parts[2];
+      await deleteTracker(env, targetTrackerId, targetUserChatId);
+      await sendAdminAllTrackers(botToken, chatId, messageId, env, 0);
+    }
+    return;
+  }
+
+  if (action === "adm_del_city") {
+    if (isAdmin) {
+      const cityCode = parts[1];
+      await removeCustomCity(cityCode, env);
+      await sendAdminCustomCities(botToken, chatId, messageId, env);
+    }
+    return;
+  }
+
   // Tracker Controls
   if (action === "t_pause") {
     const updated = await setTrackerPaused(env, parts[1], true, chatId);
@@ -2480,6 +2577,316 @@ async function sendStatusReport(botToken, chatId, env) {
   }
   text += "💡 Use /list to pause, resume, or remove trackers.";
   await sendTelegram(botToken, chatId, text);
+}
+
+// -------------------------------------------------------------
+// ADMIN & ANALYTICS HELPERS
+// -------------------------------------------------------------
+
+function escapeMd(str) {
+  if (!str) return "";
+  return String(str).replace(/[*_`\[\]()]/g, " ");
+}
+
+async function recordUserInteraction(env, chatId) {
+  if (!env || !env.TRACKER_DB || !chatId) return;
+  try {
+    const raw = await env.TRACKER_DB.get("registered_users");
+    let users = [];
+    if (raw) {
+      try {
+        users = JSON.parse(raw);
+        if (!Array.isArray(users)) users = [];
+      } catch (e) {
+        users = [];
+      }
+    }
+    const strId = String(chatId);
+    if (!users.includes(strId)) {
+      users.push(strId);
+      await env.TRACKER_DB.put("registered_users", JSON.stringify(users));
+    }
+  } catch (err) {
+    console.error("recordUserInteraction error:", err);
+  }
+}
+
+async function getAllTrackersAcrossUsers(env) {
+  if (!env || !env.TRACKER_DB) return [];
+  const allTrackers = [];
+  try {
+    const list = await env.TRACKER_DB.list({ prefix: "trackers:" });
+    for (const key of list.keys) {
+      const ownerChatId = key.name.replace("trackers:", "");
+      const raw = await env.TRACKER_DB.get(key.name);
+      if (!raw) continue;
+      try {
+        const trackers = JSON.parse(raw);
+        if (Array.isArray(trackers)) {
+          for (const t of trackers) {
+            allTrackers.push({ ...t, ownerChatId });
+          }
+        }
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.error("getAllTrackersAcrossUsers error:", err);
+  }
+  return allTrackers;
+}
+
+async function removeCustomCity(cityCode, env) {
+  if (!env || !env.TRACKER_DB || !cityCode) return false;
+  try {
+    const raw = await env.TRACKER_DB.get("custom_cities");
+    if (raw) {
+      let cities = JSON.parse(raw);
+      if (Array.isArray(cities)) {
+        cities = cities.filter(c => c.code !== cityCode);
+        await env.TRACKER_DB.put("custom_cities", JSON.stringify(cities));
+      }
+    }
+    await env.TRACKER_DB.delete(`city:${cityCode}`);
+    return true;
+  } catch (err) {
+    console.error("removeCustomCity error:", err);
+    return false;
+  }
+}
+
+async function sendAdminDashboard(botToken, chatId, messageId = null, env = null) {
+  let registeredCount = 0;
+  let customCitiesCount = 0;
+  let totalTrackers = 0;
+  let activeTrackers = 0;
+  let pausedTrackers = 0;
+
+  if (env && env.TRACKER_DB) {
+    try {
+      const rawUsers = await env.TRACKER_DB.get("registered_users");
+      const userList = rawUsers ? JSON.parse(rawUsers) : [];
+      const userSet = new Set(Array.isArray(userList) ? userList : []);
+      const trkList = await env.TRACKER_DB.list({ prefix: "trackers:" });
+      for (const k of trkList.keys) {
+        userSet.add(k.name.replace("trackers:", ""));
+      }
+      registeredCount = userSet.size;
+
+      const rawCities = await env.TRACKER_DB.get("custom_cities");
+      if (rawCities) {
+        const cList = JSON.parse(rawCities);
+        customCitiesCount = Array.isArray(cList) ? cList.length : 0;
+      }
+    } catch (e) {}
+
+    const all = await getAllTrackersAcrossUsers(env);
+    totalTrackers = all.length;
+    activeTrackers = all.filter(t => !t.isPaused).length;
+    pausedTrackers = all.filter(t => t.isPaused).length;
+  }
+
+  const text =
+    "👑 *Movie Tracker Admin Dashboard*\n" +
+    "━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+    "📊 *Live Platform Statistics:*\n" +
+    `• 👥 *Total Users:* ${registeredCount}\n` +
+    `• 🎯 *Total Trackers:* ${totalTrackers} (${activeTrackers} active, ${pausedTrackers} paused)\n` +
+    `• 🏙️ *Custom Cities Added:* ${customCitiesCount}\n` +
+    `• 🤖 *Bot Engine:* Cloudflare Worker + Python Cron\n\n` +
+    "Select an administration tool below:";
+
+  const buttons = [
+    [{ text: `📋 All Trackers (${totalTrackers})`, callback_data: "act:admin_all_trackers:0" }],
+    [{ text: `🏙️ Custom Cities (${customCitiesCount})`, callback_data: "act:admin_custom_cities" }],
+    [{ text: `📢 Broadcast to All Users (${registeredCount})`, callback_data: "act:admin_broadcast" }],
+    [{ text: "« Return to Main Menu", callback_data: "act:cities" }]
+  ];
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
+  } else {
+    await sendTelegram(botToken, chatId, text, { inline_keyboard: buttons });
+  }
+}
+
+async function sendAdminAllTrackers(botToken, chatId, messageId = null, env = null, page = 0) {
+  const allTrackers = await getAllTrackersAcrossUsers(env);
+  if (!allTrackers || allTrackers.length === 0) {
+    const emptyText = "📋 *No trackers found in the system across any users.*";
+    const emptyButtons = [
+      [{ text: "« Back to Admin Dashboard", callback_data: "act:admin_panel" }]
+    ];
+    if (messageId) {
+      await editTelegramMessage(botToken, chatId, messageId, emptyText, { inline_keyboard: emptyButtons });
+    } else {
+      await sendTelegram(botToken, chatId, emptyText, { inline_keyboard: emptyButtons });
+    }
+    return;
+  }
+
+  const pageSize = 5;
+  const totalPages = Math.ceil(allTrackers.length / pageSize);
+  const curPage = Math.max(0, Math.min(page, totalPages - 1));
+  const slice = allTrackers.slice(curPage * pageSize, (curPage + 1) * pageSize);
+
+  let text = `📋 *All System Trackers* (Page ${curPage + 1}/${totalPages} — Total: ${allTrackers.length})\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  const buttons = [];
+  slice.forEach((t, i) => {
+    const idx = curPage * pageSize + i + 1;
+    const title = escapeMd((t.movieTitle || t.eventCode || "Movie").replace(/\s*\([^)]*\)$/, "").trim());
+    const status = t.isPaused ? "⏸️ Paused" : "🟢 Active";
+    const shows = t.knownSessions?.length || 0;
+    const venue = escapeMd(t.venueName || t.venueCode);
+    text += `*${idx}. ${title}*\n`;
+    text += `• User: \`${t.ownerChatId}\`\n`;
+    text += `• Venue: ${venue}\n`;
+    text += `• Status: ${status} | Shows: ${shows}\n\n`;
+
+    buttons.push([
+      { text: `🗑️ Delete #${idx} (${title.slice(0, 15)})`, callback_data: `adm_del_trk:${t.id}:${t.ownerChatId}` }
+    ]);
+  });
+
+  const navRow = [];
+  if (curPage > 0) {
+    navRow.push({ text: "« Prev", callback_data: `act:admin_all_trackers:${curPage - 1}` });
+  }
+  if (curPage < totalPages - 1) {
+    navRow.push({ text: "Next »", callback_data: `act:admin_all_trackers:${curPage + 1}` });
+  }
+  if (navRow.length > 0) {
+    buttons.push(navRow);
+  }
+
+  buttons.push([
+    { text: "« Back to Admin Dashboard", callback_data: "act:admin_panel" }
+  ]);
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
+  } else {
+    await sendTelegram(botToken, chatId, text, { inline_keyboard: buttons });
+  }
+}
+
+async function sendAdminCustomCities(botToken, chatId, messageId = null, env = null) {
+  let customList = [];
+  if (env && env.TRACKER_DB) {
+    try {
+      const raw = await env.TRACKER_DB.get("custom_cities");
+      if (raw) customList = JSON.parse(raw);
+    } catch (e) {}
+  }
+
+  if (!customList || customList.length === 0) {
+    const text =
+      "🏙️ *Manage Custom Cities*\n\n" +
+      "No custom cities have been requested yet.\n" +
+      "Only the 6 core cities are currently active.";
+    const buttons = [
+      [{ text: "« Back to Admin Dashboard", callback_data: "act:admin_panel" }]
+    ];
+    if (messageId) {
+      await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
+    } else {
+      await sendTelegram(botToken, chatId, text, { inline_keyboard: buttons });
+    }
+    return;
+  }
+
+  let text = `🏙️ *Custom Cities in Database (${customList.length}):*\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  const buttons = [];
+
+  for (const c of customList) {
+    text += `• *${escapeMd(c.name)}* (Code: \`${c.code}\`, Slug: \`${c.slug}\`)\n`;
+    buttons.push([
+      { text: `🗑️ Remove ${c.name} (${c.code})`, callback_data: `adm_del_city:${c.code}` }
+    ]);
+  }
+
+  buttons.push([
+    { text: "« Back to Admin Dashboard", callback_data: "act:admin_panel" }
+  ]);
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
+  } else {
+    await sendTelegram(botToken, chatId, text, { inline_keyboard: buttons });
+  }
+}
+
+async function handleAdminBroadcastInput(botToken, chatId, text, env) {
+  await clearSession(env, chatId);
+
+  if (!env || !env.TRACKER_DB) {
+    await sendTelegram(botToken, chatId, "❌ Database error: TRACKER_DB not available.");
+    return;
+  }
+
+  const recipientSet = new Set();
+  try {
+    const rawUsers = await env.TRACKER_DB.get("registered_users");
+    if (rawUsers) {
+      const uList = JSON.parse(rawUsers);
+      if (Array.isArray(uList)) {
+        for (const u of uList) if (u) recipientSet.add(String(u));
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const trkList = await env.TRACKER_DB.list({ prefix: "trackers:" });
+    for (const k of trkList.keys) {
+      const id = k.name.replace("trackers:", "").trim();
+      if (id) recipientSet.add(id);
+    }
+  } catch (e) {}
+
+  recipientSet.add(String(chatId));
+
+  const recipients = Array.from(recipientSet);
+  if (recipients.length === 0) {
+    await sendTelegram(botToken, chatId, "⚠️ No registered users found to broadcast to.");
+    await sendAdminDashboard(botToken, chatId, null, env);
+    return;
+  }
+
+  await sendTelegram(botToken, chatId, `🚀 Starting broadcast to *${recipients.length}* user(s)...`);
+
+  let successCount = 0;
+  let failCount = 0;
+
+  const broadcastMsg =
+    `📢 *ANNOUNCEMENT*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `${text}\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `⚡ _Sent by BookMyShow Ticket Tracker Admin_`;
+
+  for (const rChatId of recipients) {
+    try {
+      await sendTelegram(botToken, rChatId, broadcastMsg);
+      successCount++;
+    } catch (err) {
+      console.error(`Broadcast failed for user ${rChatId}:`, err);
+      failCount++;
+    }
+  }
+
+  await sendTelegram(
+    botToken,
+    chatId,
+    `✅ *Broadcast Completed!*\n\n` +
+    `• Delivered: *${successCount}*\n` +
+    `• Failed: *${failCount}*\n` +
+    `• Total Target Users: *${recipients.length}*`,
+    {
+      inline_keyboard: [
+        [{ text: "👑 Admin Dashboard", callback_data: "act:admin_panel" }]
+      ]
+    }
+  );
 }
 
 // -------------------------------------------------------------
