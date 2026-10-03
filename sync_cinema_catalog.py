@@ -306,9 +306,9 @@ def main():
             if cc and cc in venues_by_city and cc not in ordered_cities:
                 ordered_cities.append(cc)
 
-    # Core high-traffic cities (Hyderabad, Delhi-NCR, Kanpur, Mumbai, Bangalore, etc.)
+    # Core high-traffic cities (strictly 6 core cities)
     # In deterministic priority order
-    core_cities = ["HYD", "NCR", "KANP", "MUMBAI", "BANG", "CHD", "PUNE", "KOLK", "CHEN", "AHD", "KOCH", "JAIP"]
+    core_cities = ["HYD", "NCR", "KANP", "MUMBAI", "BANG", "LUCK"]
     for c in core_cities:
         if c in venues_by_city and c not in ordered_cities:
             ordered_cities.append(c)

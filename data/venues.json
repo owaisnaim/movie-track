@@ -1,543 +1,488 @@
 {
-  "MUMBAI": [
+  "HYD": [
     {
-      "code": "CSWO",
-      "name": "Cinepolis: Nexus Seawoods, Nerul, Navi Mumbai",
+      "code": "PRHN",
+      "name": "Prasads Multiplex",
       "subRegion": ""
     },
     {
-      "code": "IMOB",
-      "name": "INOX Megaplex: Sky City Mall, Borivali",
+      "code": "AMBH",
+      "name": "AMB Cinemas: Gachibowli",
       "subRegion": ""
     },
     {
-      "code": "CPVM",
-      "name": "Cinepolis: Lake Shore, Thane (EX Viviana Mall)",
+      "code": "ALUC",
+      "name": "ALLU Cinemas: Kokapet",
       "subRegion": ""
     },
     {
-      "code": "FMMA",
-      "name": "INOX: Megaplex, Inorbit Mall, Malad",
+      "code": "ACPM",
+      "name": "Asian Lakshmikala Cinepride: Moosapet",
       "subRegion": ""
     },
     {
-      "code": "INRC",
-      "name": "INOX: R-City, Ghatkopar",
+      "code": "ACEV",
+      "name": "ART CINEMAS: Vanasthalipuram",
       "subRegion": ""
     },
     {
-      "code": "PIPP",
-      "name": "PVR ICON: Phoenix Palladium, Lower Parel Mumbai",
+      "code": "PVFS",
+      "name": "PVR: Nexus Mall Kukatpally, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "POVI",
-      "name": "HDFC Millennia PVR ICON: Oberoi Mall, Goregaon (E)",
+      "code": "ACAS",
+      "name": "AAA Cinemas: Ameerpet",
       "subRegion": ""
     },
     {
-      "code": "BMXC",
-      "name": "BMX Cinemas(BalajiMovieplex): Littleworld Kharghar",
+      "code": "AACN",
+      "name": "Aparna Cinemas: Nallagandla",
       "subRegion": ""
     },
     {
-      "code": "PCMM",
-      "name": "PVR: The Capital Mall, Nalasopara (E)",
+      "code": "CTNR",
+      "name": "Cinepolis: TNR North City, Suchitra, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "PMKM",
-      "name": "PVR: Market City, Kurla (Premiere)",
+      "code": "ILKS",
+      "name": "PVR Lakeshore PXL 4K Laser ATMOS DTS-X Y Junction",
       "subRegion": ""
     },
     {
-      "code": "IMCM",
-      "name": "Metro INOX Cinemas: Marine Lines",
+      "code": "SRMO",
+      "name": "Sree Ramulu 70mm 4K Laser: Moosapet",
       "subRegion": ""
     },
     {
-      "code": "MCIW",
-      "name": "Miraj Cinemas: IMAX, Wadala",
+      "code": "IGMH",
+      "name": "INOX: GSM Mall, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "POPE",
-      "name": "PVR: Orion Mall, Panvel",
+      "code": "MMAH",
+      "name": "MovieMax: AMR, ECIL Secunderabad",
       "subRegion": ""
     },
     {
-      "code": "PVAE",
-      "name": "PVR:C&B Square Chakala Andheri E(Formerly Sangam)",
+      "code": "GPRH",
+      "name": "GPR Multiplex: Nizampet, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "MXBY",
-      "name": "Maxus Cinemas: Bhayander",
+      "code": "CPMH",
+      "name": "Cinepolis: Lulu Mall, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "MTHB",
-      "name": "MOVIETIME: HUB, Goregaon (E)",
+      "code": "CVMU",
+      "name": "Cineverse Multiplex: Uppal",
       "subRegion": ""
     },
     {
-      "code": "FMKY",
-      "name": "INOX:Metro Mall Junction,Kalyan(Newly Renovated)",
+      "code": "MMCA",
+      "name": "Miraj Cinemas: CineTown, Miyapur",
       "subRegion": ""
     },
     {
-      "code": "KKMB",
-      "name": "BMX Cinemas (Balaji Movieplex): Koparkhairane",
+      "code": "ASHN",
+      "name": "Asian Cinemart: RC Puram",
       "subRegion": ""
     },
     {
-      "code": "PLXP",
-      "name": "PVR: Lodha Xperia, Palava",
+      "code": "MAHM",
+      "name": "Mallikarjuna 70mm A/C DTS: Kukatpally",
       "subRegion": ""
     },
     {
-      "code": "CAGL",
-      "name": "Cinepolis: Aurum, Ghansoli, Navi Mumbai",
+      "code": "AMCA",
+      "name": "Asian M Cube Mall: Attapur",
       "subRegion": ""
     },
     {
-      "code": "PDDV",
-      "name": "PVR: Dynamix, Juhu",
+      "code": "SRCM",
+      "name": "Sai Ranga70MM 4KLaser Dolby7.1 AirCooled: Miyapur",
       "subRegion": ""
     },
     {
-      "code": "PRCW",
-      "name": "PVR ICON: Infiniti Andheri (W)",
+      "code": "ABCS",
+      "name": "Cinepolis: DSL Virtue Mall Uppal, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "CPNM",
-      "name": "Cinepolis: Magnet Mall, Bhandup (W)",
+      "code": "BRKH",
+      "name": "Bhramaramba 70MM A/C 4K Dolby: Kukatpally",
       "subRegion": ""
     },
     {
-      "code": "MIFU",
-      "name": "Funcity Big Cinema:UNR (OPEN 4 NEW RECLINER SCRNS)",
+      "code": "CPHY",
+      "name": "Asian Cineplanet Multiplex: Kompally",
       "subRegion": ""
     },
     {
-      "code": "PVMI",
-      "name": "PVR: Infiniti, Malad Mumbai",
+      "code": "PNNG",
+      "name": "PVR: Next Galleria Mall, Panjagutta",
       "subRegion": ""
     },
     {
-      "code": "STER",
-      "name": "Sterling Cineplex: Fort",
+      "code": "CMMA",
+      "name": "Cinepolis: Mantra Mall, Attapur",
       "subRegion": ""
     },
     {
-      "code": "MCRM",
-      "name": "Miraj Cinemas: R Mall, Mulund",
+      "code": "ISTN",
+      "name": "INOX: Sattva Necklace Mall, Kavadiguda",
       "subRegion": ""
     },
     {
-      "code": "FMDA",
-      "name": "INOX: Thakur Mall, Dahisar",
+      "code": "GOKU",
+      "name": "Gokul 70MM 4K DTS: Erragadda",
       "subRegion": ""
     },
     {
-      "code": "MTCR",
-      "name": "MOVIETIME Cubic Mall: Chembur",
+      "code": "PVTS",
+      "name": "PVR: Atrium Gachibowli, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "INKO",
-      "name": "INOX: Korum Mall, Eastern Express Highway, Thane",
+      "code": "JJPP",
+      "name": "JP Cinemas: Chandanagar",
       "subRegion": ""
     },
     {
-      "code": "MCFF",
-      "name": "Miraj Cinemas: Funfiesta, Nalasopara (W)",
+      "code": "AKYJ",
+      "name": "INOX: Ashoka One, 4K LASER Dolby ATMOS: Kukatpally",
       "subRegion": ""
     },
     {
-      "code": "PITI",
-      "name": "PVR: Citi Mall, Andheri (W)",
+      "code": "SSRM",
+      "name": "Sri Sai Ram 70mm A/C 4k Laser Dolby 7.1:Malkajgiri",
       "subRegion": ""
     },
     {
-      "code": "IPBG",
-      "name": "INOX: Palm Beach Galleria Mall, Navi Mumbai",
+      "code": "SMMR",
+      "name": "Sandhya 70MM 4K Dolby Atmos: RTC X Roads",
       "subRegion": ""
     },
     {
-      "code": "MMHA",
-      "name": "MovieMax: Huma, Kanjurmarg (Seats Renovated)",
+      "code": "HMHD",
+      "name": "BR Hitech 70mm: Madhapur",
       "subRegion": ""
     },
     {
-      "code": "POLM",
-      "name": "PVR: Odeon Mall, Ghatkopar",
+      "code": "ARJU",
+      "name": "Arjun 70MM: Kukatpally",
       "subRegion": ""
     },
     {
-      "code": "PVWJ",
-      "name": "Maison PVR: Jio World Drive, Mumbai",
+      "code": "PIMH",
+      "name": "PVR: Irrum Manzil, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "FNAN",
-      "name": "Cinepolis: Fun Republic Mall, Andheri (W)",
+      "code": "PVTP",
+      "name": "PVR: Preston, Gachibowli Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "DCTW",
-      "name": "Devgn CineX: The Walk, Thane",
+      "code": "PIIC",
+      "name": "PVR Superplex Inorbit: LUXE, PXL, 4DX: Cyberabad",
       "subRegion": ""
     },
     {
-      "code": "FMRL",
-      "name": "INOX: Raghuleela Mall, Kandivali (W)",
+      "code": "IOMH",
+      "name": "INOX: Odeon 4K, LASER, ATMOS, DTS-X: RTC X Roads",
       "subRegion": ""
     },
     {
-      "code": "IMJW",
-      "name": "Maison INOX: Jio World Plaza, BKC",
+      "code": "APNS",
+      "name": "Aparna Cinemas: Shamshabad",
       "subRegion": ""
     },
     {
-      "code": "THAB",
-      "name": "Cinepolis: High Street Mall, Thane (EX Cinemastar)",
+      "code": "ARMH",
+      "name": "Asian Radhika Multiplex: ECIL",
       "subRegion": ""
     },
     {
-      "code": "MXBO",
-      "name": "Maxus Cinemas: Borivali (W)",
+      "code": "PVHM",
+      "name": "PVR ICON: Hitech, Madhapur, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "SMFV",
-      "name": "MovieMax: SM5 Kalyan, Newly Renovated",
+      "code": "INKM",
+      "name": "Cine Town Indra Nagendra: Karmanghat",
       "subRegion": ""
     },
     {
-      "code": "MMMR",
-      "name": "MovieMax: Mira Road (Seats Renovated)",
+      "code": "ACHI",
+      "name": "Asian Sha & Shahensha: Chintal",
       "subRegion": ""
     },
     {
-      "code": "MDVA",
-      "name": "Miraj Cinemas: Dattani Mall, Vasai (W)",
+      "code": "PVUM",
+      "name": "PVR: Musarambagh, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "FNCM",
-      "name": "Fun Cinemas: K Star Mall, Chembur",
+      "code": "IPRS",
+      "name": "INOX: Prism Mall, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "INNP",
-      "name": "INOX Laserplex: CR2, Nariman Point",
+      "code": "MRAD",
+      "name": "Miraj Cinemas: Anand Mall and Movies, Narsingi",
       "subRegion": ""
     },
     {
-      "code": "BMXA",
-      "name": "BMX Cinemas: Ambernath (New)",
+      "code": "SNKH",
+      "name": "Asian Mukta A2 Sensation Cinema: Kairathabad",
       "subRegion": ""
     },
     {
-      "code": "MMET",
-      "name": "MovieMax: Eternity Mall, Thane (Newly Renovated)",
+      "code": "MCSS",
+      "name": "Miraj Cinemas: Shalini Shivani, Kothapet",
       "subRegion": ""
     },
     {
-      "code": "HPVR",
-      "name": "PVR: Haseen, Bhiwandi",
+      "code": "SNDY",
+      "name": "Sandhya 35mm 2k Dolby Atmos: RTC X Roads",
       "subRegion": ""
     },
     {
-      "code": "MIDO",
-      "name": "Miraj Cinemas: Dombivali (E)",
+      "code": "DVRR",
+      "name": "Devi 70MM 4K Laser & Dolby Atmos: RTC X Roads",
       "subRegion": ""
     },
     {
-      "code": "MMWM",
-      "name": "MovieMax: Wonder Mall, Thane",
+      "code": "PVYH",
+      "name": "PVR: Central Mall, Panjagutta",
       "subRegion": ""
     },
     {
-      "code": "MUCK",
-      "name": "Mukta A2 Cinemas: Triveni Grande, Kalyan (West)",
+      "code": "ASJY",
+      "name": "Asian Jyothi: RC Puram",
       "subRegion": ""
     },
     {
-      "code": "MMSZ",
-      "name": "MovieMax: Sion",
+      "code": "MCKT",
+      "name": "Mahalaxmi Complex: Kothapet",
       "subRegion": ""
     },
     {
-      "code": "PLUS",
-      "name": "PVR: Lido, Juhu Mumbai",
+      "code": "ARYH",
+      "name": "Asian Rajya Lakshmi: Uppal",
       "subRegion": ""
     },
     {
-      "code": "CTRR",
-      "name": "Chitra Cinema: Dadar (Newly Renovated)",
+      "code": "MRAA",
+      "name": "Miraj Cinemas: A2A Central Mall, Balanagar",
       "subRegion": ""
     },
     {
-      "code": "AETE",
-      "name": "Anand Cinema: Thane",
+      "code": "INHY",
+      "name": "INOX GVK One, Banjara Hills",
       "subRegion": ""
     },
     {
-      "code": "MCTG",
-      "name": "Topiwala Mukta A2 Cinemas, Goregaon",
+      "code": "INMH",
+      "name": "INOX: Maheshwari Parmeshwari Mall, Kachiguda",
       "subRegion": ""
     },
     {
-      "code": "EMNC",
-      "name": "EROS INOX IMAX Cinema: Churchgate",
+      "code": "VRKC",
+      "name": "Indra Venkataramana Padmavati Cinema: Kachiguda",
       "subRegion": ""
     },
     {
-      "code": "MAJB",
-      "name": "Mukta A2 Cinemas: Jai Hind, Lalbaugh",
+      "code": "VTRB",
+      "name": "Vijetha 70MM 4k Atmos: Borabanda",
       "subRegion": ""
     },
     {
-      "code": "MACE",
-      "name": "Miraj Cinemas: Anupam Mall Goregaon (E)",
+      "code": "SPCB",
+      "name": "Asian Super Cinema: Balapur",
       "subRegion": ""
     },
     {
-      "code": "MCAA",
-      "name": "Miraj Cinemas: Ashok Anil Multiplex, Ulhasnagar",
+      "code": "TVHY",
+      "name": "Tivoli Cinemas: Secunderabad",
       "subRegion": ""
     },
     {
-      "code": "MTMA",
-      "name": "MOVIETIME: MALAD (WEST)",
+      "code": "SUDA",
+      "name": "Sudarshan 35MM 4k Laser & Dolby Atmos: RTC X Roads",
       "subRegion": ""
     },
     {
-      "code": "CPVV",
-      "name": "Cinepolis: VIP Lake Shore, Thane (EX Viviana Mall)",
+      "code": "IVNM",
+      "name": "INOX: SMR Vinay Metro Mall, Dolby ATMOS: Miyapur",
       "subRegion": ""
     },
     {
-      "code": "PMPK",
-      "name": "PVR: Milap, Kandivali (W)",
+      "code": "PRCX",
+      "name": "PVR: RK Cineplex, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "MCNE",
-      "name": "Mukta A2 Cinemas: New Excelsior, Fort",
+      "code": "MRGT",
+      "name": "Miraj Cinemas: Geeta, Chandanagar",
       "subRegion": ""
     },
     {
-      "code": "AAAS",
-      "name": "Ajanta Cinema Cinex: Borivali (W) Newly Renovated",
+      "code": "STHD",
+      "name": "Cinepolis: Sudha Cinemas, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "RCHG",
-      "name": "Rajhans Cinemas: Helix 3, Ghatkopar (W)",
+      "code": "MRRG",
+      "name": "Miraj Cinemas: Raghavendra, Malkajgiri",
       "subRegion": ""
     },
     {
-      "code": "MXSN",
-      "name": "Maxus Cinemas: Saki Naka",
+      "code": "SCHC",
+      "name": "VLS Sridevi 2K A/C Dts: Chilakalguda",
       "subRegion": ""
     },
     {
-      "code": "GCMG",
-      "name": "Gold Cinema: Malad Malvani",
+      "code": "UKCC",
+      "name": "UK Cineplex: Nacharam, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "RSMI",
-      "name": "Rassaz Multiplex: Mira Road",
+      "code": "CPCL",
+      "name": "Cinepolis: CCPL Mall Malkajgiri, Hyderabad",
       "subRegion": ""
     },
     {
-      "code": "GOCS",
-      "name": "Gold Cinema: Santacruz (W)",
+      "code": "AMCM",
+      "name": "Asian Mukund Cinema: Medchal",
       "subRegion": ""
     },
     {
-      "code": "MTSC",
-      "name": "MOVIETIME Star City: Matunga (W)",
+      "code": "PSMJ",
+      "name": "Movietime Cinemas: SKY Mall, Erragadda X Road",
       "subRegion": ""
     },
     {
-      "code": "WAML",
-      "name": "INOX: Insignia at Atria Mall, Worli",
+      "code": "MTHY",
+      "name": "Platinum Movietime Cinema: Gachibowli SLN Terminus",
       "subRegion": ""
     },
     {
-      "code": "FMDR",
-      "name": "INOX: Nakshatra Mall, Dadar (W) (Newly Renovated)",
+      "code": "VAJA",
+      "name": "Vyjayanthi Cinema A/C 2K: Nacharam",
       "subRegion": ""
     },
     {
-      "code": "LEPV",
-      "name": "PVR: Le Reve-Globus Mall, Bandra West, Mumbai",
+      "code": "PRCS",
+      "name": "Prashant Cinema: Secunderabad (Newly Renovated)",
       "subRegion": ""
     },
     {
-      "code": "CCMP",
-      "name": "Miraj Cinemas: Cineraj, Panvel (Newly Renovated)",
+      "code": "TRHY",
+      "name": "Asian Tarakarama Cineplex: Kachiguda",
       "subRegion": ""
     },
     {
-      "code": "TCDM",
-      "name": "Tilak Cineplex (Pooja Newly Renovated): Dombivali",
+      "code": "RKMH",
+      "name": "Rama Krishna 70mm: Abids",
       "subRegion": ""
     },
     {
-      "code": "IRGT",
-      "name": "INOX: Insignia at R Mall, Thane",
+      "code": "PTTH",
+      "name": "Alankar (Pratap Theatre): Langer House",
       "subRegion": ""
     },
     {
-      "code": "MCAN",
-      "name": "Miraj Cinemas: Star, Ambernath (Newly Renovated)",
+      "code": "SCVM",
+      "name": "Sushma 2K Dolby Digital Cinema: Vanasthalipuram",
       "subRegion": ""
     },
     {
-      "code": "MTGD",
-      "name": "MOVIETIME: Dahisar (E)",
+      "code": "CPLK",
+      "name": "CONNPLEX Luxuriance Cinemas: Mpm Mall, Banjara Hil",
       "subRegion": ""
     },
     {
-      "code": "RGCM",
-      "name": "Regal Cinema: Colaba",
+      "code": "BJNG",
+      "name": "Bhujanga 70MM: Jeedimetla",
       "subRegion": ""
     },
     {
-      "code": "OMCS",
-      "name": "Mukta A2 Cinemas Orion: Santacruz",
+      "code": "ARTH",
+      "name": "Aradhana Theatre",
       "subRegion": ""
     },
     {
-      "code": "PZCD",
-      "name": "Plaza Cinema: Dadar",
+      "code": "SRCA",
+      "name": "Sree Ramana 70MM 4K Laser & Dolby 7.1: Amberpet",
       "subRegion": ""
     },
     {
-      "code": "KCMA",
-      "name": "Kasturba Cinema (Newly Renovated): Malad",
+      "code": "SRKR",
+      "name": "Sri Krishna 70MM: Uppal",
       "subRegion": ""
     },
     {
-      "code": "MXCK",
-      "name": "Maxus Cinemas: Kandivali (E) Newly Opened",
+      "code": "RMKN",
+      "name": "Ramakrishna 35mm: Abids",
       "subRegion": ""
     },
     {
-      "code": "SNGL",
-      "name": "Gold Cinema: Sona Borivali (E)",
+      "code": "RCNH",
+      "name": "ROONGTA CINEMAS: NOVUM, NAMPALLY",
       "subRegion": ""
     },
     {
-      "code": "MTSU",
-      "name": "MOVIETIME Suburbia: Bandra (W)",
+      "code": "SRCH",
+      "name": "Sree Ramana Gold 4K & Dolby 7.1: Amberpet",
       "subRegion": ""
     },
     {
-      "code": "KTMV",
-      "name": "KT Vision Cinema: Vasai (Screens)",
+      "code": "SSRJ",
+      "name": "Sree Sai Raja Theatre: Musheerabad",
       "subRegion": ""
     },
     {
-      "code": "MMMC",
-      "name": "Maratha Mandir",
+      "code": "KTKT",
+      "name": "Kumar Theatre: Kachiguda",
       "subRegion": ""
     },
     {
-      "code": "GCDM",
-      "name": "Gopi Cinema: Dombivali",
+      "code": "SNIB",
+      "name": "Santosh Theatre: Ibrahimpatnam",
       "subRegion": ""
     },
     {
-      "code": "NYMD",
-      "name": "Devgn Cinex: Mulund",
+      "code": "SLRT",
+      "name": "Laxmi 70MM A/C LASER DOLBY 7.1: Shamshabad",
       "subRegion": ""
     },
     {
-      "code": "GDTH",
-      "name": "Gold  Cinema: Shivaji Road, Thane (W)",
+      "code": "MCBH",
+      "name": "Metro Cinema: Bahadurpura",
       "subRegion": ""
     },
     {
-      "code": "MMAA",
-      "name": "MovieMax: Andheri (E)",
+      "code": "LKMT",
+      "name": "Lakshmi Kala Mandir: Alwal",
       "subRegion": ""
     },
     {
-      "code": "ONEB",
-      "name": "1 Cinema by Mukta A2: Bharatmata (Newly Renovated)",
+      "code": "SART",
+      "name": "Saptagiri 70MM 4K & Dolby Digital: RTC X Roads",
       "subRegion": ""
     },
     {
-      "code": "CNTX",
-      "name": "ICONIX CINEMAS: (OLD AARADHANA TALKIES) THANE",
+      "code": "SKTA",
+      "name": "Sri Krishna Theatre: Aliabad (Shameerpet)",
       "subRegion": ""
     },
     {
-      "code": "FQSA",
-      "name": "Fun Square Cinema: Sanpada",
-      "subRegion": ""
-    },
-    {
-      "code": "BRVP",
-      "name": "Bahar Cinema: Vile Parle (E)",
-      "subRegion": ""
-    },
-    {
-      "code": "KURL",
-      "name": "Bharat Cineplex: Kurla (W)",
-      "subRegion": ""
-    },
-    {
-      "code": "KMMV",
-      "name": "K Movie Star Multiplex: Vasai (W)",
-      "subRegion": ""
-    },
-    {
-      "code": "KKUI",
-      "name": "KT Vision Cinema: Vasai(Screen 1)",
-      "subRegion": ""
-    },
-    {
-      "code": "PJDW",
-      "name": "Maison PVR: Jio World Drive-IN, Mumbai",
-      "subRegion": ""
-    },
-    {
-      "code": "MMCV",
-      "name": "Movie Max V Cinema: Virar (E)",
-      "subRegion": ""
-    },
-    {
-      "code": "NHCG",
-      "name": "Nishat Cinema: Grant Road",
-      "subRegion": ""
-    },
-    {
-      "code": "NNNX",
-      "name": "Nazrana Cinema: Bhiwandi",
-      "subRegion": ""
-    },
-    {
-      "code": "VVVM",
-      "name": "Vaishali Cinema: Badlapur",
-      "subRegion": ""
-    },
-    {
-      "code": "VECU",
-      "name": "Venus Cinema: Ulhasnagar",
-      "subRegion": ""
-    },
-    {
-      "code": "WCVR",
-      "name": "Woodland Cinemas: Virar (W)",
+      "code": "YAKT",
+      "name": "Yakut Mahal Theater: Yakutpura",
       "subRegion": ""
     }
   ],
@@ -1258,6 +1203,548 @@
       "subRegion": ""
     }
   ],
+  "MUMBAI": [
+    {
+      "code": "CSWO",
+      "name": "Cinepolis: Nexus Seawoods, Nerul, Navi Mumbai",
+      "subRegion": ""
+    },
+    {
+      "code": "IMOB",
+      "name": "INOX Megaplex: Sky City Mall, Borivali",
+      "subRegion": ""
+    },
+    {
+      "code": "CPVM",
+      "name": "Cinepolis: Lake Shore, Thane (EX Viviana Mall)",
+      "subRegion": ""
+    },
+    {
+      "code": "FMMA",
+      "name": "INOX: Megaplex, Inorbit Mall, Malad",
+      "subRegion": ""
+    },
+    {
+      "code": "INRC",
+      "name": "INOX: R-City, Ghatkopar",
+      "subRegion": ""
+    },
+    {
+      "code": "PIPP",
+      "name": "PVR ICON: Phoenix Palladium, Lower Parel Mumbai",
+      "subRegion": ""
+    },
+    {
+      "code": "POVI",
+      "name": "HDFC Millennia PVR ICON: Oberoi Mall, Goregaon (E)",
+      "subRegion": ""
+    },
+    {
+      "code": "BMXC",
+      "name": "BMX Cinemas(BalajiMovieplex): Littleworld Kharghar",
+      "subRegion": ""
+    },
+    {
+      "code": "PCMM",
+      "name": "PVR: The Capital Mall, Nalasopara (E)",
+      "subRegion": ""
+    },
+    {
+      "code": "PMKM",
+      "name": "PVR: Market City, Kurla (Premiere)",
+      "subRegion": ""
+    },
+    {
+      "code": "IMCM",
+      "name": "Metro INOX Cinemas: Marine Lines",
+      "subRegion": ""
+    },
+    {
+      "code": "MCIW",
+      "name": "Miraj Cinemas: IMAX, Wadala",
+      "subRegion": ""
+    },
+    {
+      "code": "POPE",
+      "name": "PVR: Orion Mall, Panvel",
+      "subRegion": ""
+    },
+    {
+      "code": "PVAE",
+      "name": "PVR:C&B Square Chakala Andheri E(Formerly Sangam)",
+      "subRegion": ""
+    },
+    {
+      "code": "MXBY",
+      "name": "Maxus Cinemas: Bhayander",
+      "subRegion": ""
+    },
+    {
+      "code": "MTHB",
+      "name": "MOVIETIME: HUB, Goregaon (E)",
+      "subRegion": ""
+    },
+    {
+      "code": "FMKY",
+      "name": "INOX:Metro Mall Junction,Kalyan(Newly Renovated)",
+      "subRegion": ""
+    },
+    {
+      "code": "KKMB",
+      "name": "BMX Cinemas (Balaji Movieplex): Koparkhairane",
+      "subRegion": ""
+    },
+    {
+      "code": "PLXP",
+      "name": "PVR: Lodha Xperia, Palava",
+      "subRegion": ""
+    },
+    {
+      "code": "CAGL",
+      "name": "Cinepolis: Aurum, Ghansoli, Navi Mumbai",
+      "subRegion": ""
+    },
+    {
+      "code": "PDDV",
+      "name": "PVR: Dynamix, Juhu",
+      "subRegion": ""
+    },
+    {
+      "code": "PRCW",
+      "name": "PVR ICON: Infiniti Andheri (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "CPNM",
+      "name": "Cinepolis: Magnet Mall, Bhandup (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "MIFU",
+      "name": "Funcity Big Cinema:UNR (OPEN 4 NEW RECLINER SCRNS)",
+      "subRegion": ""
+    },
+    {
+      "code": "PVMI",
+      "name": "PVR: Infiniti, Malad Mumbai",
+      "subRegion": ""
+    },
+    {
+      "code": "STER",
+      "name": "Sterling Cineplex: Fort",
+      "subRegion": ""
+    },
+    {
+      "code": "MCRM",
+      "name": "Miraj Cinemas: R Mall, Mulund",
+      "subRegion": ""
+    },
+    {
+      "code": "FMDA",
+      "name": "INOX: Thakur Mall, Dahisar",
+      "subRegion": ""
+    },
+    {
+      "code": "MTCR",
+      "name": "MOVIETIME Cubic Mall: Chembur",
+      "subRegion": ""
+    },
+    {
+      "code": "INKO",
+      "name": "INOX: Korum Mall, Eastern Express Highway, Thane",
+      "subRegion": ""
+    },
+    {
+      "code": "MCFF",
+      "name": "Miraj Cinemas: Funfiesta, Nalasopara (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "PITI",
+      "name": "PVR: Citi Mall, Andheri (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "IPBG",
+      "name": "INOX: Palm Beach Galleria Mall, Navi Mumbai",
+      "subRegion": ""
+    },
+    {
+      "code": "MMHA",
+      "name": "MovieMax: Huma, Kanjurmarg (Seats Renovated)",
+      "subRegion": ""
+    },
+    {
+      "code": "POLM",
+      "name": "PVR: Odeon Mall, Ghatkopar",
+      "subRegion": ""
+    },
+    {
+      "code": "PVWJ",
+      "name": "Maison PVR: Jio World Drive, Mumbai",
+      "subRegion": ""
+    },
+    {
+      "code": "FNAN",
+      "name": "Cinepolis: Fun Republic Mall, Andheri (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "DCTW",
+      "name": "Devgn CineX: The Walk, Thane",
+      "subRegion": ""
+    },
+    {
+      "code": "FMRL",
+      "name": "INOX: Raghuleela Mall, Kandivali (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "IMJW",
+      "name": "Maison INOX: Jio World Plaza, BKC",
+      "subRegion": ""
+    },
+    {
+      "code": "THAB",
+      "name": "Cinepolis: High Street Mall, Thane (EX Cinemastar)",
+      "subRegion": ""
+    },
+    {
+      "code": "MXBO",
+      "name": "Maxus Cinemas: Borivali (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "SMFV",
+      "name": "MovieMax: SM5 Kalyan, Newly Renovated",
+      "subRegion": ""
+    },
+    {
+      "code": "MMMR",
+      "name": "MovieMax: Mira Road (Seats Renovated)",
+      "subRegion": ""
+    },
+    {
+      "code": "MDVA",
+      "name": "Miraj Cinemas: Dattani Mall, Vasai (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "FNCM",
+      "name": "Fun Cinemas: K Star Mall, Chembur",
+      "subRegion": ""
+    },
+    {
+      "code": "INNP",
+      "name": "INOX Laserplex: CR2, Nariman Point",
+      "subRegion": ""
+    },
+    {
+      "code": "BMXA",
+      "name": "BMX Cinemas: Ambernath (New)",
+      "subRegion": ""
+    },
+    {
+      "code": "MMET",
+      "name": "MovieMax: Eternity Mall, Thane (Newly Renovated)",
+      "subRegion": ""
+    },
+    {
+      "code": "HPVR",
+      "name": "PVR: Haseen, Bhiwandi",
+      "subRegion": ""
+    },
+    {
+      "code": "MIDO",
+      "name": "Miraj Cinemas: Dombivali (E)",
+      "subRegion": ""
+    },
+    {
+      "code": "MMWM",
+      "name": "MovieMax: Wonder Mall, Thane",
+      "subRegion": ""
+    },
+    {
+      "code": "MUCK",
+      "name": "Mukta A2 Cinemas: Triveni Grande, Kalyan (West)",
+      "subRegion": ""
+    },
+    {
+      "code": "MMSZ",
+      "name": "MovieMax: Sion",
+      "subRegion": ""
+    },
+    {
+      "code": "PLUS",
+      "name": "PVR: Lido, Juhu Mumbai",
+      "subRegion": ""
+    },
+    {
+      "code": "CTRR",
+      "name": "Chitra Cinema: Dadar (Newly Renovated)",
+      "subRegion": ""
+    },
+    {
+      "code": "AETE",
+      "name": "Anand Cinema: Thane",
+      "subRegion": ""
+    },
+    {
+      "code": "MCTG",
+      "name": "Topiwala Mukta A2 Cinemas, Goregaon",
+      "subRegion": ""
+    },
+    {
+      "code": "EMNC",
+      "name": "EROS INOX IMAX Cinema: Churchgate",
+      "subRegion": ""
+    },
+    {
+      "code": "MAJB",
+      "name": "Mukta A2 Cinemas: Jai Hind, Lalbaugh",
+      "subRegion": ""
+    },
+    {
+      "code": "MACE",
+      "name": "Miraj Cinemas: Anupam Mall Goregaon (E)",
+      "subRegion": ""
+    },
+    {
+      "code": "MCAA",
+      "name": "Miraj Cinemas: Ashok Anil Multiplex, Ulhasnagar",
+      "subRegion": ""
+    },
+    {
+      "code": "MTMA",
+      "name": "MOVIETIME: MALAD (WEST)",
+      "subRegion": ""
+    },
+    {
+      "code": "CPVV",
+      "name": "Cinepolis: VIP Lake Shore, Thane (EX Viviana Mall)",
+      "subRegion": ""
+    },
+    {
+      "code": "PMPK",
+      "name": "PVR: Milap, Kandivali (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "MCNE",
+      "name": "Mukta A2 Cinemas: New Excelsior, Fort",
+      "subRegion": ""
+    },
+    {
+      "code": "AAAS",
+      "name": "Ajanta Cinema Cinex: Borivali (W) Newly Renovated",
+      "subRegion": ""
+    },
+    {
+      "code": "RCHG",
+      "name": "Rajhans Cinemas: Helix 3, Ghatkopar (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "MXSN",
+      "name": "Maxus Cinemas: Saki Naka",
+      "subRegion": ""
+    },
+    {
+      "code": "GCMG",
+      "name": "Gold Cinema: Malad Malvani",
+      "subRegion": ""
+    },
+    {
+      "code": "RSMI",
+      "name": "Rassaz Multiplex: Mira Road",
+      "subRegion": ""
+    },
+    {
+      "code": "GOCS",
+      "name": "Gold Cinema: Santacruz (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "MTSC",
+      "name": "MOVIETIME Star City: Matunga (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "WAML",
+      "name": "INOX: Insignia at Atria Mall, Worli",
+      "subRegion": ""
+    },
+    {
+      "code": "FMDR",
+      "name": "INOX: Nakshatra Mall, Dadar (W) (Newly Renovated)",
+      "subRegion": ""
+    },
+    {
+      "code": "LEPV",
+      "name": "PVR: Le Reve-Globus Mall, Bandra West, Mumbai",
+      "subRegion": ""
+    },
+    {
+      "code": "CCMP",
+      "name": "Miraj Cinemas: Cineraj, Panvel (Newly Renovated)",
+      "subRegion": ""
+    },
+    {
+      "code": "TCDM",
+      "name": "Tilak Cineplex (Pooja Newly Renovated): Dombivali",
+      "subRegion": ""
+    },
+    {
+      "code": "IRGT",
+      "name": "INOX: Insignia at R Mall, Thane",
+      "subRegion": ""
+    },
+    {
+      "code": "MCAN",
+      "name": "Miraj Cinemas: Star, Ambernath (Newly Renovated)",
+      "subRegion": ""
+    },
+    {
+      "code": "MTGD",
+      "name": "MOVIETIME: Dahisar (E)",
+      "subRegion": ""
+    },
+    {
+      "code": "RGCM",
+      "name": "Regal Cinema: Colaba",
+      "subRegion": ""
+    },
+    {
+      "code": "OMCS",
+      "name": "Mukta A2 Cinemas Orion: Santacruz",
+      "subRegion": ""
+    },
+    {
+      "code": "PZCD",
+      "name": "Plaza Cinema: Dadar",
+      "subRegion": ""
+    },
+    {
+      "code": "KCMA",
+      "name": "Kasturba Cinema (Newly Renovated): Malad",
+      "subRegion": ""
+    },
+    {
+      "code": "MXCK",
+      "name": "Maxus Cinemas: Kandivali (E) Newly Opened",
+      "subRegion": ""
+    },
+    {
+      "code": "SNGL",
+      "name": "Gold Cinema: Sona Borivali (E)",
+      "subRegion": ""
+    },
+    {
+      "code": "MTSU",
+      "name": "MOVIETIME Suburbia: Bandra (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "KTMV",
+      "name": "KT Vision Cinema: Vasai (Screens)",
+      "subRegion": ""
+    },
+    {
+      "code": "MMMC",
+      "name": "Maratha Mandir",
+      "subRegion": ""
+    },
+    {
+      "code": "GCDM",
+      "name": "Gopi Cinema: Dombivali",
+      "subRegion": ""
+    },
+    {
+      "code": "NYMD",
+      "name": "Devgn Cinex: Mulund",
+      "subRegion": ""
+    },
+    {
+      "code": "GDTH",
+      "name": "Gold  Cinema: Shivaji Road, Thane (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "MMAA",
+      "name": "MovieMax: Andheri (E)",
+      "subRegion": ""
+    },
+    {
+      "code": "ONEB",
+      "name": "1 Cinema by Mukta A2: Bharatmata (Newly Renovated)",
+      "subRegion": ""
+    },
+    {
+      "code": "CNTX",
+      "name": "ICONIX CINEMAS: (OLD AARADHANA TALKIES) THANE",
+      "subRegion": ""
+    },
+    {
+      "code": "FQSA",
+      "name": "Fun Square Cinema: Sanpada",
+      "subRegion": ""
+    },
+    {
+      "code": "BRVP",
+      "name": "Bahar Cinema: Vile Parle (E)",
+      "subRegion": ""
+    },
+    {
+      "code": "KURL",
+      "name": "Bharat Cineplex: Kurla (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "KMMV",
+      "name": "K Movie Star Multiplex: Vasai (W)",
+      "subRegion": ""
+    },
+    {
+      "code": "KKUI",
+      "name": "KT Vision Cinema: Vasai(Screen 1)",
+      "subRegion": ""
+    },
+    {
+      "code": "PJDW",
+      "name": "Maison PVR: Jio World Drive-IN, Mumbai",
+      "subRegion": ""
+    },
+    {
+      "code": "MMCV",
+      "name": "Movie Max V Cinema: Virar (E)",
+      "subRegion": ""
+    },
+    {
+      "code": "NHCG",
+      "name": "Nishat Cinema: Grant Road",
+      "subRegion": ""
+    },
+    {
+      "code": "NNNX",
+      "name": "Nazrana Cinema: Bhiwandi",
+      "subRegion": ""
+    },
+    {
+      "code": "VVVM",
+      "name": "Vaishali Cinema: Badlapur",
+      "subRegion": ""
+    },
+    {
+      "code": "VECU",
+      "name": "Venus Cinema: Ulhasnagar",
+      "subRegion": ""
+    },
+    {
+      "code": "WCVR",
+      "name": "Woodland Cinemas: Virar (W)",
+      "subRegion": ""
+    }
+  ],
   "BANG": [
     {
       "code": "IMMO",
@@ -1920,3062 +2407,6 @@
       "subRegion": ""
     }
   ],
-  "HYD": [
-    {
-      "code": "PRHN",
-      "name": "Prasads Multiplex",
-      "subRegion": ""
-    },
-    {
-      "code": "AMBH",
-      "name": "AMB Cinemas: Gachibowli",
-      "subRegion": ""
-    },
-    {
-      "code": "ALUC",
-      "name": "ALLU Cinemas: Kokapet",
-      "subRegion": ""
-    },
-    {
-      "code": "ACPM",
-      "name": "Asian Lakshmikala Cinepride: Moosapet",
-      "subRegion": ""
-    },
-    {
-      "code": "ACEV",
-      "name": "ART CINEMAS: Vanasthalipuram",
-      "subRegion": ""
-    },
-    {
-      "code": "PVFS",
-      "name": "PVR: Nexus Mall Kukatpally, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "ACAS",
-      "name": "AAA Cinemas: Ameerpet",
-      "subRegion": ""
-    },
-    {
-      "code": "AACN",
-      "name": "Aparna Cinemas: Nallagandla",
-      "subRegion": ""
-    },
-    {
-      "code": "CTNR",
-      "name": "Cinepolis: TNR North City, Suchitra, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "ILKS",
-      "name": "PVR Lakeshore PXL 4K Laser ATMOS DTS-X Y Junction",
-      "subRegion": ""
-    },
-    {
-      "code": "SRMO",
-      "name": "Sree Ramulu 70mm 4K Laser: Moosapet",
-      "subRegion": ""
-    },
-    {
-      "code": "IGMH",
-      "name": "INOX: GSM Mall, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "MMAH",
-      "name": "MovieMax: AMR, ECIL Secunderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "GPRH",
-      "name": "GPR Multiplex: Nizampet, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "CPMH",
-      "name": "Cinepolis: Lulu Mall, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "CVMU",
-      "name": "Cineverse Multiplex: Uppal",
-      "subRegion": ""
-    },
-    {
-      "code": "MMCA",
-      "name": "Miraj Cinemas: CineTown, Miyapur",
-      "subRegion": ""
-    },
-    {
-      "code": "ASHN",
-      "name": "Asian Cinemart: RC Puram",
-      "subRegion": ""
-    },
-    {
-      "code": "MAHM",
-      "name": "Mallikarjuna 70mm A/C DTS: Kukatpally",
-      "subRegion": ""
-    },
-    {
-      "code": "AMCA",
-      "name": "Asian M Cube Mall: Attapur",
-      "subRegion": ""
-    },
-    {
-      "code": "SRCM",
-      "name": "Sai Ranga70MM 4KLaser Dolby7.1 AirCooled: Miyapur",
-      "subRegion": ""
-    },
-    {
-      "code": "ABCS",
-      "name": "Cinepolis: DSL Virtue Mall Uppal, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "BRKH",
-      "name": "Bhramaramba 70MM A/C 4K Dolby: Kukatpally",
-      "subRegion": ""
-    },
-    {
-      "code": "CPHY",
-      "name": "Asian Cineplanet Multiplex: Kompally",
-      "subRegion": ""
-    },
-    {
-      "code": "PNNG",
-      "name": "PVR: Next Galleria Mall, Panjagutta",
-      "subRegion": ""
-    },
-    {
-      "code": "CMMA",
-      "name": "Cinepolis: Mantra Mall, Attapur",
-      "subRegion": ""
-    },
-    {
-      "code": "ISTN",
-      "name": "INOX: Sattva Necklace Mall, Kavadiguda",
-      "subRegion": ""
-    },
-    {
-      "code": "GOKU",
-      "name": "Gokul 70MM 4K DTS: Erragadda",
-      "subRegion": ""
-    },
-    {
-      "code": "PVTS",
-      "name": "PVR: Atrium Gachibowli, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "JJPP",
-      "name": "JP Cinemas: Chandanagar",
-      "subRegion": ""
-    },
-    {
-      "code": "AKYJ",
-      "name": "INOX: Ashoka One, 4K LASER Dolby ATMOS: Kukatpally",
-      "subRegion": ""
-    },
-    {
-      "code": "SSRM",
-      "name": "Sri Sai Ram 70mm A/C 4k Laser Dolby 7.1:Malkajgiri",
-      "subRegion": ""
-    },
-    {
-      "code": "SMMR",
-      "name": "Sandhya 70MM 4K Dolby Atmos: RTC X Roads",
-      "subRegion": ""
-    },
-    {
-      "code": "HMHD",
-      "name": "BR Hitech 70mm: Madhapur",
-      "subRegion": ""
-    },
-    {
-      "code": "ARJU",
-      "name": "Arjun 70MM: Kukatpally",
-      "subRegion": ""
-    },
-    {
-      "code": "PIMH",
-      "name": "PVR: Irrum Manzil, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "PVTP",
-      "name": "PVR: Preston, Gachibowli Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "PIIC",
-      "name": "PVR Superplex Inorbit: LUXE, PXL, 4DX: Cyberabad",
-      "subRegion": ""
-    },
-    {
-      "code": "IOMH",
-      "name": "INOX: Odeon 4K, LASER, ATMOS, DTS-X: RTC X Roads",
-      "subRegion": ""
-    },
-    {
-      "code": "APNS",
-      "name": "Aparna Cinemas: Shamshabad",
-      "subRegion": ""
-    },
-    {
-      "code": "ARMH",
-      "name": "Asian Radhika Multiplex: ECIL",
-      "subRegion": ""
-    },
-    {
-      "code": "PVHM",
-      "name": "PVR ICON: Hitech, Madhapur, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "INKM",
-      "name": "Cine Town Indra Nagendra: Karmanghat",
-      "subRegion": ""
-    },
-    {
-      "code": "ACHI",
-      "name": "Asian Sha & Shahensha: Chintal",
-      "subRegion": ""
-    },
-    {
-      "code": "PVUM",
-      "name": "PVR: Musarambagh, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "IPRS",
-      "name": "INOX: Prism Mall, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "MRAD",
-      "name": "Miraj Cinemas: Anand Mall and Movies, Narsingi",
-      "subRegion": ""
-    },
-    {
-      "code": "SNKH",
-      "name": "Asian Mukta A2 Sensation Cinema: Kairathabad",
-      "subRegion": ""
-    },
-    {
-      "code": "MCSS",
-      "name": "Miraj Cinemas: Shalini Shivani, Kothapet",
-      "subRegion": ""
-    },
-    {
-      "code": "SNDY",
-      "name": "Sandhya 35mm 2k Dolby Atmos: RTC X Roads",
-      "subRegion": ""
-    },
-    {
-      "code": "DVRR",
-      "name": "Devi 70MM 4K Laser & Dolby Atmos: RTC X Roads",
-      "subRegion": ""
-    },
-    {
-      "code": "PVYH",
-      "name": "PVR: Central Mall, Panjagutta",
-      "subRegion": ""
-    },
-    {
-      "code": "ASJY",
-      "name": "Asian Jyothi: RC Puram",
-      "subRegion": ""
-    },
-    {
-      "code": "MCKT",
-      "name": "Mahalaxmi Complex: Kothapet",
-      "subRegion": ""
-    },
-    {
-      "code": "ARYH",
-      "name": "Asian Rajya Lakshmi: Uppal",
-      "subRegion": ""
-    },
-    {
-      "code": "MRAA",
-      "name": "Miraj Cinemas: A2A Central Mall, Balanagar",
-      "subRegion": ""
-    },
-    {
-      "code": "INHY",
-      "name": "INOX GVK One, Banjara Hills",
-      "subRegion": ""
-    },
-    {
-      "code": "INMH",
-      "name": "INOX: Maheshwari Parmeshwari Mall, Kachiguda",
-      "subRegion": ""
-    },
-    {
-      "code": "VRKC",
-      "name": "Indra Venkataramana Padmavati Cinema: Kachiguda",
-      "subRegion": ""
-    },
-    {
-      "code": "VTRB",
-      "name": "Vijetha 70MM 4k Atmos: Borabanda",
-      "subRegion": ""
-    },
-    {
-      "code": "SPCB",
-      "name": "Asian Super Cinema: Balapur",
-      "subRegion": ""
-    },
-    {
-      "code": "TVHY",
-      "name": "Tivoli Cinemas: Secunderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "SUDA",
-      "name": "Sudarshan 35MM 4k Laser & Dolby Atmos: RTC X Roads",
-      "subRegion": ""
-    },
-    {
-      "code": "IVNM",
-      "name": "INOX: SMR Vinay Metro Mall, Dolby ATMOS: Miyapur",
-      "subRegion": ""
-    },
-    {
-      "code": "PRCX",
-      "name": "PVR: RK Cineplex, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "MRGT",
-      "name": "Miraj Cinemas: Geeta, Chandanagar",
-      "subRegion": ""
-    },
-    {
-      "code": "STHD",
-      "name": "Cinepolis: Sudha Cinemas, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "MRRG",
-      "name": "Miraj Cinemas: Raghavendra, Malkajgiri",
-      "subRegion": ""
-    },
-    {
-      "code": "SCHC",
-      "name": "VLS Sridevi 2K A/C Dts: Chilakalguda",
-      "subRegion": ""
-    },
-    {
-      "code": "UKCC",
-      "name": "UK Cineplex: Nacharam, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "CPCL",
-      "name": "Cinepolis: CCPL Mall Malkajgiri, Hyderabad",
-      "subRegion": ""
-    },
-    {
-      "code": "AMCM",
-      "name": "Asian Mukund Cinema: Medchal",
-      "subRegion": ""
-    },
-    {
-      "code": "PSMJ",
-      "name": "Movietime Cinemas: SKY Mall, Erragadda X Road",
-      "subRegion": ""
-    },
-    {
-      "code": "MTHY",
-      "name": "Platinum Movietime Cinema: Gachibowli SLN Terminus",
-      "subRegion": ""
-    },
-    {
-      "code": "VAJA",
-      "name": "Vyjayanthi Cinema A/C 2K: Nacharam",
-      "subRegion": ""
-    },
-    {
-      "code": "PRCS",
-      "name": "Prashant Cinema: Secunderabad (Newly Renovated)",
-      "subRegion": ""
-    },
-    {
-      "code": "TRHY",
-      "name": "Asian Tarakarama Cineplex: Kachiguda",
-      "subRegion": ""
-    },
-    {
-      "code": "RKMH",
-      "name": "Rama Krishna 70mm: Abids",
-      "subRegion": ""
-    },
-    {
-      "code": "PTTH",
-      "name": "Alankar (Pratap Theatre): Langer House",
-      "subRegion": ""
-    },
-    {
-      "code": "SCVM",
-      "name": "Sushma 2K Dolby Digital Cinema: Vanasthalipuram",
-      "subRegion": ""
-    },
-    {
-      "code": "CPLK",
-      "name": "CONNPLEX Luxuriance Cinemas: Mpm Mall, Banjara Hil",
-      "subRegion": ""
-    },
-    {
-      "code": "BJNG",
-      "name": "Bhujanga 70MM: Jeedimetla",
-      "subRegion": ""
-    },
-    {
-      "code": "ARTH",
-      "name": "Aradhana Theatre",
-      "subRegion": ""
-    },
-    {
-      "code": "SRCA",
-      "name": "Sree Ramana 70MM 4K Laser & Dolby 7.1: Amberpet",
-      "subRegion": ""
-    },
-    {
-      "code": "SRKR",
-      "name": "Sri Krishna 70MM: Uppal",
-      "subRegion": ""
-    },
-    {
-      "code": "RMKN",
-      "name": "Ramakrishna 35mm: Abids",
-      "subRegion": ""
-    },
-    {
-      "code": "RCNH",
-      "name": "ROONGTA CINEMAS: NOVUM, NAMPALLY",
-      "subRegion": ""
-    },
-    {
-      "code": "SRCH",
-      "name": "Sree Ramana Gold 4K & Dolby 7.1: Amberpet",
-      "subRegion": ""
-    },
-    {
-      "code": "SSRJ",
-      "name": "Sree Sai Raja Theatre: Musheerabad",
-      "subRegion": ""
-    },
-    {
-      "code": "KTKT",
-      "name": "Kumar Theatre: Kachiguda",
-      "subRegion": ""
-    },
-    {
-      "code": "SNIB",
-      "name": "Santosh Theatre: Ibrahimpatnam",
-      "subRegion": ""
-    },
-    {
-      "code": "SLRT",
-      "name": "Laxmi 70MM A/C LASER DOLBY 7.1: Shamshabad",
-      "subRegion": ""
-    },
-    {
-      "code": "MCBH",
-      "name": "Metro Cinema: Bahadurpura",
-      "subRegion": ""
-    },
-    {
-      "code": "LKMT",
-      "name": "Lakshmi Kala Mandir: Alwal",
-      "subRegion": ""
-    },
-    {
-      "code": "SART",
-      "name": "Saptagiri 70MM 4K & Dolby Digital: RTC X Roads",
-      "subRegion": ""
-    },
-    {
-      "code": "SKTA",
-      "name": "Sri Krishna Theatre: Aliabad (Shameerpet)",
-      "subRegion": ""
-    },
-    {
-      "code": "YAKT",
-      "name": "Yakut Mahal Theater: Yakutpura",
-      "subRegion": ""
-    }
-  ],
-  "CHD": [
-    {
-      "code": "PECP",
-      "name": "PVR: Elante, Chandigarh",
-      "subRegion": ""
-    },
-    {
-      "code": "PMMI",
-      "name": "PVR: CP67 Mall, Mohali",
-      "subRegion": ""
-    },
-    {
-      "code": "PVKL",
-      "name": "PVR: MOHALI WALK",
-      "subRegion": ""
-    },
-    {
-      "code": "CBSM",
-      "name": "Cinepolis: Bestech Square, Mohali",
-      "subRegion": ""
-    },
-    {
-      "code": "PCCH",
-      "name": "Piccadily Square",
-      "subRegion": ""
-    },
-    {
-      "code": "PVCZ",
-      "name": "PVR Cosmo: Zirakpur",
-      "subRegion": ""
-    },
-    {
-      "code": "PCVV",
-      "name": "PVR: Centra, Chandigarh",
-      "subRegion": ""
-    },
-    {
-      "code": "CTMJ",
-      "name": "Cinepolis: Jagat Mall, Chandigarh",
-      "subRegion": ""
-    },
-    {
-      "code": "RCPS",
-      "name": "Rajhans Cinemas: Panchkula",
-      "subRegion": ""
-    },
-    {
-      "code": "INZD",
-      "name": "INOX: Dhillon Plaza (Zirakpur)",
-      "subRegion": ""
-    },
-    {
-      "code": "PCIT",
-      "name": "PVR: City Centre IT Park, Chandigarh",
-      "subRegion": ""
-    },
-    {
-      "code": "FNCH",
-      "name": "Fun Cinemas: Republic Mall, Chandigarh",
-      "subRegion": ""
-    },
-    {
-      "code": "INPC",
-      "name": "INOX: NH22 Mall, Amravati Enclave, Panchkula",
-      "subRegion": ""
-    },
-    {
-      "code": "LCZP",
-      "name": "Legend Cinemas: Paras Downtown Square, Zirakpur",
-      "subRegion": ""
-    }
-  ],
-  "AHD": [
-    {
-      "code": "PPAM",
-      "name": "PVR: Palladium Mall, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "CPAO",
-      "name": "Cinepolis: Nexus Ahmedabad One",
-      "subRegion": ""
-    },
-    {
-      "code": "PVAA",
-      "name": "PVR: Acropolis, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "RCCA",
-      "name": "Rajhans Cinemas: The CBD Mall, Zundal Circle",
-      "subRegion": ""
-    },
-    {
-      "code": "ARED",
-      "name": "PVR: Arved Transcube, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "HAMD",
-      "name": "INOX: Himalaya Mall, Drive In Road, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "NYST",
-      "name": "Devgn CineX: Swagat Mall, Gandhinagar",
-      "subRegion": ""
-    },
-    {
-      "code": "RRCV",
-      "name": "Rajhans Cinemas: Vastral",
-      "subRegion": ""
-    },
-    {
-      "code": "CKUA",
-      "name": "Cinepolis: Kankubag, Vastral, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "MPCH",
-      "name": "Mango Plus Cinemas: Nikol",
-      "subRegion": ""
-    },
-    {
-      "code": "CLKN",
-      "name": "Classic Cinema, Kudasan: Gandhinagar",
-      "subRegion": ""
-    },
-    {
-      "code": "MTRB",
-      "name": "Mukta A2 Cinemas: The Retail Park (TRP) Bopal",
-      "subRegion": ""
-    },
-    {
-      "code": "WAGA",
-      "name": "Wide Angle",
-      "subRegion": ""
-    },
-    {
-      "code": "METH",
-      "name": "PVR: Motera, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "NYAG",
-      "name": "Devgn CineX: Chandkheda, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "ABMP",
-      "name": "AB Miniplex: Shivranjini Cross Road, Satellite",
-      "subRegion": ""
-    },
-    {
-      "code": "CPLC",
-      "name": "Cineprime Cinema: Luxuriance, Hanspura",
-      "subRegion": ""
-    },
-    {
-      "code": "PSTM",
-      "name": "PVR: Satyamev Emporio Odhav, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "CGAR",
-      "name": "City Gold: Ashram Road",
-      "subRegion": ""
-    },
-    {
-      "code": "MCMA",
-      "name": "Miraj Cinemas: City Pulse, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "COPG",
-      "name": "CONNPLEX Signature Cinemas: Gandhinagar",
-      "subRegion": ""
-    },
-    {
-      "code": "CPEC",
-      "name": "Cineprime Cinema: Nikol",
-      "subRegion": ""
-    },
-    {
-      "code": "SBMT",
-      "name": "Sanelite Cinemas (SB Multiplex): Agora Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "CSEP",
-      "name": "CONNPLEX Signature Cinemas: Parimal",
-      "subRegion": ""
-    },
-    {
-      "code": "WSIC",
-      "name": "White Screen Cinema (Five 11): Gandhinagar",
-      "subRegion": ""
-    },
-    {
-      "code": "RCNK",
-      "name": "Rajhans Cinemas: Nikol",
-      "subRegion": ""
-    },
-    {
-      "code": "INGA",
-      "name": "INOX: Gandhinagar, Adalaj",
-      "subRegion": ""
-    },
-    {
-      "code": "CONS",
-      "name": "CONNPLEX Luxuriance Cinemas: SBR",
-      "subRegion": ""
-    },
-    {
-      "code": "CSST",
-      "name": "CONNPLEX Signature Cinemas: Shilaj",
-      "subRegion": ""
-    },
-    {
-      "code": "APPX",
-      "name": "Apple Multiplex: Maninagar, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "CSTE",
-      "name": "CONNPLEX Signature Cinemas: Gota",
-      "subRegion": ""
-    },
-    {
-      "code": "CXST",
-      "name": "CONNPLEX Signature Cinemas: South Bopal",
-      "subRegion": ""
-    },
-    {
-      "code": "CSMP",
-      "name": "CONNPLEX Luxuriance Cinemas: Prahladnagar",
-      "subRegion": ""
-    },
-    {
-      "code": "CNLP",
-      "name": "CONNPLEX Luxuriance Cinemas: Vaishnodevi",
-      "subRegion": ""
-    },
-    {
-      "code": "SCSS",
-      "name": "Sanelite Cinemas: Science City",
-      "subRegion": ""
-    },
-    {
-      "code": "AMGD",
-      "name": "Apple Multiplex: Gota, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "MASA",
-      "name": "Mukta A2 Shiv Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "MACZ",
-      "name": "Mukta A2 Cinemas: Rajyash, South Vasna, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "MATN",
-      "name": "Mukta A2 Cinemas: Ratnanjali Square Satellite",
-      "subRegion": ""
-    },
-    {
-      "code": "MABC",
-      "name": "Mukta A2 Cinemas: Chandkheda",
-      "subRegion": ""
-    },
-    {
-      "code": "MVSK",
-      "name": "Miraj Cinemas: Vardhman Square, Sanand",
-      "subRegion": ""
-    },
-    {
-      "code": "MBSX",
-      "name": "Miraj Cinemas: Shalin Square, Hathijan",
-      "subRegion": ""
-    },
-    {
-      "code": "CGOS",
-      "name": "City Gold Satellite",
-      "subRegion": ""
-    },
-    {
-      "code": "CNAD",
-      "name": "CONNPLEX Luxuriance Cinemas: Adani Shantigram",
-      "subRegion": ""
-    },
-    {
-      "code": "APCL",
-      "name": "Apple Cinema: Bapunagar",
-      "subRegion": ""
-    },
-    {
-      "code": "BSSO",
-      "name": "Sanelite Cinemas (Banana Smartplex): SBR, Thaltej",
-      "subRegion": ""
-    },
-    {
-      "code": "MCCP",
-      "name": "Miraj Cinemas: Cinepride, Krishna Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "SCSV",
-      "name": "Sanelite Cinemas: South Bopal",
-      "subRegion": ""
-    },
-    {
-      "code": "HVCA",
-      "name": "Havelock Cineflix Cinemas: Maninagar, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "SJKA",
-      "name": "SK Cinemas: Hathijan",
-      "subRegion": ""
-    },
-    {
-      "code": "DEVI",
-      "name": "Devi Multiplex: Naroda",
-      "subRegion": ""
-    },
-    {
-      "code": "CSAN",
-      "name": "CONNPLEX Signature Cinemas: Narol",
-      "subRegion": ""
-    },
-    {
-      "code": "YMCY",
-      "name": "Magic Cinema: YMCA Club",
-      "subRegion": ""
-    },
-    {
-      "code": "TCZA",
-      "name": "The Cinestar Miniplex: Bhat Circle, SP Ring Road",
-      "subRegion": ""
-    },
-    {
-      "code": "NAMD",
-      "name": "1,Newfangled Miniplex (Twin Seat): Mondeal Park",
-      "subRegion": ""
-    },
-    {
-      "code": "CLDJ",
-      "name": "City Gold: Jivraj Park",
-      "subRegion": ""
-    },
-    {
-      "code": "MCNA",
-      "name": "Miraj Cinemas: Vitthal Plaza, New Naroda",
-      "subRegion": ""
-    },
-    {
-      "code": "CIXH",
-      "name": "CINELUX Cinema:Sola SG Highway (Newly Premium JBL)",
-      "subRegion": ""
-    },
-    {
-      "code": "CGBO",
-      "name": "City Gold: Bopal",
-      "subRegion": ""
-    },
-    {
-      "code": "VJMB",
-      "name": "Vijay Cinema: Bavla",
-      "subRegion": ""
-    },
-    {
-      "code": "CGMO",
-      "name": "City Gold: Motera",
-      "subRegion": ""
-    },
-    {
-      "code": "REMA",
-      "name": "Revolution Multiplex, CTM",
-      "subRegion": ""
-    },
-    {
-      "code": "NMAD",
-      "name": "2,Newfangled Miniplex (Twin Seat): Motera",
-      "subRegion": ""
-    },
-    {
-      "code": "PSMA",
-      "name": "P Square Movieplex, Gota",
-      "subRegion": ""
-    },
-    {
-      "code": "CPMU",
-      "name": "City Pulse Miniplex: Iscon Circle S.G Highway",
-      "subRegion": ""
-    },
-    {
-      "code": "OCBN",
-      "name": "Orange Cinemas: Bapunagar",
-      "subRegion": ""
-    },
-    {
-      "code": "CPEM",
-      "name": "City Pulse: Orient Miniplex, Ellisbridge",
-      "subRegion": ""
-    },
-    {
-      "code": "RCAD",
-      "name": "Rupam Multiplex",
-      "subRegion": ""
-    },
-    {
-      "code": "DICD",
-      "name": "Drive In Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "CPSM",
-      "name": "Savvy Swaraaj Miniplex: Gota, Ahmedabad",
-      "subRegion": ""
-    },
-    {
-      "code": "MAAM",
-      "name": "Mira Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "RACD",
-      "name": "Rupam Arth Cineplex: Sanand",
-      "subRegion": ""
-    }
-  ],
-  "PUNE": [
-    {
-      "code": "PMPW",
-      "name": "INOX Megaplex Phoenix Mall of the Millennium Wakad",
-      "subRegion": ""
-    },
-    {
-      "code": "PCMZ",
-      "name": "PVR: Phoenix Market City, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "PUNB",
-      "name": "Cinepolis: Seasons Mall, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "CPKT",
-      "name": "City Pride: Kothrud",
-      "subRegion": ""
-    },
-    {
-      "code": "ESEM",
-      "name": "E-SQUARE: Xion Mall, Hinjawadi",
-      "subRegion": ""
-    },
-    {
-      "code": "CNWE",
-      "name": "Cinepolis: Nexus WESTEND Mall Aundh, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "CYKR",
-      "name": "City Pride, Nyati Plaza: Kharadi",
-      "subRegion": ""
-    },
-    {
-      "code": "ECPP",
-      "name": "INOX: Elpro City Square, Chinchwad",
-      "subRegion": ""
-    },
-    {
-      "code": "PIPO",
-      "name": "PVR: Icon, The Pavillion Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "MATK",
-      "name": "MovieMax: Amanora Town Centre, Pune(Now Renovated)",
-      "subRegion": ""
-    },
-    {
-      "code": "CPAR",
-      "name": "Abhiruchi City Pride: Sinhagad Road",
-      "subRegion": ""
-    },
-    {
-      "code": "VJHS",
-      "name": "E-SQUARE: VJ Happiness Street, Hinjawadi",
-      "subRegion": ""
-    },
-    {
-      "code": "PGHM",
-      "name": "PVR: Grand Highstreet Mall, Hinjawadi",
-      "subRegion": ""
-    },
-    {
-      "code": "VCPM",
-      "name": "Vishal Cinemaas: Pimpri",
-      "subRegion": ""
-    },
-    {
-      "code": "MSCM",
-      "name": "Miraj Cinemas: Spine City Mall, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "NPSE",
-      "name": "E-SQUARE: University Road, Pune (Newly Renovated)",
-      "subRegion": ""
-    },
-    {
-      "code": "PKPU",
-      "name": "PVR: Kumar Pacific, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "CTSR",
-      "name": "City Pride: Satara Road",
-      "subRegion": ""
-    },
-    {
-      "code": "ESBW",
-      "name": "Bollywood Multiplex: Kharadi",
-      "subRegion": ""
-    },
-    {
-      "code": "RHMN",
-      "name": "INOX: Royal Heritage Mall, NIBM Ext",
-      "subRegion": ""
-    },
-    {
-      "code": "CPRP",
-      "name": "City Pride Royal Cinemas: Rahatani",
-      "subRegion": ""
-    },
-    {
-      "code": "FMJP",
-      "name": "INOX: Jai Ganesh, Akurdi",
-      "subRegion": ""
-    },
-    {
-      "code": "PDCP",
-      "name": "PVR: Directors Cut, KOPA, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "MKML",
-      "name": "MovieMax Gold: Mariplex Mall, Kalyani Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "INPN",
-      "name": "INOX: Bund Garden Road",
-      "subRegion": ""
-    },
-    {
-      "code": "RFNP",
-      "name": "Rajhans Cinemas: 93 Avenue Mall,Fatima Nagar, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "STTG",
-      "name": "Shri Shivaji Talkies: Talegaon",
-      "subRegion": ""
-    },
-    {
-      "code": "CTMP",
-      "name": "City Pride: Mangala Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "RAHU",
-      "name": "Rahul 70 MM: Shivajinagar, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "CLTP",
-      "name": "CONNPLEX Luxuriance Cinemas: Tribeca Highstreet",
-      "subRegion": ""
-    },
-    {
-      "code": "CKPP",
-      "name": "Cinemark 24 Proxima: Indryani Nagar, Bhosari-Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "PUVB",
-      "name": "Cinepolis: VIP Seasons Mall, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "DCCP",
-      "name": "Dharmatma Cinemark: Chakan, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "CTRD",
-      "name": "City Pride: R Deccan",
-      "subRegion": ""
-    },
-    {
-      "code": "ESVP",
-      "name": "Victory Theatre: Camp, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "LCPC",
-      "name": "Laxmi Cineplex: Narayangaon",
-      "subRegion": ""
-    },
-    {
-      "code": "CPFT",
-      "name": "Fun Time Multiplex: Sinhagad Road",
-      "subRegion": ""
-    },
-    {
-      "code": "VBCT",
-      "name": "Vaibhav Chitramandir: Hadapsar",
-      "subRegion": ""
-    },
-    {
-      "code": "FTDP",
-      "name": "Funtime Deluxe: Pimpri, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "VCMP",
-      "name": "Vikas Cinema: Manchar",
-      "subRegion": ""
-    },
-    {
-      "code": "FSCW",
-      "name": "Funsquare Cinema: Ghotawade Phata",
-      "subRegion": ""
-    },
-    {
-      "code": "CEPO",
-      "name": "CinePRO: Vasant Cinema, Pune",
-      "subRegion": ""
-    },
-    {
-      "code": "ASHC",
-      "name": "Ashok Theatre: Pimpri",
-      "subRegion": ""
-    },
-    {
-      "code": "VLCX",
-      "name": "Vilux Talkies: Khadki",
-      "subRegion": ""
-    },
-    {
-      "code": "SHEV",
-      "name": "Shevanta Cinema: Junnar",
-      "subRegion": ""
-    }
-  ],
-  "CHEN": [
-    {
-      "code": "RAKK",
-      "name": "Rakki Cinemas: OMR, Kelambakkam",
-      "subRegion": ""
-    },
-    {
-      "code": "TVHP",
-      "name": "The Vijay Park Multiplex: Injambakkam ECR 4K Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "RRGB",
-      "name": "Rakki RGB Laser 4K: Thiruvallur",
-      "subRegion": ""
-    },
-    {
-      "code": "KVCS",
-      "name": "KC(KrishnaveniCinemas) RG3 LASER DOLBYATMOS TNAGAR",
-      "subRegion": ""
-    },
-    {
-      "code": "MCXF",
-      "name": "Meenakshi Cinemas (Rakki) 4K Dolby Atmos: Avadi",
-      "subRegion": ""
-    },
-    {
-      "code": "CBMC",
-      "name": "Cinepolis: BSR Mall, OMR, Thoraipakkam",
-      "subRegion": ""
-    },
-    {
-      "code": "MAYJ",
-      "name": "MAYAJAAL Multiplex: ECR, Chennai",
-      "subRegion": ""
-    },
-    {
-      "code": "AGSM",
-      "name": "AGS Cinemas: Maduravoyal",
-      "subRegion": ""
-    },
-    {
-      "code": "ACVM",
-      "name": "AGS Cinemas: Villivakkam",
-      "subRegion": ""
-    },
-    {
-      "code": "ACTN",
-      "name": "AGS Cinemas: T. Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "RSSC",
-      "name": "Rohini Silver Screens: Koyambedu",
-      "subRegion": ""
-    },
-    {
-      "code": "PVPZ",
-      "name": "PVR: Palazzo, The Nexus Vijaya Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "PVHR",
-      "name": "PVR: Heritage RSL ECR, Chennai",
-      "subRegion": ""
-    },
-    {
-      "code": "PCAN",
-      "name": "PVR: VR Chennai, Anna Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "MCSK",
-      "name": "Miraj Cinemas: Sekaran Mall, Perrumbakkam",
-      "subRegion": ""
-    },
-    {
-      "code": "INTO",
-      "name": "INOX: The Marina Mall, OMR",
-      "subRegion": ""
-    },
-    {
-      "code": "INPR",
-      "name": "INOX: LUXE Phoenix Market City, Velachery",
-      "subRegion": ""
-    },
-    {
-      "code": "VVGT",
-      "name": "Vels Theatres",
-      "subRegion": ""
-    },
-    {
-      "code": "PVES",
-      "name": "HDFC Millennia PVR: Escape-Express Avenue Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "ACON",
-      "name": "AGS Cinemas OMR: Navlur",
-      "subRegion": ""
-    },
-    {
-      "code": "PVHC",
-      "name": "PVR: Ampa Mall, Nelson Manickam Road",
-      "subRegion": ""
-    },
-    {
-      "code": "PVSR",
-      "name": "PVR: Sathyam, Royapettah",
-      "subRegion": ""
-    },
-    {
-      "code": "MMPR",
-      "name": "MovieMax: PR Mall, Wall Tax Road, Chennai",
-      "subRegion": ""
-    },
-    {
-      "code": "PSKL",
-      "name": "PVR: SKLS Galaxy Mall, Red Hills Chennai",
-      "subRegion": ""
-    },
-    {
-      "code": "PABC",
-      "name": "PVR: Aerohub, Chennai",
-      "subRegion": ""
-    },
-    {
-      "code": "FMCN",
-      "name": "INOX National: Arcot Road",
-      "subRegion": ""
-    },
-    {
-      "code": "PBRM",
-      "name": "PVR: Perambur, Spectrum Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "RDMP",
-      "name": "Shree Radha Movie Park 4K Dolby Atmos: Redhills",
-      "subRegion": ""
-    },
-    {
-      "code": "WSTC",
-      "name": "Woodlands Theatre",
-      "subRegion": ""
-    },
-    {
-      "code": "PGRA",
-      "name": "PVR: Grand Galada, Pallavaram",
-      "subRegion": ""
-    },
-    {
-      "code": "PGMV",
-      "name": "PVR: Grand Mall, Velachery",
-      "subRegion": ""
-    },
-    {
-      "code": "VVTN",
-      "name": "VETRIVEL RGB DOLBY:NANGANALLUR (NEWLY RENOVATED)",
-      "subRegion": ""
-    },
-    {
-      "code": "KSTK",
-      "name": "Kasi Talkies Dolby Atmos: Ashok Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "INCH",
-      "name": "INOX",
-      "subRegion": ""
-    },
-    {
-      "code": "MLMT",
-      "name": "Marvel Movie Max 4K Laser Dolby Atmos: Tiruvallur",
-      "subRegion": ""
-    },
-    {
-      "code": "KMRM",
-      "name": "Kumaran Theatre PROVA 4K DOLBY ATMOS: Madipakkam",
-      "subRegion": ""
-    },
-    {
-      "code": "MMKC",
-      "name": "Medavakkam Kumaran Cinemas RGB LASER Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "JOTG",
-      "name": "Jothi Theatre 4K A/c DTS: ST Thomas Mount",
-      "subRegion": ""
-    },
-    {
-      "code": "SLMP",
-      "name": "SLB (LakshmiBala) Movie Park 4K Dolby Atmos: Padi",
-      "subRegion": ""
-    },
-    {
-      "code": "GAHC",
-      "name": "Gopalakrishna A/C 2K DOLBY 7.1-Karanodai(Redhills)",
-      "subRegion": ""
-    },
-    {
-      "code": "JTPL",
-      "name": "Janatha Theatre 4K AC DTS (JBL AUDIO): Pallavaram",
-      "subRegion": ""
-    },
-    {
-      "code": "ASGG",
-      "name": "Alankar Theatre: Maduranthakam",
-      "subRegion": ""
-    },
-    {
-      "code": "HRSR",
-      "name": "Sri Hari Theatre Dolby Atmos: Pattabiram",
-      "subRegion": ""
-    },
-    {
-      "code": "GKGM",
-      "name": "Gayathiri Cinemas A/C Dolby Atmos: Maduranthakam",
-      "subRegion": ""
-    },
-    {
-      "code": "ATMG",
-      "name": "Anand Theatre Madhuranthagam RGB LASER 4k",
-      "subRegion": ""
-    },
-    {
-      "code": "JTMV",
-      "name": "VVM Cinemas 3D 2K AC Dts, Ponneri",
-      "subRegion": ""
-    },
-    {
-      "code": "AVMT",
-      "name": "AVM Cinemas: Uthukkottai",
-      "subRegion": ""
-    },
-    {
-      "code": "GRTC",
-      "name": "GanapathyRam Theatre 4K Dolby 7.1",
-      "subRegion": ""
-    },
-    {
-      "code": "AMTT",
-      "name": "Arul Muruga Theatre 4K: Thiruporur",
-      "subRegion": ""
-    },
-    {
-      "code": "GCRP",
-      "name": "Green Cinemas 4K Atmos, PLF: Padi",
-      "subRegion": ""
-    },
-    {
-      "code": "GKCP",
-      "name": "GK Cinemas RGB + Laser SRL 4D: Porur",
-      "subRegion": ""
-    },
-    {
-      "code": "LKOP",
-      "name": "Lathaa Cinemas A/C Atmos 2K 3D: Chengalpattu",
-      "subRegion": ""
-    },
-    {
-      "code": "SSCC",
-      "name": "Sivasakthi Cinemas RGB 4K Laser: Padi",
-      "subRegion": ""
-    },
-    {
-      "code": "VECT",
-      "name": "Vela Cinemas RGB 4KLaser DolbyAtmos: Thiruninravur",
-      "subRegion": ""
-    },
-    {
-      "code": "SUTC",
-      "name": "Gokulam Cinemas 4K Dolby Atmos: Poonamalle",
-      "subRegion": ""
-    },
-    {
-      "code": "REMC",
-      "name": "Remy Cinemas A/C DTS 2K 3D Laser: Avadi",
-      "subRegion": ""
-    },
-    {
-      "code": "SBTR",
-      "name": "SB Cinemas (Sri Bhagavathi) 4K Atmos: Poonamallee",
-      "subRegion": ""
-    },
-    {
-      "code": "NLTC",
-      "name": "National Theatre 4K Dolby Atmos: Tambaram",
-      "subRegion": ""
-    },
-    {
-      "code": "SVWT",
-      "name": "Vigneshwara Theatre RGB Laser: Poonamallee",
-      "subRegion": ""
-    },
-    {
-      "code": "VCDK",
-      "name": "Venkateswara Cinemas DOLBY ATMOS: Kundrathur",
-      "subRegion": ""
-    },
-    {
-      "code": "VRCP",
-      "name": "VR Cinemas RGB 4K LASER DOLBY ATMOS: Pattabiram",
-      "subRegion": ""
-    },
-    {
-      "code": "MTLM",
-      "name": "Mani Talkies 2K RGB Laser ATMOS: Minjur",
-      "subRegion": ""
-    },
-    {
-      "code": "OMTT",
-      "name": "Odiyan Mani Theatre 2k A/c Dolby: Thiruvottiyur",
-      "subRegion": ""
-    }
-  ],
-  "KOLK": [
-    {
-      "code": "FSCK",
-      "name": "INOX: South City, Kolkata",
-      "subRegion": ""
-    },
-    {
-      "code": "NNKA",
-      "name": "Nandan",
-      "subRegion": ""
-    },
-    {
-      "code": "INQM",
-      "name": "INOX: Quest Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "DMPZ",
-      "name": "PVR: Diamond Plaza, Jessore Kolkata",
-      "subRegion": ""
-    },
-    {
-      "code": "CLMK",
-      "name": "Cinepolis: Lake Mall, Kolkata",
-      "subRegion": ""
-    },
-    {
-      "code": "MSMA",
-      "name": "PVR: Mani Square Mall, Kolkata",
-      "subRegion": ""
-    },
-    {
-      "code": "INRK",
-      "name": "INOX: City Centre II, Rajarhat",
-      "subRegion": ""
-    },
-    {
-      "code": "CAML",
-      "name": "Cinepolis: Acropolis Mall, Kolkata",
-      "subRegion": ""
-    },
-    {
-      "code": "INSL",
-      "name": "INOX: City Center, Salt Lake",
-      "subRegion": ""
-    },
-    {
-      "code": "MCKK",
-      "name": "Miraj Cinemas: The Terminus, New Town",
-      "subRegion": ""
-    },
-    {
-      "code": "IMKN",
-      "name": "INOX: Star Mall, Madhyamgram",
-      "subRegion": ""
-    },
-    {
-      "code": "PVAK",
-      "name": "PVR: Avani, Kolkata",
-      "subRegion": ""
-    },
-    {
-      "code": "RDBK",
-      "name": "RDB Cinemas: Salt Lake, Kolkata",
-      "subRegion": ""
-    },
-    {
-      "code": "INER",
-      "name": "INOX: Forum Mall, Elgin Road",
-      "subRegion": ""
-    },
-    {
-      "code": "ATCK",
-      "name": "Atindra Cinema: Barrackpore",
-      "subRegion": ""
-    },
-    {
-      "code": "IFRM",
-      "name": "INOX: Forum Rangoli Mall, Belur",
-      "subRegion": ""
-    },
-    {
-      "code": "NACK",
-      "name": "Navina Cinema: Tollygunge",
-      "subRegion": ""
-    },
-    {
-      "code": "ASKO",
-      "name": "Asoka Cinema: Behala",
-      "subRegion": ""
-    },
-    {
-      "code": "IMJN",
-      "name": "INOX: Metro, Jawaharlal Nehru Road",
-      "subRegion": ""
-    },
-    {
-      "code": "SVNR",
-      "name": "SVF Cinemas: Wood Square Mall, Narendrapur",
-      "subRegion": ""
-    },
-    {
-      "code": "ATJA",
-      "name": "SSR Ajanta Cinema: Behala",
-      "subRegion": ""
-    },
-    {
-      "code": "INKS",
-      "name": "INOX: Swabhumi, Maulana Azad Sarani",
-      "subRegion": ""
-    },
-    {
-      "code": "RTOY",
-      "name": "Radha Studio: Tollygunge",
-      "subRegion": ""
-    },
-    {
-      "code": "FCHP",
-      "name": "INOX: Hiland Park",
-      "subRegion": ""
-    },
-    {
-      "code": "PCRA",
-      "name": "Priya Cinema: Rashbehari Avenue",
-      "subRegion": ""
-    },
-    {
-      "code": "STKT",
-      "name": "Binodini Theatre (Star Theatre)",
-      "subRegion": ""
-    },
-    {
-      "code": "MCSL",
-      "name": "Miraj Cinemas: Downtown Mall, Salt Lake",
-      "subRegion": ""
-    },
-    {
-      "code": "BARA",
-      "name": "Bioscope: Axis Mall, Rajarhat",
-      "subRegion": ""
-    },
-    {
-      "code": "SSGK",
-      "name": "SSR Globe Cinemas: New Market, Kolkata",
-      "subRegion": ""
-    },
-    {
-      "code": "SFCR",
-      "name": "SVF Cinemas: Platina Mall, Howrah",
-      "subRegion": ""
-    },
-    {
-      "code": "INHD",
-      "name": "Hind INOX",
-      "subRegion": ""
-    },
-    {
-      "code": "RTHK",
-      "name": "Rathindra Multiplex: Sodepur",
-      "subRegion": ""
-    },
-    {
-      "code": "SVFN",
-      "name": "Nazrultirtha Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "EMCI",
-      "name": "Elora Multiplex: Champahati",
-      "subRegion": ""
-    },
-    {
-      "code": "ACNB",
-      "name": "SSR Cinemas, Suncity Mall: Barasat",
-      "subRegion": ""
-    },
-    {
-      "code": "SSRL",
-      "name": "SSR Cinemas: Maheshtala",
-      "subRegion": ""
-    },
-    {
-      "code": "MENO",
-      "name": "Menoka Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "PRCN",
-      "name": "Prachi Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "SVFB",
-      "name": "SVF Cinemas: Baruipur Show House, Baruipur",
-      "subRegion": ""
-    },
-    {
-      "code": "MRJH",
-      "name": "Miraj Cinemas: Aurbindo Mall, Howrah",
-      "subRegion": ""
-    },
-    {
-      "code": "JYKL",
-      "name": "Jayanti Cinema: Barrackpore",
-      "subRegion": ""
-    },
-    {
-      "code": "JMJR",
-      "name": "Jaya Cinemas: City Mall, Barasat",
-      "subRegion": ""
-    },
-    {
-      "code": "NECA",
-      "name": "New Empire Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "SONP",
-      "name": "Sonali Cinema: Dunlop",
-      "subRegion": ""
-    },
-    {
-      "code": "BJLC",
-      "name": "Bijoli Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "BASU",
-      "name": "Basusree Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "RDCQ",
-      "name": "Rupmandir Cinema: Belghoria",
-      "subRegion": ""
-    },
-    {
-      "code": "UDMM",
-      "name": "Utpal Dutta Mancha: Maheshtala",
-      "subRegion": ""
-    },
-    {
-      "code": "AMLC",
-      "name": "Amala Cinema: Barrackpore (AC Dolby Atmos)",
-      "subRegion": ""
-    },
-    {
-      "code": "LCBK",
-      "name": "Lali Cinema: Barasat",
-      "subRegion": ""
-    },
-    {
-      "code": "LICL",
-      "name": "Lila Cinema: Baruipur",
-      "subRegion": ""
-    },
-    {
-      "code": "PMAC",
-      "name": "Padma Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "STBZ",
-      "name": "Sobha Talkies: Betberia",
-      "subRegion": ""
-    },
-    {
-      "code": "UUBT",
-      "name": "Uma Talkies: Bakhrahat",
-      "subRegion": ""
-    }
-  ],
-  "KOCH": [
-    {
-      "code": "PVLC",
-      "name": "PVR: Lulu, Kochi",
-      "subRegion": ""
-    },
-    {
-      "code": "PVMF",
-      "name": "PVR: Forum Mall, Kochi",
-      "subRegion": ""
-    },
-    {
-      "code": "CPCK",
-      "name": "Cinepolis: Centre Square, Kochi",
-      "subRegion": ""
-    },
-    {
-      "code": "PMNK",
-      "name": "PVR: Mymoon, Kochi",
-      "subRegion": ""
-    },
-    {
-      "code": "SNYK",
-      "name": "Shenoys",
-      "subRegion": ""
-    },
-    {
-      "code": "PCVB",
-      "name": "PVR: Oberon Mall, Kochi",
-      "subRegion": ""
-    },
-    {
-      "code": "MYCA",
-      "name": "MY Cinemas, KSRT Complex, Angamaly: Kerala",
-      "subRegion": ""
-    },
-    {
-      "code": "EVMP",
-      "name": "EVM Cinema A/C 4K RGB Laser 3D: Perumbavoor",
-      "subRegion": ""
-    },
-    {
-      "code": "CPSK",
-      "name": "Cinepolis: VIP Centre Square Mall, Kochi",
-      "subRegion": ""
-    },
-    {
-      "code": "VMHE",
-      "name": "Vanitha Cineplex RGB Laser 4K 3D ATMOS: Edappally",
-      "subRegion": ""
-    },
-    {
-      "code": "PMCE",
-      "name": "Padma Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "ACPV",
-      "name": "Aashirvad Cineplexx: Piravom",
-      "subRegion": ""
-    },
-    {
-      "code": "KTEK",
-      "name": "Kavitha Theatre 4K 3D Dolby 7.1: Ernakulam",
-      "subRegion": ""
-    },
-    {
-      "code": "NTTR",
-      "name": "New Central Talkies RGB Laser 4K 3D Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "MAJT",
-      "name": "Majestic Multiplex 4K RGB Laser: Narakkal",
-      "subRegion": ""
-    },
-    {
-      "code": "JMMA",
-      "name": "JM Movies Josh Mall: Mookkannoor Angamaly",
-      "subRegion": ""
-    },
-    {
-      "code": "MYCR",
-      "name": "MY Cinemas RedCarpet: Kariyad",
-      "subRegion": ""
-    },
-    {
-      "code": "GCFK",
-      "name": "G Cinemas Fort Kochi: 4K Dolby ATMOS",
-      "subRegion": ""
-    },
-    {
-      "code": "PCNM",
-      "name": "PAN Cinemas Nucleus Mall 4K ATMOS",
-      "subRegion": ""
-    },
-    {
-      "code": "CETA",
-      "name": "Central Talkies RGB Laser 4K  3D Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "MCIK",
-      "name": "M Cinemas 4K 3D Dolby ATMOS: Varapuzha",
-      "subRegion": ""
-    },
-    {
-      "code": "FSMA",
-      "name": "Four Star Movies: Manjapra, Angamaly",
-      "subRegion": ""
-    },
-    {
-      "code": "MMTA",
-      "name": "Matha Madhurya RGB Laser 3D Dolby Atmos: Aluva",
-      "subRegion": ""
-    },
-    {
-      "code": "KCTK",
-      "name": "K Cinemas 4K Dolby Atmos Tripplebeam 3D: Cherai",
-      "subRegion": ""
-    },
-    {
-      "code": "ACPK",
-      "name": "Aashirvad Cineplexx: Perumbavoor",
-      "subRegion": ""
-    },
-    {
-      "code": "ZTKC",
-      "name": "Zeenath Theatre A/c Real Laser Dolby 7.1: Aluva",
-      "subRegion": ""
-    },
-    {
-      "code": "KSNP",
-      "name": "Kairali Sree Theater: North Parvur",
-      "subRegion": ""
-    },
-    {
-      "code": "CAIS",
-      "name": "Casino Talkies A/C Real Laser 3D DOLBY 7.1: Aluva",
-      "subRegion": ""
-    },
-    {
-      "code": "JMAX",
-      "name": "J MAX  2K 3D Dolby 7.1: PATTIMATTOM",
-      "subRegion": ""
-    },
-    {
-      "code": "SSGT",
-      "name": "Shafaz Laser & Grand 4K Theatre North Paravoor",
-      "subRegion": ""
-    },
-    {
-      "code": "SCKI",
-      "name": "Savita Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "SCKO",
-      "name": "Sarita Cinema RGB Laser 4K 3D ATMOS",
-      "subRegion": ""
-    },
-    {
-      "code": "SETK",
-      "name": "Sangeeta Cinema",
-      "subRegion": ""
-    }
-  ],
-  "AGRA": [
-    {
-      "code": "SARV",
-      "name": "SARV Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "PAJA",
-      "name": "PVR: Anjana Mall, Agra",
-      "subRegion": ""
-    },
-    {
-      "code": "SEEG",
-      "name": "Shree Cinema, Dolby Atmos, 4k Laser",
-      "subRegion": ""
-    },
-    {
-      "code": "CCPF",
-      "name": "Cineworld Multiplex: Paras Pearls Mall, Agra",
-      "subRegion": ""
-    },
-    {
-      "code": "APAS",
-      "name": "Meher Theatre",
-      "subRegion": ""
-    },
-    {
-      "code": "GLCA",
-      "name": "Gold Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "SJTA",
-      "name": "Sanjay Talkies",
-      "subRegion": ""
-    },
-    {
-      "code": "VCIA",
-      "name": "Vimal Cineplex",
-      "subRegion": ""
-    },
-    {
-      "code": "PPAG",
-      "name": "Panna Palace",
-      "subRegion": ""
-    },
-    {
-      "code": "SABM",
-      "name": "Bharat Starworld Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "RVCA",
-      "name": "Rajeev Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "CCIA",
-      "name": "Chitra Cinema",
-      "subRegion": ""
-    }
-  ],
-  "AJMER": [
-    {
-      "code": "PJRR",
-      "name": "PVR: Mittal Mall, Ajmer",
-      "subRegion": ""
-    },
-    {
-      "code": "INAC",
-      "name": "INOX: City Square Mall, Ajmer",
-      "subRegion": ""
-    },
-    {
-      "code": "MMMX",
-      "name": "MayaMandir Multiplex (Dolby Atmos Sound)",
-      "subRegion": ""
-    }
-  ],
-  "AMRI": [
-    {
-      "code": "FNAS",
-      "name": "Cinepolis: Nexus Amritsar",
-      "subRegion": ""
-    },
-    {
-      "code": "SCAR",
-      "name": "INOX: VR Ambarsar, Amritsar",
-      "subRegion": ""
-    },
-    {
-      "code": "MTCA",
-      "name": "Movietime Cinemas: Omaxe Novelty Mall, Amritsar",
-      "subRegion": ""
-    },
-    {
-      "code": "SCTS",
-      "name": "PVR: SCT, Amritsar",
-      "subRegion": ""
-    }
-  ],
-  "ATKK": [
-    {
-      "code": "LRTA",
-      "name": "Lakshmi Ranga Theater: Atmakur",
-      "subRegion": ""
-    },
-    {
-      "code": "RMHK",
-      "name": "Ranga Mahal Theater: Atmakur",
-      "subRegion": ""
-    }
-  ],
-  "ATMK": [],
-  "AUBI": [
-    {
-      "code": "NYTO",
-      "name": "Narendra Talkies: Aurangabad",
-      "subRegion": ""
-    }
-  ],
-  "AURW": [
-    {
-      "code": "SHAY",
-      "name": "Shyamal Talkies: Aurangabad (W.B)",
-      "subRegion": ""
-    }
-  ],
-  "BKOT": [
-    {
-      "code": "KTKO",
-      "name": "Sri Venkateswara Theater Dolby Digital",
-      "subRegion": ""
-    },
-    {
-      "code": "SDBK",
-      "name": "Sri Dwarakanatha Talkies: B Kothakota",
-      "subRegion": ""
-    }
-  ],
-  "BELG": [
-    {
-      "code": "INBL",
-      "name": "INOX: Camp Road, Belagavi",
-      "subRegion": ""
-    },
-    {
-      "code": "BIKB",
-      "name": "Kapeel Cinema Nucleus Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "SNTB",
-      "name": "Swaroop Nartaki Talkies",
-      "subRegion": ""
-    },
-    {
-      "code": "NTBB",
-      "name": "Nirmal Theatre: Belagavi",
-      "subRegion": ""
-    },
-    {
-      "code": "CHGV",
-      "name": "Chitra Talkies: Belagavi",
-      "subRegion": ""
-    },
-    {
-      "code": "GLOB",
-      "name": "Globe Cinemas: Camp Area",
-      "subRegion": ""
-    },
-    {
-      "code": "PRDB",
-      "name": "Prakash Digital 4K Cinema: Belagavi",
-      "subRegion": ""
-    },
-    {
-      "code": "SSBZ",
-      "name": "Santosh Theatre: Belagavi",
-      "subRegion": ""
-    }
-  ],
-  "BHAW": [
-    {
-      "code": "BMBK",
-      "name": "Bhagirathi Multiplex",
-      "subRegion": ""
-    },
-    {
-      "code": "NEWS",
-      "name": "New Star Cineplex",
-      "subRegion": ""
-    }
-  ],
-  "BHOP": [
-    {
-      "code": "FNBP",
-      "name": "Cinepolis: DB Mall, Bhopal",
-      "subRegion": ""
-    },
-    {
-      "code": "CBPB",
-      "name": "Cinepolis: Bansal Plaza, Bhopal",
-      "subRegion": ""
-    },
-    {
-      "code": "CPAS",
-      "name": "Cinepolis: Aashima Mall, Bhopal",
-      "subRegion": ""
-    },
-    {
-      "code": "MAPM",
-      "name": "Mukta A2 Cinemas: Peoples Mall, Bhopal",
-      "subRegion": ""
-    },
-    {
-      "code": "PASD",
-      "name": "PVR: Aura Mall, Bhopal",
-      "subRegion": ""
-    },
-    {
-      "code": "JCMN",
-      "name": "Jyoti Cineplex (New Seats)",
-      "subRegion": ""
-    },
-    {
-      "code": "SACG",
-      "name": "Sangam Cineplex",
-      "subRegion": ""
-    },
-    {
-      "code": "MALB",
-      "name": "Miraj Cinemas: Alark Square, Bhopal",
-      "subRegion": ""
-    },
-    {
-      "code": "DDXB",
-      "name": "DDX Cinema Kolar",
-      "subRegion": ""
-    },
-    {
-      "code": "DDRX",
-      "name": "DDX Regal Cinema Awadhpuri",
-      "subRegion": ""
-    },
-    {
-      "code": "RAMC",
-      "name": "Rangmahal Cineplex",
-      "subRegion": ""
-    },
-    {
-      "code": "SANC",
-      "name": "Sangeet Cineplex",
-      "subRegion": ""
-    },
-    {
-      "code": "BCBP",
-      "name": "Bharat Cineplex",
-      "subRegion": ""
-    },
-    {
-      "code": "RBAC",
-      "name": "Raj Big 2 Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "ALPC",
-      "name": "Alpana Air-Cooled Cineplex",
-      "subRegion": ""
-    },
-    {
-      "code": "BPKC",
-      "name": "British Park Cineplex",
-      "subRegion": ""
-    },
-    {
-      "code": "RAJL",
-      "name": "Raj Cinema",
-      "subRegion": ""
-    }
-  ],
-  "BHUB": [
-    {
-      "code": "MPDB",
-      "name": "Maharaja (Christie 4K, DOLBY ATMOS 64 CHANNEL)",
-      "subRegion": ""
-    },
-    {
-      "code": "CNED",
-      "name": "Cinepolis: Nexus Esplanade, Bhubaneswar",
-      "subRegion": ""
-    },
-    {
-      "code": "SWBH",
-      "name": "Sriya Swati Stutee Cineplexx (4K, DOLBY ATMOS)",
-      "subRegion": ""
-    },
-    {
-      "code": "KTBH",
-      "name": "Keshari Talkies (BARCO 4K LASER DOLBY ATMOS)",
-      "subRegion": ""
-    },
-    {
-      "code": "PUGB",
-      "name": "PVR: Utkal Kanika Galleria, Bhubaneswar",
-      "subRegion": ""
-    },
-    {
-      "code": "IDRM",
-      "name": "INOX: DN Regalia Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "INBB",
-      "name": "INOX: BMC Bhawani Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "INNS",
-      "name": "INOX: Symphony Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "PJJT",
-      "name": "PJ Movies (Veena Theatre): Jatni",
-      "subRegion": ""
-    }
-  ],
-  "CPTN": [
-    {
-      "code": "BBTC",
-      "name": "Sri Balaji Talkies",
-      "subRegion": ""
-    },
-    {
-      "code": "SLSM",
-      "name": "Sri Lakshmi Theatre",
-      "subRegion": ""
-    }
-  ],
-  "CHNN": [],
-  "AURA": [
-    {
-      "code": "SCAU",
-      "name": "INOX: Prozone Mall, Chhatrapati Sambhaji Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "RMIA",
-      "name": "INOX: Reliance Mall, Chhatrapati Sambhaji Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "ARDC",
-      "name": "Anjali Ratnadeep Cinema:Chhatrapati SambhajiNagar",
-      "subRegion": ""
-    },
-    {
-      "code": "NCCI",
-      "name": "Nupur Cinema: Chh.Sambhajinagar (Newly Renovated)",
-      "subRegion": ""
-    },
-    {
-      "code": "GLDA",
-      "name": "Goldie Cinemark: Chhatrapati Sambhaji Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "KVSW",
-      "name": "Khinvasara Cineplex: Waluj",
-      "subRegion": ""
-    },
-    {
-      "code": "ANES",
-      "name": "Abhinay: Chhatrapati Sambhaji Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "AAAD",
-      "name": "Khinvasara Cineplex: Chhatrapati SambhajiNagar",
-      "subRegion": ""
-    },
-    {
-      "code": "MNCA",
-      "name": "MohanNova Cinemaz: Chhatrapati SambhajiNagar",
-      "subRegion": ""
-    }
-  ],
-  "COIM": [
-    {
-      "code": "CCCB",
-      "name": "Cosmo Cinemas PEELAMEDU AC 4K RGB Laser:Coimbatore",
-      "subRegion": ""
-    },
-    {
-      "code": "MCTC",
-      "name": "Murugan Cinemas A/C 4K Atmos: Thudiyalur",
-      "subRegion": ""
-    },
-    {
-      "code": "CCAT",
-      "name": "Cosmo Cinemas: NARASIMANAIKEN PALAYAM, AC 4k ATMOS",
-      "subRegion": ""
-    },
-    {
-      "code": "JTPC",
-      "name": "Jayanthi Cinemas A/C 4K LASER ATMOS: P.N Palayam",
-      "subRegion": ""
-    },
-    {
-      "code": "FNCO",
-      "name": "Cinepolis: Fun Republic Mall, Coimbatore",
-      "subRegion": ""
-    },
-    {
-      "code": "KGCM",
-      "name": "KG Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "BWCB",
-      "name": "Broadway Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "INPT",
-      "name": "INOX: Prozone Mall, Coimbatore",
-      "subRegion": ""
-    },
-    {
-      "code": "KOVI",
-      "name": "Kovai Shanti Complex 4K 3D",
-      "subRegion": ""
-    },
-    {
-      "code": "PFSC",
-      "name": "PVR: Alveal Fun Savvy Mall, Coimbatore",
-      "subRegion": ""
-    },
-    {
-      "code": "SRMJ",
-      "name": "Miraj Cinemas: SRK Mall, Coimbatore",
-      "subRegion": ""
-    },
-    {
-      "code": "PBMC",
-      "name": "PVR: Brookefields Mall, Coimbatore",
-      "subRegion": ""
-    },
-    {
-      "code": "SETC",
-      "name": "Sangeetha Multiplex: Somanur",
-      "subRegion": ""
-    },
-    {
-      "code": "GKCC",
-      "name": "Gokulam Cinemas A/C 2K",
-      "subRegion": ""
-    },
-    {
-      "code": "KARP",
-      "name": "Karpagam Theatres 4K Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "SDKT",
-      "name": "Sri Sakthi Kalpana Cinemas: Kavundampalayam",
-      "subRegion": ""
-    },
-    {
-      "code": "KRCC",
-      "name": "Krithika Cinemas A/C 4K Dolby",
-      "subRegion": ""
-    },
-    {
-      "code": "MEEN",
-      "name": "Meenambiga Cinemas A/C 2K DOLBY ATMOS: Somanur",
-      "subRegion": ""
-    },
-    {
-      "code": "ASCC",
-      "name": "Arasan Cinemas A/C 4K Dolby",
-      "subRegion": ""
-    },
-    {
-      "code": "KACC",
-      "name": "Kavitha Cinemas 4K Dolby Atmos: K.G. Chavadi",
-      "subRegion": ""
-    },
-    {
-      "code": "KAVE",
-      "name": "Kaveri Cinema",
-      "subRegion": ""
-    }
-  ],
-  "DEH": [
-    {
-      "code": "PMOD",
-      "name": "PVR: Mall Of Dehradun",
-      "subRegion": ""
-    },
-    {
-      "code": "PVCN",
-      "name": "PVR: Centrio, Dehradun",
-      "subRegion": ""
-    },
-    {
-      "code": "SCRZ",
-      "name": "Silver City Multiplex: Rajpur Road",
-      "subRegion": ""
-    },
-    {
-      "code": "PVPC",
-      "name": "PVR: Pacific, Dehradun",
-      "subRegion": ""
-    },
-    {
-      "code": "STID",
-      "name": "Starworld IPS Multiplex Euphoria (Vikas Mall)",
-      "subRegion": ""
-    },
-    {
-      "code": "MLDP",
-      "name": "Microcineplex Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "BNBA",
-      "name": "Movie Lounge: Crossroads Mall, Dehradun",
-      "subRegion": ""
-    },
-    {
-      "code": "NTCD",
-      "name": "Natraj Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "NEDD",
-      "name": "FUN Cinemas New Empire",
-      "subRegion": ""
-    },
-    {
-      "code": "OCDE",
-      "name": "Orient Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "KBPK",
-      "name": "KB Cinema: Rani Pokhari",
-      "subRegion": ""
-    }
-  ],
-  "GOA": [
-    {
-      "code": "INGO",
-      "name": "INOX: Old GMC, DB Road, Panaji",
-      "subRegion": ""
-    },
-    {
-      "code": "INPO",
-      "name": "INOX: Porvorim, Goa",
-      "subRegion": ""
-    },
-    {
-      "code": "INMG",
-      "name": "INOX: Osia G Wing Margao, Goa",
-      "subRegion": ""
-    },
-    {
-      "code": "INOA",
-      "name": "INOX: Osia A Wing Margao, Goa",
-      "subRegion": ""
-    },
-    {
-      "code": "HFSV",
-      "name": "Z Square Cine Shivam: Vasco Da Gama",
-      "subRegion": ""
-    },
-    {
-      "code": "HFSQ",
-      "name": "Z Square Hira Talkies: Bicholim",
-      "subRegion": ""
-    },
-    {
-      "code": "NYCP",
-      "name": "Novelty Laserplex: Ponda, Goa (Newly Renovated)",
-      "subRegion": ""
-    },
-    {
-      "code": "KSES",
-      "name": "1930 Vasco",
-      "subRegion": ""
-    },
-    {
-      "code": "HFSA",
-      "name": "Z Square Cine Samrat Ashok: Panaji",
-      "subRegion": ""
-    },
-    {
-      "code": "MMZP",
-      "name": "Magic Moviez: Ponda",
-      "subRegion": ""
-    },
-    {
-      "code": "HFLM",
-      "name": "Z Square Cine Vishant: Margao",
-      "subRegion": ""
-    }
-  ],
-  "GOAL": [
-    {
-      "code": "DGGC",
-      "name": "Diamond Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "KCCA",
-      "name": "Kalpana Cinema",
-      "subRegion": ""
-    }
-  ],
-  "GUNT": [
-    {
-      "code": "STTY",
-      "name": "Studio 81 Cinemas: 4K Laser Dolby Atmos, Guntur",
-      "subRegion": ""
-    },
-    {
-      "code": "HLWD",
-      "name": "Hollywood Bollywood Theaters",
-      "subRegion": ""
-    },
-    {
-      "code": "HHCG",
-      "name": "Harihar Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "CNPR",
-      "name": "Cine Prime",
-      "subRegion": ""
-    },
-    {
-      "code": "SCAG",
-      "name": "Siva Cinemas 4K Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "CSER",
-      "name": "Cine Square Dolby Atmos A/C",
-      "subRegion": ""
-    },
-    {
-      "code": "SRMH",
-      "name": "Sreemanth Mahal: Chebrolu",
-      "subRegion": ""
-    }
-  ],
-  "GUW": [
-    {
-      "code": "CCGW",
-      "name": "PVR: City Centre, Guwahati",
-      "subRegion": ""
-    },
-    {
-      "code": "NCSQ",
-      "name": "INOX: NCS Square, Guwahati",
-      "subRegion": ""
-    },
-    {
-      "code": "CCMG",
-      "name": "Cinepolis: Central Mall, Guwahati",
-      "subRegion": ""
-    },
-    {
-      "code": "TCTS",
-      "name": "TS Cinemas: Times Square Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "GRCG",
-      "name": "Grande Cines: Paltan bazar, Guwahati",
-      "subRegion": ""
-    },
-    {
-      "code": "NYRG",
-      "name": "Devgn CineX: Roodraksh Mall, Guwahati",
-      "subRegion": ""
-    },
-    {
-      "code": "CCBT",
-      "name": "Matrix Cinemas: Matrix Mall, Beltola, Guwahati",
-      "subRegion": ""
-    },
-    {
-      "code": "INAG",
-      "name": "INOX: Aurus, Guwahati",
-      "subRegion": ""
-    },
-    {
-      "code": "GRGA",
-      "name": "Grand Royal Cines, Sixmile",
-      "subRegion": ""
-    },
-    {
-      "code": "ACGA",
-      "name": "Anuradha Cineplex",
-      "subRegion": ""
-    },
-    {
-      "code": "KDCG",
-      "name": "Kelvin Gold Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "AICF",
-      "name": "Aideo Cinema Hall: ASFFDC, Panjabari, Guwahati",
-      "subRegion": ""
-    },
-    {
-      "code": "FUCG",
-      "name": "Galleria Cinema: HUB Mall, Guwahati",
-      "subRegion": ""
-    },
-    {
-      "code": "RRCG",
-      "name": "RR Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "GDCN",
-      "name": "Gold Cinema: Narengi",
-      "subRegion": ""
-    },
-    {
-      "code": "SDCH",
-      "name": "Silver Screen (AC Dolby 7.1): Bijoynagar",
-      "subRegion": ""
-    }
-  ],
-  "HUBL": [
-    {
-      "code": "PVHB",
-      "name": "PVR: Inorbit Mall, Hubli",
-      "subRegion": ""
-    },
-    {
-      "code": "LPCH",
-      "name": "Laxmi Citypride Multiplex: Laxmi Mall, Hubli",
-      "subRegion": ""
-    },
-    {
-      "code": "CPUO",
-      "name": "Cinepolis: Urban Oasis Mall, Hubli",
-      "subRegion": ""
-    },
-    {
-      "code": "APSU",
-      "name": "Apsara & Sudha Cinemas: Hubli",
-      "subRegion": ""
-    },
-    {
-      "code": "RTHC",
-      "name": "Rupam Talkies: Hubbali",
-      "subRegion": ""
-    }
-  ],
-  "IND": [
-    {
-      "code": "SCIN",
-      "name": "INOX: C-21 Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "PTIN",
-      "name": "PVR: Treasure Island Mall, Indore",
-      "subRegion": ""
-    },
-    {
-      "code": "PCMX",
-      "name": "INOX: Phoenix Pride of India, Indore",
-      "subRegion": ""
-    },
-    {
-      "code": "INIC",
-      "name": "INOX: Nexus Indore Central Mall, Regal Square",
-      "subRegion": ""
-    },
-    {
-      "code": "SSLP",
-      "name": "Sapna Sangeeta Lumiere",
-      "subRegion": ""
-    },
-    {
-      "code": "RCMM",
-      "name": "Rajhans Cinemas: Malhar Mega Mall, Indore",
-      "subRegion": ""
-    },
-    {
-      "code": "DTDT",
-      "name": "Drama Factory Cinema, Zodiac Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "KYID",
-      "name": "Kalyan Cinemas: Rajendra Nagar, Indore",
-      "subRegion": ""
-    },
-    {
-      "code": "MCTY",
-      "name": "Miraj Cinemas: Velocity III, Indore",
-      "subRegion": ""
-    },
-    {
-      "code": "ODEN",
-      "name": "Odeon Cinemas: Rajendra Nagar, Indore",
-      "subRegion": ""
-    },
-    {
-      "code": "FFCX",
-      "name": "Fundore Cinemas, Rau",
-      "subRegion": ""
-    },
-    {
-      "code": "CSCI",
-      "name": "Cine Square Cinemas: Airport Road, Indore",
-      "subRegion": ""
-    },
-    {
-      "code": "MMZM",
-      "name": "Mangal Multiplex",
-      "subRegion": ""
-    },
-    {
-      "code": "FCMC",
-      "name": "Fortune Cinemas: Mhow, Indore",
-      "subRegion": ""
-    },
-    {
-      "code": "MMXI",
-      "name": "Manmandir Miniplex",
-      "subRegion": ""
-    },
-    {
-      "code": "PRFI",
-      "name": "Prafull RK Deluxe Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "CMRA",
-      "name": "Chhotu Maharaj Cine Cafe: Treasure Fantasy, Rau",
-      "subRegion": ""
-    },
-    {
-      "code": "ASTC",
-      "name": "Aasttha Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "DICI",
-      "name": "Cine Wheels Drive in by Windasa",
-      "subRegion": ""
-    },
-    {
-      "code": "KDIN",
-      "name": "Kastur Deluxe Theatre",
-      "subRegion": ""
-    }
-  ],
-  "JGRO": [
-    {
-      "code": "LALC",
-      "name": "Lal Palace Cineplex",
-      "subRegion": ""
-    },
-    {
-      "code": "SOCN",
-      "name": "Star Omjee Cinema",
-      "subRegion": ""
-    }
-  ],
-  "JAIJ": [
-    {
-      "code": "GCJR",
-      "name": "Gravity Cinemax",
-      "subRegion": ""
-    },
-    {
-      "code": "RAME",
-      "name": "Rama Metro Cinema (Dolby 7.1 Sound): Sheorinarayan",
-      "subRegion": ""
-    }
-  ],
-  "JAIP": [
-    {
-      "code": "CPJI",
-      "name": "Cinepolis: Jewel of India, Jaipur (Newly Opened)",
-      "subRegion": ""
-    },
-    {
-      "code": "PVJM",
-      "name": "PVR: Mall of Jaipur",
-      "subRegion": ""
-    },
-    {
-      "code": "EPJM",
-      "name": "Miraj Cinemas: Entertainment Paradise, Jaipur",
-      "subRegion": ""
-    },
-    {
-      "code": "RMCJ",
-      "name": "Rajmandir Cinema (Dolby Atmos)",
-      "subRegion": ""
-    },
-    {
-      "code": "CNWJ",
-      "name": "Cinepolis: World Trade Park Mall, Jaipur",
-      "subRegion": ""
-    },
-    {
-      "code": "FNJJ",
-      "name": "Cinepolis: Triton Mega Mall, Jaipur",
-      "subRegion": ""
-    },
-    {
-      "code": "GCMJ",
-      "name": "INOX: GT Central Mall, Jaipur",
-      "subRegion": ""
-    },
-    {
-      "code": "INPS",
-      "name": "INOX: Pink Square Mall, Adarsh Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "ISTJ",
-      "name": "INOX: Sunny Trade Center, Jaipur",
-      "subRegion": ""
-    },
-    {
-      "code": "INEM",
-      "name": "INOX: Elements Mall, Ajmer Road",
-      "subRegion": ""
-    },
-    {
-      "code": "GLXJ",
-      "name": "Galaxy Cinema Mansarovar",
-      "subRegion": ""
-    },
-    {
-      "code": "DDJP",
-      "name": "DD Cinemas: Vivacity Mall, Jaipur",
-      "subRegion": ""
-    },
-    {
-      "code": "BICJ",
-      "name": "Cinestar Multiplex: Vidhyadhar Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "JTMN",
-      "name": "INOX: JTM Mall, Malviya Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "GDCP",
-      "name": "Gold Cinema: City Plaza, Bani Park (Newly Opened)",
-      "subRegion": ""
-    },
-    {
-      "code": "FRCJ",
-      "name": "First Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "INJV",
-      "name": "INOX: Vaibhav, Amarapali Circle",
-      "subRegion": ""
-    },
-    {
-      "code": "FSTD",
-      "name": "Funstar Cinemas: Vidhyadhar Nagar, Jaipur",
-      "subRegion": ""
-    },
-    {
-      "code": "KOCI",
-      "name": "Kohinoor Cinema (Laser Dolby Atmos): Sanganer",
-      "subRegion": ""
-    },
-    {
-      "code": "PACJ",
-      "name": "Paras Cinema: Amer Road",
-      "subRegion": ""
-    },
-    {
-      "code": "GMCN",
-      "name": "GEM Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "MMDJ",
-      "name": "7D Masti: Gaurav Tower Central",
-      "subRegion": ""
-    }
-  ],
-  "JALA": [
-    {
-      "code": "PMMH",
-      "name": "PVR: MBD, Jalandhar",
-      "subRegion": ""
-    },
-    {
-      "code": "INRJ",
-      "name": "INOX: Reliance Mall, Jalandhar",
-      "subRegion": ""
-    },
-    {
-      "code": "PCJL",
-      "name": "PVR: Curo, Jalandhar",
-      "subRegion": ""
-    },
-    {
-      "code": "PFJJ",
-      "name": "PVR: Friends, Jalandhar",
-      "subRegion": ""
-    },
-    {
-      "code": "SARB",
-      "name": "Sarb Multiplex",
-      "subRegion": ""
-    },
-    {
-      "code": "ANCJ",
-      "name": "Ayaan Cinemas",
-      "subRegion": ""
-    }
-  ],
-  "JAMM": [
-    {
-      "code": "WVJM",
-      "name": "Wave: One Movies, Jammu",
-      "subRegion": ""
-    },
-    {
-      "code": "MTJA",
-      "name": "Movietime Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "PMSJ",
-      "name": "Platinum Movietime SPA: Palm Island Mall, Jammu",
-      "subRegion": ""
-    },
-    {
-      "code": "PKKJ",
-      "name": "PVR: KC Jammu",
-      "subRegion": ""
-    },
-    {
-      "code": "JMJU",
-      "name": "Apsra Hospitality & Entertainment(Apsra Multiplex)",
-      "subRegion": ""
-    }
-  ],
-  "JMDP": [
-    {
-      "code": "CPSH",
-      "name": "PJP Cinepolis",
-      "subRegion": ""
-    },
-    {
-      "code": "MCCD",
-      "name": "Miraj Cinemas: Chandra Pacific Mall, Golmuri",
-      "subRegion": ""
-    },
-    {
-      "code": "ECGH",
-      "name": "Eylex Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "CNJD",
-      "name": "CONNPLEX Signature Cinemas",
-      "subRegion": ""
-    }
-  ],
-  "JODH": [
-    {
-      "code": "IXIM",
-      "name": "INOX: Indiabulls Mall, Jodhpur",
-      "subRegion": ""
-    },
-    {
-      "code": "MBCR",
-      "name": "Miraj Cinemas: Blue City Mall, Jodhpur",
-      "subRegion": ""
-    },
-    {
-      "code": "BMCJ",
-      "name": "Miraj Cinemas: Bioscope, Jodhpur",
-      "subRegion": ""
-    },
-    {
-      "code": "NICJ",
-      "name": "Nasrani Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "NKCP",
-      "name": "New Kohinoor Cinema",
-      "subRegion": ""
-    }
-  ],
-  "KAKI": [
-    {
-      "code": "INMT",
-      "name": "INOX: SRMT Mall, Kakinada",
-      "subRegion": ""
-    },
-    {
-      "code": "GEPL",
-      "name": "GEPL Padmapriya Sripriya",
-      "subRegion": ""
-    },
-    {
-      "code": "SGDK",
-      "name": "Satyagouri A/C 2K Digital Dolby Ex",
-      "subRegion": ""
-    },
-    {
-      "code": "SRYK",
-      "name": "Surya Cinemax",
-      "subRegion": ""
-    },
-    {
-      "code": "LXTK",
-      "name": "Laxmi  A/C  Dts 2K",
-      "subRegion": ""
-    },
-    {
-      "code": "CCAZ",
-      "name": "Chandra Guptha Complex",
-      "subRegion": ""
-    }
-  ],
-  "KPKT": [
-    {
-      "code": "SDMA",
-      "name": "Sri Durga Mahal A/c Dts",
-      "subRegion": ""
-    }
-  ],
   "KANP": [
     {
       "code": "INZS",
@@ -5068,51 +2499,6 @@
       "subRegion": ""
     }
   ],
-  "KOTA": [
-    {
-      "code": "INAM",
-      "name": "INOX: Ahluwalias Great Mall, Kota",
-      "subRegion": ""
-    },
-    {
-      "code": "PCCK",
-      "name": "PVR: Cinemall, Kota",
-      "subRegion": ""
-    },
-    {
-      "code": "FNKT",
-      "name": "Fun Cinemas: City Mall, Kota",
-      "subRegion": ""
-    },
-    {
-      "code": "GDKA",
-      "name": "Gold Cinema",
-      "subRegion": ""
-    }
-  ],
-  "KOAN": [],
-  "KTAB": [],
-  "KTND": [
-    {
-      "code": "SLTK",
-      "name": "Sri Lakshmi Theater A/c DTS",
-      "subRegion": ""
-    }
-  ],
-  "KOTL": [],
-  "KOVR": [
-    {
-      "code": "JTST",
-      "name": "Srinivas Theatre: Kovur",
-      "subRegion": ""
-    },
-    {
-      "code": "MYTH",
-      "name": "Mythili Theatre: Kovur",
-      "subRegion": ""
-    }
-  ],
-  "KURN": [],
   "LUCK": [
     {
       "code": "PSLX",
@@ -5217,1935 +2603,6 @@
     {
       "code": "SCLK",
       "name": "Shubham Cinema",
-      "subRegion": ""
-    }
-  ],
-  "LUDH": [
-    {
-      "code": "PPNL",
-      "name": "PVR: Pavilion, Ludhiana",
-      "subRegion": ""
-    },
-    {
-      "code": "CPNL",
-      "name": "Cinepolis: Nexus MBD, Ludhiana",
-      "subRegion": ""
-    },
-    {
-      "code": "PSLV",
-      "name": "PVR: Silver Arc, Ludhiana",
-      "subRegion": ""
-    },
-    {
-      "code": "WVLD",
-      "name": "Wave: One Movies, Ludhiana",
-      "subRegion": ""
-    },
-    {
-      "code": "VTTL",
-      "name": "V2V CINEMAS,OMAXE PLAZA MALL {NEWLY RENOVATED}",
-      "subRegion": ""
-    },
-    {
-      "code": "PVCS",
-      "name": "PVR: Avon City Mall, Ludhiana",
-      "subRegion": ""
-    },
-    {
-      "code": "NPAD",
-      "name": "Nirmal Cineplex",
-      "subRegion": ""
-    },
-    {
-      "code": "PPLL",
-      "name": "Preet Palace",
-      "subRegion": ""
-    },
-    {
-      "code": "MNJL",
-      "name": "Manju Theatre",
-      "subRegion": ""
-    }
-  ],
-  "MAPM": [
-    {
-      "code": "VCMR",
-      "name": "PVR: Varam Central, Machilipatnam",
-      "subRegion": ""
-    },
-    {
-      "code": "MACT",
-      "name": "Siri Complex",
-      "subRegion": ""
-    }
-  ],
-  "MADU": [
-    {
-      "code": "VICS",
-      "name": "Vetri Cinemas (Maattuthavani) Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "VCDA",
-      "name": "Vetri Cinemas (Villapuram) Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "KDCT",
-      "name": "Kannan Devi Cinemas, Tirunagar",
-      "subRegion": ""
-    },
-    {
-      "code": "JACS",
-      "name": "Jazz And Arsh Cinemas A/C Sony 4K",
-      "subRegion": ""
-    },
-    {
-      "code": "AICM",
-      "name": "Annamalai Cinemas A/C 4K",
-      "subRegion": ""
-    },
-    {
-      "code": "VCSN",
-      "name": "V Cinemas A/C 2K 3D: Sholavanthan",
-      "subRegion": ""
-    },
-    {
-      "code": "RSSM",
-      "name": "Radiance Cinema: Koodal Nagar, Madurai",
-      "subRegion": ""
-    },
-    {
-      "code": "TJCM",
-      "name": "Tamil Jaya Cinemas SONY 4K Dolby Digital",
-      "subRegion": ""
-    },
-    {
-      "code": "INVS",
-      "name": "INOX: Vishaal De Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "SHAC",
-      "name": "Shanmuga Cine Complex A/C 7.1",
-      "subRegion": ""
-    },
-    {
-      "code": "GMMC",
-      "name": "Ganesh Cinemas (Melur) 4K RGB Laser & Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "GCMM",
-      "name": "Gopuram Cinemas ATMOS and Laser Projector",
-      "subRegion": ""
-    },
-    {
-      "code": "THRM",
-      "name": "Thanga Regal Cinema DOLBY ATMOS LASER",
-      "subRegion": ""
-    },
-    {
-      "code": "DIKT",
-      "name": "Dhevi Kalaivani Theatre A/C DTS",
-      "subRegion": ""
-    },
-    {
-      "code": "SCGM",
-      "name": "Ganesh theatre A/C Sony 4K 3D Dolby 7.1",
-      "subRegion": ""
-    },
-    {
-      "code": "MIDL",
-      "name": "Midlaand Cinemas A/C 4K Dolby Digital 7.1",
-      "subRegion": ""
-    },
-    {
-      "code": "SKTG",
-      "name": "Sakthi Cinemas Barco Laser Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "MTMT",
-      "name": "MVM MARUDHU MODERN THEATER A/C 2K 3D",
-      "subRegion": ""
-    },
-    {
-      "code": "SMWC",
-      "name": "Muneeswarar Cinema A/C Barco19B 4K 3D:Alanganallur",
-      "subRegion": ""
-    },
-    {
-      "code": "PIAT",
-      "name": "Palani Arumuga Cinema A/C Laser Projector",
-      "subRegion": ""
-    },
-    {
-      "code": "MNKH",
-      "name": "Meenakshi theatre A/C 7.1 Surround: Thirumangalam",
-      "subRegion": ""
-    },
-    {
-      "code": "PCDA",
-      "name": "Priya Complex Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "LTTP",
-      "name": "Sri Lakshmi Theatre: Thirupparankundram",
-      "subRegion": ""
-    },
-    {
-      "code": "RZYM",
-      "name": "RITZY SHA Cinemas 4K RGB LASER ATMOS",
-      "subRegion": ""
-    },
-    {
-      "code": "SSMC",
-      "name": "Solamalai Cinemas A/C Sony 4K",
-      "subRegion": ""
-    },
-    {
-      "code": "GCTG",
-      "name": "Guru Cinemas A/C RGB Laser 4K 3D",
-      "subRegion": ""
-    },
-    {
-      "code": "RBCT",
-      "name": "Ritzy Banu Cinemas A/C 4K: Thirumangalam",
-      "subRegion": ""
-    }
-  ],
-  "MNMI": [],
-  "MLR": [
-    {
-      "code": "PSMP",
-      "name": "PVR: Nexus Mall, Pandeshwar, Mangalore",
-      "subRegion": ""
-    },
-    {
-      "code": "ADCM",
-      "name": "Bharath Cinemas: Bharath Mall, Bejai, Mangaluru",
-      "subRegion": ""
-    },
-    {
-      "code": "CPCM",
-      "name": "Cinepolis: City Centre Mall, Mangaluru",
-      "subRegion": ""
-    },
-    {
-      "code": "BMYK",
-      "name": "Deralakatte Bharath Cinemas: Bearys Turning Point",
-      "subRegion": ""
-    },
-    {
-      "code": "CGSM",
-      "name": "Cine Galaxy: Surathkal, Mangalore",
-      "subRegion": ""
-    },
-    {
-      "code": "SDAL",
-      "name": "Suchitra Prabhat Cinemas: 4K RGB Laser Dolby Atmos",
-      "subRegion": ""
-    }
-  ],
-  "MERT": [
-    {
-      "code": "INPM",
-      "name": "INOX: PVS Mall, Meerut",
-      "subRegion": ""
-    },
-    {
-      "code": "WVMT",
-      "name": "Wave",
-      "subRegion": ""
-    },
-    {
-      "code": "RCMA",
-      "name": "Rapid Cinema, The Melange Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "NYSM",
-      "name": "Devgn CineX",
-      "subRegion": ""
-    },
-    {
-      "code": "SCCG",
-      "name": "GG Cinemas: Sardhana",
-      "subRegion": ""
-    },
-    {
-      "code": "KCMW",
-      "name": "Kapil Cinema: Mawana",
-      "subRegion": ""
-    }
-  ],
-  "MYS": [
-    {
-      "code": "DRMY",
-      "name": "DRC Cinemas: BM Habitat Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "PNSM",
-      "name": "PVR: Nexus Mall Centre City, Mysuru",
-      "subRegion": ""
-    },
-    {
-      "code": "SCMY",
-      "name": "INOX: Mall of Mysuru",
-      "subRegion": ""
-    },
-    {
-      "code": "PVSY",
-      "name": "PVR: Garuda Mall, Albert Victor Road, Mysuru",
-      "subRegion": ""
-    },
-    {
-      "code": "ICCM",
-      "name": "INOX: Centro, Mysore",
-      "subRegion": ""
-    },
-    {
-      "code": "CCMU",
-      "name": "Mysuru VISION Cinemas, Behind GRS Fantasy Park",
-      "subRegion": ""
-    },
-    {
-      "code": "WOTM",
-      "name": "Woodlands Picture House: Mysore",
-      "subRegion": ""
-    },
-    {
-      "code": "SDLM",
-      "name": "Sangam Digital 2K Theatre Dolby 7.1: Mysuru",
-      "subRegion": ""
-    },
-    {
-      "code": "GATM",
-      "name": "Gayathri Talkies: Mysuru, Christie Solaria 2K",
-      "subRegion": ""
-    },
-    {
-      "code": "PYSU",
-      "name": "Prabha Theatre: Mysuru",
-      "subRegion": ""
-    },
-    {
-      "code": "PMTY",
-      "name": "Padma Talkies: Mysuru",
-      "subRegion": ""
-    },
-    {
-      "code": "RKTS",
-      "name": "Rajkamal Digital 2K Laser Projection: Mysore",
-      "subRegion": ""
-    },
-    {
-      "code": "LYMS",
-      "name": "Lido Theatre: Mysuru",
-      "subRegion": ""
-    },
-    {
-      "code": "TBMY",
-      "name": "Tibbadevi Theatre: Mysuru",
-      "subRegion": ""
-    }
-  ],
-  "NGKL": [],
-  "NAGP": [
-    {
-      "code": "CVRN",
-      "name": "Cinepolis: VR Mall, Nagpur",
-      "subRegion": ""
-    },
-    {
-      "code": "MMEN",
-      "name": "MovieMax: Eternity, Nagpur",
-      "subRegion": ""
-    },
-    {
-      "code": "INTM",
-      "name": "INOX: Jaswant Tuli Mall, Kamptee Road",
-      "subRegion": ""
-    },
-    {
-      "code": "SLCZ",
-      "name": "Skylight (Sangam) Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "AMNG",
-      "name": "AM Cinema: Manish Nagar, Nagpur",
-      "subRegion": ""
-    },
-    {
-      "code": "ACJN",
-      "name": "AM Cinema Iconic: Jayanti Nagar VII, Besa, Nagpur",
-      "subRegion": ""
-    },
-    {
-      "code": "AMJN",
-      "name": "AM Cinema: Jaiprakash Nagar, Nagpur",
-      "subRegion": ""
-    },
-    {
-      "code": "AMKN",
-      "name": "AM Cinema: Koradi, Nagpur",
-      "subRegion": ""
-    },
-    {
-      "code": "BTCN",
-      "name": "Buty Cineplex-Sadar",
-      "subRegion": ""
-    },
-    {
-      "code": "AMBT",
-      "name": "AM Cinema: Bansi Nagar, Nagpur",
-      "subRegion": ""
-    },
-    {
-      "code": "PPKC",
-      "name": "Kamal Cineplex",
-      "subRegion": ""
-    },
-    {
-      "code": "LCNS",
-      "name": "Liberty Cinema: Sadar",
-      "subRegion": ""
-    },
-    {
-      "code": "PACN",
-      "name": "Panchsheel Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "JYYN",
-      "name": "Janki Theatre (2K Laser,5.1 Dolby): Sitabuldi",
-      "subRegion": ""
-    },
-    {
-      "code": "CCKN",
-      "name": "Cine Chourangi: Khapri, Nagpur",
-      "subRegion": ""
-    },
-    {
-      "code": "JTNR",
-      "name": "Jayshree Cineplex",
-      "subRegion": ""
-    },
-    {
-      "code": "GTEE",
-      "name": "Goyal Talkies: Kamptee",
-      "subRegion": ""
-    }
-  ],
-  "NARS": [
-    {
-      "code": "PVND",
-      "name": "PVR: Sree Kanya, Narsipatnam",
-      "subRegion": ""
-    },
-    {
-      "code": "BGRJ",
-      "name": "Bangaraju Picture Palace A/C DTS",
-      "subRegion": ""
-    },
-    {
-      "code": "RJMM",
-      "name": "Raju Movie Max",
-      "subRegion": ""
-    }
-  ],
-  "NASK": [
-    {
-      "code": "CTNK",
-      "name": "PVR: City Center, Nashik",
-      "subRegion": ""
-    },
-    {
-      "code": "MMTZ",
-      "name": "MovieMax: College Road, Nashik (Seats Renovated)",
-      "subRegion": ""
-    },
-    {
-      "code": "DCCO",
-      "name": "Divya Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "VNMN",
-      "name": "Vijay Mamta Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "RLCN",
-      "name": "Regimental, Mukta A2 Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "OCON",
-      "name": "Ozone Cinema: Ojhar, Nashik",
-      "subRegion": ""
-    },
-    {
-      "code": "RJTE",
-      "name": "Raviraj Theatre: Niphad",
-      "subRegion": ""
-    }
-  ],
-  "NELL": [
-    {
-      "code": "RACN",
-      "name": "Rain Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "JMBA",
-      "name": "Jameela Mahal: Buchireddypalem",
-      "subRegion": ""
-    },
-    {
-      "code": "JTSM",
-      "name": "Siri Multiplex",
-      "subRegion": ""
-    }
-  ],
-  "NZPT": [
-    {
-      "code": "SSVD",
-      "name": "SSV Cinemas A/c 2K Dolby DTS: Nagaram",
-      "subRegion": ""
-    }
-  ],
-  "PTPT": [
-    {
-      "code": "UMTP",
-      "name": "Sree Uma Max 2k Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "JJDA",
-      "name": "J &J Cinemas A/C Dolby Atmos",
-      "subRegion": ""
-    }
-  ],
-  "PATN": [
-    {
-      "code": "INBP",
-      "name": "INOX: City Centre Mall, Patna",
-      "subRegion": ""
-    },
-    {
-      "code": "PATB",
-      "name": "Cinepolis: P&M Mall, Patna",
-      "subRegion": ""
-    },
-    {
-      "code": "CGPM",
-      "name": "Cinepolis: Gravity Mall, Patna",
-      "subRegion": ""
-    },
-    {
-      "code": "INTN",
-      "name": "INOX: Ashok, Patna",
-      "subRegion": ""
-    },
-    {
-      "code": "RGNT",
-      "name": "Fun Cinemas: Regent Theatre",
-      "subRegion": ""
-    },
-    {
-      "code": "MCMP",
-      "name": "Mona: Christie 4K RGB Laser & Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "SPCP",
-      "name": "Sushil Plaza Cinema Plex: Phulwari, Patna",
-      "subRegion": ""
-    },
-    {
-      "code": "ASRG",
-      "name": "ASR Cinemas, RPS More",
-      "subRegion": ""
-    },
-    {
-      "code": "CXJD",
-      "name": "CONNPLEX Smart Cinemas: Sp Verma Road Jd Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "ESCP",
-      "name": "Elphinstone Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "CLKP",
-      "name": "CONNPLEX Luxuriance Cinemas: Kankarbagh, Patna",
-      "subRegion": ""
-    },
-    {
-      "code": "CSTP",
-      "name": "CONNPLEX Smart Cinemas: Rajabazar",
-      "subRegion": ""
-    },
-    {
-      "code": "PKVC",
-      "name": "PKV Smart Cinemas, Boring Canal Road",
-      "subRegion": ""
-    },
-    {
-      "code": "CAEP",
-      "name": "CONNPLEX Smart Cinemas: Phulwari Sharif, Patna",
-      "subRegion": ""
-    },
-    {
-      "code": "KTPC",
-      "name": "Krishna Talkies",
-      "subRegion": ""
-    },
-    {
-      "code": "CPLD",
-      "name": "CONNPLEX Smart Cinemas: Khagaul, Patna",
-      "subRegion": ""
-    },
-    {
-      "code": "CHSX",
-      "name": "CONNPLEX Smart Cinemas: Bihta, Patna",
-      "subRegion": ""
-    },
-    {
-      "code": "CSBP",
-      "name": "CONNPLEX Signature Cinemas: Bhikhana Pahari,Patna",
-      "subRegion": ""
-    },
-    {
-      "code": "VEAN",
-      "name": "Veena Theatre (Dolby Digital)",
-      "subRegion": ""
-    },
-    {
-      "code": "CCSP",
-      "name": "Cinema Cafe Max Western Mall, Opp RPS More",
-      "subRegion": ""
-    },
-    {
-      "code": "DACA",
-      "name": "Diana Danapur AC with New Full Screen Projection",
-      "subRegion": ""
-    },
-    {
-      "code": "CCCF",
-      "name": "City Cine Cafe, Karmalichak",
-      "subRegion": ""
-    }
-  ],
-  "PERI": [
-    {
-      "code": "MDPY",
-      "name": "Mahadeshwara Theatre",
-      "subRegion": ""
-    }
-  ],
-  "ALLH": [
-    {
-      "code": "PVLG",
-      "name": "PVR: Vinayak, Prayagraj",
-      "subRegion": ""
-    },
-    {
-      "code": "SWBL",
-      "name": "Starworld Cinemas: Mutthiganj, Prayagraj",
-      "subRegion": ""
-    },
-    {
-      "code": "SCAB",
-      "name": "The Palace Civil Lines: Prayagraj",
-      "subRegion": ""
-    },
-    {
-      "code": "CDCA",
-      "name": "Chandralok Cineplex: Prayagraj",
-      "subRegion": ""
-    },
-    {
-      "code": "RDDA",
-      "name": "Rajkaran DD Cinemas: Prayagraj",
-      "subRegion": ""
-    },
-    {
-      "code": "MNSR",
-      "name": "Mansarovar Palace: Allahabad (New Renovated)",
-      "subRegion": ""
-    }
-  ],
-  "RAIPUR": [
-    {
-      "code": "PCRC",
-      "name": "PVR: City Center, Raipur",
-      "subRegion": ""
-    },
-    {
-      "code": "PMRM",
-      "name": "PVR: Magneto Mall, Raipur",
-      "subRegion": ""
-    },
-    {
-      "code": "INCR",
-      "name": "INOX: Ambuja City Centre, Raipur",
-      "subRegion": ""
-    },
-    {
-      "code": "ZTMP",
-      "name": "PVR: Zora The Mall, Raipur",
-      "subRegion": ""
-    },
-    {
-      "code": "CCRP",
-      "name": "Colors Cinemas: Colors Mall, Raipur",
-      "subRegion": ""
-    },
-    {
-      "code": "MCNR",
-      "name": "Miraj Cinemas: CBD, Nava Raipur",
-      "subRegion": ""
-    },
-    {
-      "code": "STRC",
-      "name": "Shyam Talkies (2K Laser, 5.1 Dolby)",
-      "subRegion": ""
-    },
-    {
-      "code": "RTSR",
-      "name": "Raj Talkies",
-      "subRegion": ""
-    },
-    {
-      "code": "PBTR",
-      "name": "Prabhat Talkies",
-      "subRegion": ""
-    }
-  ],
-  "YAYA": [
-    {
-      "code": "JJMR",
-      "name": "Jai Malhar Cinema",
-      "subRegion": ""
-    }
-  ],
-  "RJMU": [
-    {
-      "code": "SCPI",
-      "name": "Sarathi Cinemas(Prasaditya Mall):Rajamahendravaram",
-      "subRegion": ""
-    },
-    {
-      "code": "SKRJ",
-      "name": "Sri Sai Krishna 2K (Anusri Cinemas): Rajahmundry",
-      "subRegion": ""
-    },
-    {
-      "code": "SRYR",
-      "name": "Surya Complex Laser RGB 4K Dolby Atmos:Rajahmundry",
-      "subRegion": ""
-    },
-    {
-      "code": "SYTR",
-      "name": "Swamy Theatre LASER 4K DOLBY: Rajahmundry",
-      "subRegion": ""
-    },
-    {
-      "code": "GATR",
-      "name": "Apsara Laser R.G.B 4K Dolby Atmos: Rajahmundry",
-      "subRegion": ""
-    },
-    {
-      "code": "MKSM",
-      "name": "Muralikrishna Cinema A/C 4K 3D: Dowlaiswaram",
-      "subRegion": ""
-    },
-    {
-      "code": "RROH",
-      "name": "Raja 4K Dolby Anusri Cinemas: Rajahmundry",
-      "subRegion": ""
-    },
-    {
-      "code": "YSDK",
-      "name": "Yuvaraj Screens Dolby Atmos: Kovvur",
-      "subRegion": ""
-    },
-    {
-      "code": "URTR",
-      "name": "Urvasi Complex: Rajahmundry",
-      "subRegion": ""
-    },
-    {
-      "code": "VSMH",
-      "name": "VS Mahal 4k Dolby Atmos 3D: Namavaram",
-      "subRegion": ""
-    },
-    {
-      "code": "RUCM",
-      "name": "Fortune Four Cinemas A/C 2K 7.1: Rajanagaram",
-      "subRegion": ""
-    },
-    {
-      "code": "SVSM",
-      "name": "Sri Venkata Surya Palace 4K Dolby Atmos: Kadiam",
-      "subRegion": ""
-    },
-    {
-      "code": "SSJR",
-      "name": "Sri Sivajyothi 2K Cinema 7.1 Dolby: Rajahmundry",
-      "subRegion": ""
-    },
-    {
-      "code": "AKSR",
-      "name": "Akshara Cinemas Dolby Atmos: Ravulapalem",
-      "subRegion": ""
-    }
-  ],
-  "RANC": [
-    {
-      "code": "PNMR",
-      "name": "PVR: Nucleus Mall, Ranchi",
-      "subRegion": ""
-    },
-    {
-      "code": "PJCP",
-      "name": "PJP Cinemas: Mall of Ranchi",
-      "subRegion": ""
-    },
-    {
-      "code": "STMS",
-      "name": "Miraj Cinemas: Sandhya Tower, Ranchi",
-      "subRegion": ""
-    },
-    {
-      "code": "JDDD",
-      "name": "JD Cinemas: JD HI Street Mall, Ranchi",
-      "subRegion": ""
-    },
-    {
-      "code": "FLMB",
-      "name": "Fun Cinemas: Springcity, Ranchi",
-      "subRegion": ""
-    },
-    {
-      "code": "PKCM",
-      "name": "Popkorn Cinemas: Galaxia Mall, Ranchi",
-      "subRegion": ""
-    },
-    {
-      "code": "EYLH",
-      "name": "Eylex Cinemas: Hinoo",
-      "subRegion": ""
-    },
-    {
-      "code": "SPPR",
-      "name": "Sujata Picture Palace",
-      "subRegion": ""
-    },
-    {
-      "code": "MYEP",
-      "name": "Midwaay Cine Cafe: Patratu",
-      "subRegion": ""
-    }
-  ],
-  "SAMA": [
-    {
-      "code": "SJMT",
-      "name": "Sree Jayalakshmi Talkies: Samalkot",
-      "subRegion": ""
-    }
-  ],
-  "SOLA": [
-    {
-      "code": "ESOS",
-      "name": "E-SQUARE Oasis (A.C)",
-      "subRegion": ""
-    },
-    {
-      "code": "CLCS",
-      "name": "CONNPLEX Luxuriance Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "LYAS",
-      "name": "Laxminarayan Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "BBCL",
-      "name": "Bhagwat Cinemas (A.C)",
-      "subRegion": ""
-    },
-    {
-      "code": "ACMS",
-      "name": "Asha Cinemark",
-      "subRegion": ""
-    },
-    {
-      "code": "NRMS",
-      "name": "R Miniplex (A.C)",
-      "subRegion": ""
-    },
-    {
-      "code": "BHUC",
-      "name": "Bhagwat Uma Mandir",
-      "subRegion": ""
-    },
-    {
-      "code": "SRIC",
-      "name": "Srinivas Cinematic Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "RNTW",
-      "name": "Rangprabha Talkies: Mangalwedha",
-      "subRegion": ""
-    },
-    {
-      "code": "PDME",
-      "name": "Padma Cinema",
-      "subRegion": ""
-    }
-  ],
-  "SRNG": [
-    {
-      "code": "INTS",
-      "name": "INOX",
-      "subRegion": ""
-    }
-  ],
-  "SRIR": [],
-  "SURT": [
-    {
-      "code": "RCRP",
-      "name": "Rajhans Cinemas: Rajhans Precia, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "RFFG",
-      "name": "Rajhans Cinemas: Rajhans Flamingo, Katargam, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "INVR",
-      "name": "INOX: VR, Dumas Road, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "RHRJ",
-      "name": "PVR: Rahul Raj, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "INXR",
-      "name": "Raj Imperial, INOX: Varachha Road, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "LCSH",
-      "name": "Loop Cinemas Homeland City: Vesu",
-      "subRegion": ""
-    },
-    {
-      "code": "RMAR",
-      "name": "Rajhans Multiplex: Mota Varachha A.R Mall, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "RMAS",
-      "name": "Rajhans Multiplex: Adajan, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "CNIS",
-      "name": "Cinepolis: Imperial Square Mall, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "CMVS",
-      "name": "Cinezza Multiplex: Maharaja Farm, Mota Varachha",
-      "subRegion": ""
-    },
-    {
-      "code": "CNMS",
-      "name": "Cinezza Multiplex: Jahangirpura, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "ISRM",
-      "name": "INOX: Reliance Mall, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "VALT",
-      "name": "Valentine Multiplex (Dolby Atmos)",
-      "subRegion": ""
-    },
-    {
-      "code": "ROOG",
-      "name": "ROONGTA CINEMAS: Shyam Mandir Vesu, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "RCRM",
-      "name": "Rajhans Cinemas: Rajmahal AC Mall Sitanagar, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "RCVS",
-      "name": "Rajhans Cinemas: Aagam Viviana Mall Vesu, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "MKSB",
-      "name": "Miraj Cinemas: KSB Mall, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "RKCJ",
-      "name": "Rajhans Cinemas: Kamrej, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "PICS",
-      "name": "Pragati Cinemas: Mota Varachha, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "ACJA",
-      "name": "Apple Cinema: Jahangirpura, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "CPUS",
-      "name": "City Plus Multiplex",
-      "subRegion": ""
-    },
-    {
-      "code": "TGCS",
-      "name": "Gandhi Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "CLLP",
-      "name": "The Friday Cinema: Mota Varaccha, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "MAOP",
-      "name": "Mukta A2 Cinemas: Orbit Plaza by Pramukh, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "RMGP",
-      "name": "Rajhans Multiplex : Gopi Talav",
-      "subRegion": ""
-    },
-    {
-      "code": "RSRP",
-      "name": "Rajhans Cinemas: Tulsi Galleria Mall, Vyara",
-      "subRegion": ""
-    },
-    {
-      "code": "RCMV",
-      "name": "Rajhans Cinemas: MTC Mall, Velanja, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "CDWP",
-      "name": "Coconut Cinema DR World Parvat Patiya",
-      "subRegion": ""
-    },
-    {
-      "code": "CCKS",
-      "name": "Cineverse Cinema: Katargam, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "APLP",
-      "name": "Apple Cinema: Pal Bhatha",
-      "subRegion": ""
-    },
-    {
-      "code": "MMXS",
-      "name": "Madhuram Multiplex",
-      "subRegion": ""
-    },
-    {
-      "code": "SKLZ",
-      "name": "Sanelite Cinemas: Katargam, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "CNVS",
-      "name": "Cineverse Cinema: Vesu",
-      "subRegion": ""
-    },
-    {
-      "code": "RMVY",
-      "name": "Raj Multiplex: Iris Plaza, Panwadi, Vyara",
-      "subRegion": ""
-    },
-    {
-      "code": "KLMS",
-      "name": "KD Laxmi Multiplex (Dolby 7.1): Kim, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "TCSJ",
-      "name": "Time Cinema: Galaxy Circle Pal, Surat",
-      "subRegion": ""
-    },
-    {
-      "code": "CGCO",
-      "name": "Cinemagic Cinema: Olpad",
-      "subRegion": ""
-    },
-    {
-      "code": "BWST",
-      "name": "Bollywood Cinema, Kadodara",
-      "subRegion": ""
-    },
-    {
-      "code": "BACS",
-      "name": "Bajrang Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "RRFH",
-      "name": "Radhey Cineplex: Vyara",
-      "subRegion": ""
-    },
-    {
-      "code": "RUST",
-      "name": "Rupam Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "CMJG",
-      "name": "Chhotu Maharaj: Kosmada, Surat",
-      "subRegion": ""
-    }
-  ],
-  "SRTK": [
-    {
-      "code": "CGSM",
-      "name": "Cine Galaxy",
-      "subRegion": ""
-    },
-    {
-      "code": "BSGB",
-      "name": "Bharath Cinemas: Padubidri",
-      "subRegion": ""
-    }
-  ],
-  "TRIV": [
-    {
-      "code": "DSTA",
-      "name": "Dreams: Attingal",
-      "subRegion": ""
-    },
-    {
-      "code": "TGCA",
-      "name": "Ganga Cine House 4K Dolby Atmos: Attingal",
-      "subRegion": ""
-    },
-    {
-      "code": "VSTG",
-      "name": "GTracks Screen 1- Sony 4K: Kadinamkulam",
-      "subRegion": ""
-    },
-    {
-      "code": "GTCK",
-      "name": "GTracks Screen 2 Sony 4K: Kadinamkulam",
-      "subRegion": ""
-    },
-    {
-      "code": "PLTD",
-      "name": "PVR: Lulu, Trivandrum",
-      "subRegion": ""
-    },
-    {
-      "code": "ASLC",
-      "name": "Ariesplex SL Cinemas Cinionic Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "CMTT",
-      "name": "Cinepolis: MOT, Trivandrum",
-      "subRegion": ""
-    },
-    {
-      "code": "ACTC",
-      "name": "Artech Cinemas 4K Laser Dolby Atmos: Trivandrum",
-      "subRegion": ""
-    },
-    {
-      "code": "SKMK",
-      "name": "Sri Kalidas M Plex 4K RGB Laser Atmos: Kattakkada",
-      "subRegion": ""
-    },
-    {
-      "code": "SSST",
-      "name": "Sree Kaleeswary Sree Saraswathy 2K-3D: Kaliyikkav",
-      "subRegion": ""
-    },
-    {
-      "code": "HKCP",
-      "name": "HK Cinemas 4K 3D Dolby Atmos: Pothencode",
-      "subRegion": ""
-    },
-    {
-      "code": "SWLC",
-      "name": "Swaram Layam Cinemas: Kattakada",
-      "subRegion": ""
-    },
-    {
-      "code": "TGNT",
-      "name": "New Theatre 4K RGB LASER Dolby Atmos: Trivandrum",
-      "subRegion": ""
-    },
-    {
-      "code": "CNGE",
-      "name": "Greenfield Moviemax Cinemas: Trivandrum",
-      "subRegion": ""
-    },
-    {
-      "code": "KBTT",
-      "name": "Kalabhavan Theatre Triple Beam 3D: Trivandrum",
-      "subRegion": ""
-    },
-    {
-      "code": "SCMV",
-      "name": "Empire SR Cinemas 4K Laser Dolby Atmos: Varkala",
-      "subRegion": ""
-    },
-    {
-      "code": "CHTI",
-      "name": "Chhotu Maharaj Cine Cafe: Poovar, Kerala",
-      "subRegion": ""
-    },
-    {
-      "code": "PKKT",
-      "name": "PVR: Kripa, Thampanoor Trivandrum",
-      "subRegion": ""
-    },
-    {
-      "code": "RFGO",
-      "name": "Rocky`s: Kilimanoor",
-      "subRegion": ""
-    },
-    {
-      "code": "SPCT",
-      "name": "SP Cinemas 2K AURO 11.1: Peyad",
-      "subRegion": ""
-    },
-    {
-      "code": "RTND",
-      "name": "Rani Talkies 4K DOLBY ATMOS Nedumangadu",
-      "subRegion": ""
-    },
-    {
-      "code": "ACXN",
-      "name": "Anu Cinemax 4K Atmos: Neyyattinkara, Nellimoodu",
-      "subRegion": ""
-    },
-    {
-      "code": "MCPR",
-      "name": "Mridhanga Cineplex 4K Dolby Atmos: Poovar",
-      "subRegion": ""
-    },
-    {
-      "code": "SMXP",
-      "name": "SA Multiplex 4K 3D Dolby Atmos: Pulluvila",
-      "subRegion": ""
-    },
-    {
-      "code": "SCMX",
-      "name": "Surya Multiplex 4K Dolby Atmos: Nedumangad",
-      "subRegion": ""
-    },
-    {
-      "code": "VVVL",
-      "name": "Vimala Cinemas 4K Atmos: Varkala",
-      "subRegion": ""
-    },
-    {
-      "code": "LCTM",
-      "name": "Lenin Cinemas 4K 3D Dolby Atmos KSFDC: Trivandrum",
-      "subRegion": ""
-    },
-    {
-      "code": "IMPM",
-      "name": "IMP Big Screen RGB Laser 3D ATMOS: Padanthalumoodu",
-      "subRegion": ""
-    },
-    {
-      "code": "SICS",
-      "name": "Sri Murugan(Yamuna)Full AC 4K 3D: Panachamoodu",
-      "subRegion": ""
-    },
-    {
-      "code": "SPTT",
-      "name": "Sree Padmanabha Theatre 4K: East Fort",
-      "subRegion": ""
-    },
-    {
-      "code": "ATTR",
-      "name": "Ajanta Theatre 4K-Wide: Trivandrum",
-      "subRegion": ""
-    },
-    {
-      "code": "ASWT",
-      "name": "Aswathy Cineplus: Peringamala",
-      "subRegion": ""
-    },
-    {
-      "code": "SCVL",
-      "name": "Rocky`s: Varkala",
-      "subRegion": ""
-    },
-    {
-      "code": "HSTK",
-      "name": "Harisree Theatre 4K 3D Dolby 7.1: Kazhakkoottam",
-      "subRegion": ""
-    },
-    {
-      "code": "SCVT",
-      "name": "Sindhu Cinema: Venjaramoodu AC 2K, 3D Dolby 7.1",
-      "subRegion": ""
-    },
-    {
-      "code": "SPMT",
-      "name": "Sree Padmanabha Theatre (Screen 2): East Fort",
-      "subRegion": ""
-    },
-    {
-      "code": "MCTD",
-      "name": "MT Cineplex 4K DOLBY ATMOS: Pothencode",
-      "subRegion": ""
-    },
-    {
-      "code": "JBCA",
-      "name": "Thapasya Cine House: Attingal",
-      "subRegion": ""
-    },
-    {
-      "code": "VCHA",
-      "name": "Vaishaka Cine House: Attingal",
-      "subRegion": ""
-    },
-    {
-      "code": "KRTA",
-      "name": "Krishna Theatre: Kazhakkoottam",
-      "subRegion": ""
-    }
-  ],
-  "TIRU": [
-    {
-      "code": "PGRC",
-      "name": "PGR Cinemas A/C 4K Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "JAYD",
-      "name": "NVR Jaysyam A/C 4K Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "CSCT",
-      "name": "CS Cinemas (Devendra Theater) A/C 4K Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "STDA",
-      "name": "NVR Sandhya Theater 4K Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "PPPD",
-      "name": "Padma Picture Palace A/C 4K Dolby Atmos: Renigunta",
-      "subRegion": ""
-    },
-    {
-      "code": "PTDT",
-      "name": "Pratap Theater A/c 4K Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "PTTI",
-      "name": "Palani Cinemas A/C 7.1 Dolby Digital",
-      "subRegion": ""
-    },
-    {
-      "code": "KRTT",
-      "name": "KrishnaTeja A/C 4K Dolby(Newly Renovated):Tirupati",
-      "subRegion": ""
-    },
-    {
-      "code": "TRSV",
-      "name": "SV Cinemas(Ambica) A/C 4K Dolby Atmos: Chandragiri",
-      "subRegion": ""
-    },
-    {
-      "code": "VELR",
-      "name": "NVR Velrams A/c 4K Dolby Surround",
-      "subRegion": ""
-    },
-    {
-      "code": "MPTT",
-      "name": "Pratap Delux A/c 2k Dolby Atmos",
-      "subRegion": ""
-    },
-    {
-      "code": "STDT",
-      "name": "Srinivas Teja A/C DTS",
-      "subRegion": ""
-    }
-  ],
-  "UDAI": [
-    {
-      "code": "CBMU",
-      "name": "PVR: Celebration Mall, Udaipur",
-      "subRegion": ""
-    },
-    {
-      "code": "IUBS",
-      "name": "INOX: Urban Square Mall, Udaipur",
-      "subRegion": ""
-    },
-    {
-      "code": "INAP",
-      "name": "INOX: Lake City Mall",
-      "subRegion": ""
-    }
-  ],
-  "VAD": [
-    {
-      "code": "PVNL",
-      "name": "PVR: Nilamber Triumph, Vadodara",
-      "subRegion": ""
-    },
-    {
-      "code": "CPIV",
-      "name": "Cinepolis: Inorbit Vadodara Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "TAKA",
-      "name": "INOX Taksh Galaxy Mall: Waghodia",
-      "subRegion": ""
-    },
-    {
-      "code": "COLV",
-      "name": "CONNPLEX Luxuriance Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "PEVM",
-      "name": "PVR: EVA Mall, Vadodara",
-      "subRegion": ""
-    },
-    {
-      "code": "PTCV",
-      "name": "PVR: TransCube, Vadodara",
-      "subRegion": ""
-    },
-    {
-      "code": "INSE",
-      "name": "Infinity 7 Seas Cinema: Fatehganj",
-      "subRegion": ""
-    },
-    {
-      "code": "CNPE",
-      "name": "Cineprime Cinema: Cinemall, Vadodara",
-      "subRegion": ""
-    },
-    {
-      "code": "BTMV",
-      "name": "Bansal Movieplex: Tarsali, Vadodara",
-      "subRegion": ""
-    },
-    {
-      "code": "INVD",
-      "name": "INOX: Race Course Circle",
-      "subRegion": ""
-    },
-    {
-      "code": "MCSO",
-      "name": "Mukta A2 Cinemas (Opulence): The Emperor Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "CEIM",
-      "name": "Cinemarc: New VIP Road",
-      "subRegion": ""
-    },
-    {
-      "code": "BLMX",
-      "name": "Bansal Movieplex Gotri-Vasna Road",
-      "subRegion": ""
-    },
-    {
-      "code": "IRMM",
-      "name": "INOX: Reliance Mega Mall, Vadodara",
-      "subRegion": ""
-    },
-    {
-      "code": "CMAR",
-      "name": "Cinemarc: Akota, Vadodara",
-      "subRegion": ""
-    },
-    {
-      "code": "CMVA",
-      "name": "Cinemera Multiplex",
-      "subRegion": ""
-    },
-    {
-      "code": "DNNV",
-      "name": "Deep Cinemas: Nizampura, Chhani Road",
-      "subRegion": ""
-    },
-    {
-      "code": "MCVD",
-      "name": "Movietime: S-Square Mall, Subhanpura, Vadodara",
-      "subRegion": ""
-    },
-    {
-      "code": "FVPN",
-      "name": "Cinemarc Vihar: Pratapnagar",
-      "subRegion": ""
-    },
-    {
-      "code": "HCAD",
-      "name": "Havelock Cineflix: Tarsali, Vadodara",
-      "subRegion": ""
-    },
-    {
-      "code": "RCVA",
-      "name": "Rajhans Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "ALCI",
-      "name": "Alpana Cinema",
-      "subRegion": ""
-    },
-    {
-      "code": "SWCF",
-      "name": "Bansal Movieplex: SWC Mall",
-      "subRegion": ""
-    }
-  ],
-  "VAR": [
-    {
-      "code": "IPSG",
-      "name": "IP Cinemas: IP Sigra Mall, Varanasi",
-      "subRegion": ""
-    },
-    {
-      "code": "JHVN",
-      "name": "JHV Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "IPCM",
-      "name": "IP Cinemas: IP Vijaya Mall, Varanasi",
-      "subRegion": ""
-    },
-    {
-      "code": "PDRS",
-      "name": "PDR Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "CMVV",
-      "name": "Chhotu Maharaj Cine Cafe",
-      "subRegion": ""
-    },
-    {
-      "code": "PCBV",
-      "name": "Pari Cineplex: Babatpur, Varanasi",
-      "subRegion": ""
-    },
-    {
-      "code": "SIPA",
-      "name": "IP Sigra Mall: 7D Cinema, Varanasi",
-      "subRegion": ""
-    }
-  ],
-  "VIJP": [
-    {
-      "code": "SGWT",
-      "name": "Sri Gowrishankar Theatre: Vijayapura",
-      "subRegion": ""
-    },
-    {
-      "code": "SRII",
-      "name": "Sri Sangameshwara Chitramandira: Vijayapura",
-      "subRegion": ""
-    }
-  ],
-  "VIJA": [
-    {
-      "code": "CPVJ",
-      "name": "Cinepolis: PVP Square Mall, Vijayawada",
-      "subRegion": ""
-    },
-    {
-      "code": "ABCR",
-      "name": "ABR Cinemas Neo Screen X:  Kanuru, Vijayawada",
-      "subRegion": ""
-    },
-    {
-      "code": "INVP",
-      "name": "INOX: LEPL Icon, Patamata",
-      "subRegion": ""
-    },
-    {
-      "code": "LAIM",
-      "name": "INOX: Laila Mall, 4K LASER, DOLBY ATMOS, M.G Road",
-      "subRegion": ""
-    },
-    {
-      "code": "CPOV",
-      "name": "Cinepolis: Power One Mall, Vijayawada",
-      "subRegion": ""
-    },
-    {
-      "code": "RMTV",
-      "name": "Ram Cinemas: Gunadala A/C 4K Digital DOLBY ATMOS",
-      "subRegion": ""
-    },
-    {
-      "code": "MGGG",
-      "name": "G3 Theatres: Raj Yuvraj, Vijayawada",
-      "subRegion": ""
-    },
-    {
-      "code": "INVJ",
-      "name": "INOX: Urvasi Complex, Gandhi Nagar",
-      "subRegion": ""
-    },
-    {
-      "code": "JTSC",
-      "name": "Swarna Multiplex",
-      "subRegion": ""
-    },
-    {
-      "code": "SVLJ",
-      "name": "Sailaja Theatre",
-      "subRegion": ""
-    },
-    {
-      "code": "PRSV",
-      "name": "PVR: Ripples, Vijayawada",
-      "subRegion": ""
-    },
-    {
-      "code": "RCVD",
-      "name": "Ravindra Cinemas",
-      "subRegion": ""
-    },
-    {
-      "code": "SWRN",
-      "name": "Swarna Cinemax 2K Laser 7.1 Surround:Ibrahimpatnam",
-      "subRegion": ""
-    },
-    {
-      "code": "STHV",
-      "name": "Sairam Screens A/C Dolby 7.1 Surround",
-      "subRegion": ""
-    },
-    {
-      "code": "SWTH",
-      "name": "Swathi Theater: Bhavanipuram (Newly Renovated)",
-      "subRegion": ""
-    },
-    {
-      "code": "ATVJ",
-      "name": "Alankar A/C 4K Dolby Surround",
-      "subRegion": ""
-    },
-    {
-      "code": "VIJK",
-      "name": "Vijayalakshmi Theater A/C 4K Dolby: Kanuru",
-      "subRegion": ""
-    },
-    {
-      "code": "ACHV",
-      "name": "Apsara Cinema House",
-      "subRegion": ""
-    },
-    {
-      "code": "BLJI",
-      "name": "Balaji Cine Villa",
-      "subRegion": ""
-    },
-    {
-      "code": "JATV",
-      "name": "Jayram Theatre A/c 2K Dolby Digital",
-      "subRegion": ""
-    },
-    {
-      "code": "TVRA",
-      "name": "Tara Screens 2K A/C, Payakapuram",
-      "subRegion": ""
-    },
-    {
-      "code": "NVRN",
-      "name": "Navarang Theatre",
-      "subRegion": ""
-    },
-    {
-      "code": "SWOT",
-      "name": "Sowmya Theater (Newly Renovated)",
-      "subRegion": ""
-    },
-    {
-      "code": "SIKC",
-      "name": "Sivakrishna Cinemas A/C 2K DTS: Kondapalli",
-      "subRegion": ""
-    },
-    {
-      "code": "VAKR",
-      "name": "Venkata Krishna Luxury Cinemas: Poranki",
-      "subRegion": ""
-    },
-    {
-      "code": "BDMA",
-      "name": "Balaji Iconia A/C 2K Laser Dolby 7.1:Ibrahimpatnam",
-      "subRegion": ""
-    },
-    {
-      "code": "VCSV",
-      "name": "Capital Cinemas (Victory Screen)",
-      "subRegion": ""
-    },
-    {
-      "code": "SVLA",
-      "name": "Sri Vijaya Lakshmi Theater: Kankipadu",
-      "subRegion": ""
-    }
-  ],
-  "VIZA": [
-    {
-      "code": "JGDM",
-      "name": "Jagadamba Complex A/C 4K Dolby Atmos : Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "INVB",
-      "name": "INOX: Varun Beach, Beach Road",
-      "subRegion": ""
-    },
-    {
-      "code": "KSGK",
-      "name": "Sree Kanya Cinemas: Gajuwaka",
-      "subRegion": ""
-    },
-    {
-      "code": "MELD",
-      "name": "Sri Melody HDR Dolby Atmos: Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "INCM",
-      "name": "INOX: CMR Central, Maddilapalem",
-      "subRegion": ""
-    },
-    {
-      "code": "STTR",
-      "name": "Sarat Theater A/C 4K Dolby Atmos: Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "STMD",
-      "name": "STBL Cine World, Madhurawada: Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "CSCV",
-      "name": "Cinepolis: Sreekanya Cineglitz, Madhurawada",
-      "subRegion": ""
-    },
-    {
-      "code": "ICMG",
-      "name": "INOX: CMR Central, Gajuwaka",
-      "subRegion": ""
-    },
-    {
-      "code": "APVZ",
-      "name": "Annapurna A/C 2KDolby Digital:Kurmananapalem,Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "MAVC",
-      "name": "Mukta A2 Cinemas: Vizag (ONLY RECLINERS AND SOFAS)",
-      "subRegion": ""
-    },
-    {
-      "code": "KCMD",
-      "name": "Kameswari & Kinnera AC Laser 4K Maddilapalem:Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "INVC",
-      "name": "INOX: Vizag Chitralaya Mall",
-      "subRegion": ""
-    },
-    {
-      "code": "NSRV",
-      "name": "Natraj A/c DTS: Pendurthi",
-      "subRegion": ""
-    },
-    {
-      "code": "MCDV",
-      "name": "Mohini Cinemas Dolby Atmos: Gajuwaka",
-      "subRegion": ""
-    },
-    {
-      "code": "JTBL",
-      "name": "STBL Cinemas Multiplex SL Nagar: Visakhapatnam",
-      "subRegion": ""
-    },
-    {
-      "code": "SLKP",
-      "name": "Sri Lakshmi Narasimha Picture Palace: 104 Area",
-      "subRegion": ""
-    },
-    {
-      "code": "SSLL",
-      "name": "Sree Leela Mahal 4K Dolby Atmos: Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "SKRN",
-      "name": "SreeKanya Theatre 4K Dolby Atmos: Rly New Colony",
-      "subRegion": ""
-    },
-    {
-      "code": "NDGP",
-      "name": "Narasimha & Sri Narasimha Complex: Gopalapatnam",
-      "subRegion": ""
-    },
-    {
-      "code": "RCNM",
-      "name": "Raja Cinemax A/C 2K Dolby: Kothavalasa",
-      "subRegion": ""
-    },
-    {
-      "code": "JTYS",
-      "name": "Sangam Theatre 4K Dolby Atmos: Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "TTPP",
-      "name": "M/S Tata Picture Palace A/C Dts: Thagarapuvalasa",
-      "subRegion": ""
-    },
-    {
-      "code": "MBSJ",
-      "name": "Miraj Cinemas: Bupathi Surya Central, Dondaparthy",
-      "subRegion": ""
-    },
-    {
-      "code": "SRPP",
-      "name": "Sree Rama Theatre 4K Dolby Atmos: Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "SRVV",
-      "name": "Sri Venkateswara Theatres Dolby 7.1 2K & 4K: Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "STCV",
-      "name": "AVR Saptagiri 2K: Chittivalasa",
-      "subRegion": ""
-    },
-    {
-      "code": "STBV",
-      "name": "STBL Balaji Village Cinema, Sabbavaram: Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "UTDV",
-      "name": "Urvasi Cinemas: Laser 15K AC Dolby, Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "RATG",
-      "name": "Sri Ramulamma Theatre, Thagarapuvalasa: Vizag",
-      "subRegion": ""
-    },
-    {
-      "code": "GSTV",
-      "name": "Ganesh A/C 2K Dolby: Tagarapuvalasa",
-      "subRegion": ""
-    },
-    {
-      "code": "SJYV",
-      "name": "Sri Jaya Theatre AC Dts: Kothavalasa",
-      "subRegion": ""
-    },
-    {
-      "code": "APPZ",
-      "name": "Aruna Picture Palace 2K A/C PAM",
-      "subRegion": ""
-    },
-    {
-      "code": "KMPV",
-      "name": "Krishna Miniplex 2K Dolby, IT Sez: Madhurawada",
-      "subRegion": ""
-    }
-  ],
-  "WAR": [
-    {
-      "code": "ASMW",
-      "name": "Asian Sridevi Multiplex: Hanumakonda",
-      "subRegion": ""
-    },
-    {
-      "code": "PWLM",
-      "name": "PVR",
-      "subRegion": ""
-    },
-    {
-      "code": "ASGM",
-      "name": "Asian Gemini Theatre",
-      "subRegion": ""
-    },
-    {
-      "code": "AAPW",
-      "name": "Asian Ashoka Air-Conditioned: Hanumakonda",
-      "subRegion": ""
-    },
-    {
-      "code": "ACWH",
-      "name": "Amrutha Cinema: Hanumakonda",
-      "subRegion": ""
-    },
-    {
-      "code": "VKTR",
-      "name": "Venkatrama 70MM 2k Barco Laser",
-      "subRegion": ""
-    },
-    {
-      "code": "RTWA",
-      "name": "Radhika Theatre",
-      "subRegion": ""
-    },
-    {
-      "code": "JTBP",
-      "name": "Bhavani Picture Palace: Kazipet",
       "subRegion": ""
     }
   ]

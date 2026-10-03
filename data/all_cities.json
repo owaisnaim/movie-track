@@ -1,0 +1,611 @@
+{
+  "MUMBAI": {
+    "code": "MUMBAI",
+    "name": "Mumbai",
+    "slug": "mumbai",
+    "lat": "19.076",
+    "lon": "72.8777"
+  },
+  "NCR": {
+    "code": "NCR",
+    "name": "Delhi-NCR",
+    "slug": "national-capital-region-ncr",
+    "lat": "28.6139",
+    "lon": "77.209"
+  },
+  "BANG": {
+    "code": "BANG",
+    "name": "Bengaluru",
+    "slug": "bengaluru",
+    "lat": "12.9715987",
+    "lon": "77.5945627"
+  },
+  "HYD": {
+    "code": "HYD",
+    "name": "Hyderabad",
+    "slug": "hyderabad",
+    "lat": "17.385044",
+    "lon": "78.486671"
+  },
+  "CHD": {
+    "code": "CHD",
+    "name": "Chandigarh",
+    "slug": "chandigarh",
+    "lat": "30.7333148",
+    "lon": "76.7794179"
+  },
+  "AHD": {
+    "code": "AHD",
+    "name": "Ahmedabad",
+    "slug": "ahmedabad",
+    "lat": "23.0395677",
+    "lon": "72.5660045"
+  },
+  "PUNE": {
+    "code": "PUNE",
+    "name": "Pune",
+    "slug": "pune",
+    "lat": "18.5204303",
+    "lon": "73.8567437"
+  },
+  "CHEN": {
+    "code": "CHEN",
+    "name": "Chennai",
+    "slug": "chennai",
+    "lat": "13.056",
+    "lon": "80.206"
+  },
+  "KOLK": {
+    "code": "KOLK",
+    "name": "Kolkata",
+    "slug": "kolkata",
+    "lat": "22.641",
+    "lon": "88.411"
+  },
+  "KOCH": {
+    "code": "KOCH",
+    "name": "Kochi",
+    "slug": "kochi",
+    "lat": "9.9312328",
+    "lon": "76.2673041"
+  },
+  "AGRA": {
+    "code": "AGRA",
+    "name": "Agra",
+    "slug": "agra",
+    "lat": "27.1766701",
+    "lon": "78.0080745"
+  },
+  "AJMER": {
+    "code": "AJMER",
+    "name": "Ajmer",
+    "slug": "ajmer",
+    "lat": "26.45",
+    "lon": "74.64"
+  },
+  "AMRI": {
+    "code": "AMRI",
+    "name": "Amritsar",
+    "slug": "amritsar",
+    "lat": "31.6339793",
+    "lon": "74.8722642"
+  },
+  "ATKK": {
+    "code": "ATKK",
+    "name": "Atmakur (Kurnool)",
+    "slug": "atmakur-kurnool",
+    "lat": "15.8791",
+    "lon": "78.5837"
+  },
+  "ATMK": {
+    "code": "ATMK",
+    "name": "Atmakur (Nellore)",
+    "slug": "atmakur-nellore",
+    "lat": "14.6167",
+    "lon": "79.6245"
+  },
+  "AUBI": {
+    "code": "AUBI",
+    "name": "Aurangabad (Bihar)",
+    "slug": "aurangabad-bihar",
+    "lat": "24.7033",
+    "lon": "84.3542"
+  },
+  "AURW": {
+    "code": "AURW",
+    "name": "Aurangabad (West Bengal)",
+    "slug": "aurangabad-west-bengal",
+    "lat": "24.5976",
+    "lon": "88.0339"
+  },
+  "BKOT": {
+    "code": "BKOT",
+    "name": "B. Kothakota",
+    "slug": "b-kothakota",
+    "lat": "13.65674",
+    "lon": "78.265857"
+  },
+  "BELG": {
+    "code": "BELG",
+    "name": "Belagavi (Belgaum)",
+    "slug": "belagavi-belgaum",
+    "lat": "15.85036",
+    "lon": "74.504669"
+  },
+  "BHAW": {
+    "code": "BHAW",
+    "name": "Bhawanipatna",
+    "slug": "bhawanipatna",
+    "lat": "19.9074",
+    "lon": "83.1642"
+  },
+  "BHOP": {
+    "code": "BHOP",
+    "name": "Bhopal",
+    "slug": "bhopal",
+    "lat": "23.2599333",
+    "lon": "77.412615"
+  },
+  "BHUB": {
+    "code": "BHUB",
+    "name": "Bhubaneswar",
+    "slug": "bhubaneswar",
+    "lat": "20.2960587",
+    "lon": "85.8245398"
+  },
+  "CPTN": {
+    "code": "CPTN",
+    "name": "Channapatna",
+    "slug": "channapatna",
+    "lat": "12.6510995",
+    "lon": "77.1946192"
+  },
+  "CHNN": {
+    "code": "CHNN",
+    "name": "Channarayapatna",
+    "slug": "channarayapatna",
+    "lat": "12.9",
+    "lon": "76.3899"
+  },
+  "AURA": {
+    "code": "AURA",
+    "name": "Chhatrapati Sambhajinagar (Aurangabad)",
+    "slug": "chhatrapati-sambhajinagar-aurangabad",
+    "lat": "19.876",
+    "lon": "75.349"
+  },
+  "COIM": {
+    "code": "COIM",
+    "name": "Coimbatore",
+    "slug": "coimbatore",
+    "lat": "11.0168445",
+    "lon": "76.9558321"
+  },
+  "DEH": {
+    "code": "DEH",
+    "name": "Dehradun",
+    "slug": "dehradun",
+    "lat": "30.3164945",
+    "lon": "78.0321918"
+  },
+  "GOA": {
+    "code": "GOA",
+    "name": "Goa",
+    "slug": "goa",
+    "lat": "15.378",
+    "lon": "74.019"
+  },
+  "GOAL": {
+    "code": "GOAL",
+    "name": "Goalpara",
+    "slug": "goalpara",
+    "lat": "26.1641",
+    "lon": "90.6252"
+  },
+  "GUNT": {
+    "code": "GUNT",
+    "name": "Guntur",
+    "slug": "guntur",
+    "lat": "16.3008",
+    "lon": "80.4428"
+  },
+  "GUW": {
+    "code": "GUW",
+    "name": "Guwahati",
+    "slug": "guwahati",
+    "lat": "26.144435",
+    "lon": "91.733179"
+  },
+  "HUBL": {
+    "code": "HUBL",
+    "name": "Hubballi (Hubli)",
+    "slug": "hubballi-hubli",
+    "lat": "15.3647",
+    "lon": "75.124"
+  },
+  "IND": {
+    "code": "IND",
+    "name": "Indore",
+    "slug": "indore",
+    "lat": "22.7287",
+    "lon": "75.8654"
+  },
+  "JGRO": {
+    "code": "JGRO",
+    "name": "Jagraon",
+    "slug": "jagraon",
+    "lat": "30.7916",
+    "lon": "75.4694"
+  },
+  "JAIJ": {
+    "code": "JAIJ",
+    "name": "Jaijaipur",
+    "slug": "jaijaipur",
+    "lat": "21.8313",
+    "lon": "82.8164"
+  },
+  "JAIP": {
+    "code": "JAIP",
+    "name": "Jaipur",
+    "slug": "jaipur",
+    "lat": "26.9124165",
+    "lon": "75.7872879"
+  },
+  "JALA": {
+    "code": "JALA",
+    "name": "Jalandhar",
+    "slug": "jalandhar",
+    "lat": "31.3260152",
+    "lon": "75.5761829"
+  },
+  "JAMM": {
+    "code": "JAMM",
+    "name": "Jammu",
+    "slug": "jammu",
+    "lat": "34.024288",
+    "lon": "76.092468"
+  },
+  "JMDP": {
+    "code": "JMDP",
+    "name": "Jamshedpur",
+    "slug": "jamshedpur",
+    "lat": "22.805235",
+    "lon": "86.207356"
+  },
+  "JODH": {
+    "code": "JODH",
+    "name": "Jodhpur",
+    "slug": "jodhpur",
+    "lat": "26.2389469",
+    "lon": "73.0243094"
+  },
+  "KAKI": {
+    "code": "KAKI",
+    "name": "Kakinada",
+    "slug": "kakinada",
+    "lat": "16.945181",
+    "lon": "82.238647"
+  },
+  "KPKT": {
+    "code": "KPKT",
+    "name": "Kamavarapukota",
+    "slug": "kamavarapukota",
+    "lat": "17.0098",
+    "lon": "81.1939"
+  },
+  "KANP": {
+    "code": "KANP",
+    "name": "Kanpur",
+    "slug": "kanpur",
+    "lat": "26.4634",
+    "lon": "80.3229"
+  },
+  "KOTA": {
+    "code": "KOTA",
+    "name": "Kota",
+    "slug": "kota",
+    "lat": "25.1695114",
+    "lon": "75.8539898"
+  },
+  "KOAN": {
+    "code": "KOAN",
+    "name": "Kota (AP)",
+    "slug": "kota-ap",
+    "lat": "14.0352",
+    "lon": "80.0465"
+  },
+  "KTAB": {
+    "code": "KTAB",
+    "name": "Kotabommali",
+    "slug": "kotabommali",
+    "lat": "18.5184",
+    "lon": "84.1514"
+  },
+  "KTND": {
+    "code": "KTND",
+    "name": "Kotananduru",
+    "slug": "kotananduru",
+    "lat": "17.482865",
+    "lon": "82.488968"
+  },
+  "KOTL": {
+    "code": "KOTL",
+    "name": "Kothakota",
+    "slug": "kothakota",
+    "lat": "16.3787",
+    "lon": "77.941"
+  },
+  "KOVR": {
+    "code": "KOVR",
+    "name": "Kovur (Nellore)",
+    "slug": "kovur-nellore",
+    "lat": "14.5012",
+    "lon": "79.9881"
+  },
+  "KURN": {
+    "code": "KURN",
+    "name": "Kurnool",
+    "slug": "kurnool",
+    "lat": "15.8281",
+    "lon": "78.0373"
+  },
+  "LUCK": {
+    "code": "LUCK",
+    "name": "Lucknow",
+    "slug": "lucknow",
+    "lat": "26.8465108",
+    "lon": "80.9466832"
+  },
+  "LUDH": {
+    "code": "LUDH",
+    "name": "Ludhiana",
+    "slug": "ludhiana",
+    "lat": "30.900965",
+    "lon": "75.8572758"
+  },
+  "MAPM": {
+    "code": "MAPM",
+    "name": "Machilipatnam",
+    "slug": "machilipatnam",
+    "lat": "16.1905",
+    "lon": "81.1362"
+  },
+  "MADU": {
+    "code": "MADU",
+    "name": "Madurai",
+    "slug": "madurai",
+    "lat": "9.9252007",
+    "lon": "78.1197754"
+  },
+  "MNMI": {
+    "code": "MNMI",
+    "name": "Manamadurai",
+    "slug": "manamadurai",
+    "lat": "9.689",
+    "lon": "78.4581"
+  },
+  "MLR": {
+    "code": "MLR",
+    "name": "Mangaluru (Mangalore)",
+    "slug": "mangaluru-mangalore",
+    "lat": "12.91379",
+    "lon": "74.853977"
+  },
+  "MERT": {
+    "code": "MERT",
+    "name": "Meerut",
+    "slug": "meerut",
+    "lat": "28.9844618",
+    "lon": "77.7064137"
+  },
+  "MYS": {
+    "code": "MYS",
+    "name": "Mysuru (Mysore)",
+    "slug": "mysuru-mysore",
+    "lat": "12.2958104",
+    "lon": "76.6393805"
+  },
+  "NGKL": {
+    "code": "NGKL",
+    "name": "Nagarkurnool",
+    "slug": "nagarkurnool",
+    "lat": "16.4939",
+    "lon": "78.3102"
+  },
+  "NAGP": {
+    "code": "NAGP",
+    "name": "Nagpur",
+    "slug": "nagpur",
+    "lat": "21.1458004",
+    "lon": "79.0881546"
+  },
+  "NARS": {
+    "code": "NARS",
+    "name": "Narsipatnam",
+    "slug": "narsipatnam",
+    "lat": "17.6664",
+    "lon": "82.6105"
+  },
+  "NASK": {
+    "code": "NASK",
+    "name": "Nashik",
+    "slug": "nashik",
+    "lat": "20.0014",
+    "lon": "73.7869"
+  },
+  "NELL": {
+    "code": "NELL",
+    "name": "Nellore",
+    "slug": "nellore",
+    "lat": "14.4426",
+    "lon": "79.9865"
+  },
+  "NZPT": {
+    "code": "NZPT",
+    "name": "Nizampatnam",
+    "slug": "nizampatnam",
+    "lat": "15.9069",
+    "lon": "80.6691"
+  },
+  "PTPT": {
+    "code": "PTPT",
+    "name": "Pathapatnam",
+    "slug": "pathapatnam",
+    "lat": "18.7505",
+    "lon": "84.0916"
+  },
+  "PATN": {
+    "code": "PATN",
+    "name": "Patna",
+    "slug": "patna",
+    "lat": "25.61046",
+    "lon": "85.141667"
+  },
+  "PERI": {
+    "code": "PERI",
+    "name": "Periyapatna",
+    "slug": "periyapatna",
+    "lat": "12.3374",
+    "lon": "76.0987"
+  },
+  "ALLH": {
+    "code": "ALLH",
+    "name": "Prayagraj (Allahabad)",
+    "slug": "prayagraj-allahabad",
+    "lat": "25.4022472",
+    "lon": "81.7315448"
+  },
+  "RAIPUR": {
+    "code": "RAIPUR",
+    "name": "Raipur",
+    "slug": "raipur",
+    "lat": "21.2513844",
+    "lon": "81.6296413"
+  },
+  "YAYA": {
+    "code": "YAYA",
+    "name": "Raipuriya",
+    "slug": "raipuriya",
+    "lat": "23.744812",
+    "lon": "76.658272"
+  },
+  "RJMU": {
+    "code": "RJMU",
+    "name": "Rajamahendravaram (Rajahmundry)",
+    "slug": "rajamahendravaram-rajahmundry",
+    "lat": "17.0005",
+    "lon": "81.804"
+  },
+  "RANC": {
+    "code": "RANC",
+    "name": "Ranchi",
+    "slug": "ranchi",
+    "lat": "23.3440997",
+    "lon": "85.309562"
+  },
+  "SAMA": {
+    "code": "SAMA",
+    "name": "Samalkota",
+    "slug": "samalkota",
+    "lat": "17.0504",
+    "lon": "82.1659"
+  },
+  "SOLA": {
+    "code": "SOLA",
+    "name": "Solapur",
+    "slug": "solapur",
+    "lat": "17.659834",
+    "lon": "75.906601"
+  },
+  "SRNG": {
+    "code": "SRNG",
+    "name": "Srinagar",
+    "slug": "srinagar",
+    "lat": "34.0837",
+    "lon": "74.7973"
+  },
+  "SRIR": {
+    "code": "SRIR",
+    "name": "Srirangapatna",
+    "slug": "srirangapatna",
+    "lat": "12.4216",
+    "lon": "76.6931"
+  },
+  "SURT": {
+    "code": "SURT",
+    "name": "Surat",
+    "slug": "surat",
+    "lat": "21.195",
+    "lon": "72.819444"
+  },
+  "SRTK": {
+    "code": "SRTK",
+    "name": "Surathkal",
+    "slug": "surathkal",
+    "lat": "12.9951",
+    "lon": "74.8094"
+  },
+  "TRIV": {
+    "code": "TRIV",
+    "name": "Thiruvananthapuram (Trivandrum)",
+    "slug": "thiruvananthapuram-trivandrum",
+    "lat": "8.4875",
+    "lon": "76.9525"
+  },
+  "TIRU": {
+    "code": "TIRU",
+    "name": "Tirupati",
+    "slug": "tirupati",
+    "lat": "13.6288",
+    "lon": "79.4192"
+  },
+  "UDAI": {
+    "code": "UDAI",
+    "name": "Udaipur",
+    "slug": "udaipur",
+    "lat": "24.58",
+    "lon": "73.68"
+  },
+  "VAD": {
+    "code": "VAD",
+    "name": "Vadodara",
+    "slug": "vadodara",
+    "lat": "22.3073095",
+    "lon": "73.1810976"
+  },
+  "VAR": {
+    "code": "VAR",
+    "name": "Varanasi",
+    "slug": "varanasi",
+    "lat": "25.3176452",
+    "lon": "82.9739144"
+  },
+  "VIJP": {
+    "code": "VIJP",
+    "name": "Vijayapura (Bengaluru Rural)",
+    "slug": "vijayapura-bengaluru-rural",
+    "lat": "13.2955",
+    "lon": "77.801"
+  },
+  "VIJA": {
+    "code": "VIJA",
+    "name": "Vijayawada",
+    "slug": "vijayawada",
+    "lat": "16.519",
+    "lon": "80.6215"
+  },
+  "VIZA": {
+    "code": "VIZA",
+    "name": "Vizag (Visakhapatnam)",
+    "slug": "vizag-visakhapatnam",
+    "lat": "17.6868159",
+    "lon": "83.2184815"
+  },
+  "WAR": {
+    "code": "WAR",
+    "name": "Warangal",
+    "slug": "warangal",
+    "lat": "18.000055",
+    "lon": "79.588167"
+  }
+}
