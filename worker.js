@@ -370,9 +370,16 @@ async function handleTelegramUpdate(update, env) {
   const allowedList = env.ALLOWED_CHAT_IDS ? env.ALLOWED_CHAT_IDS.split(",").map(s => s.trim()) : null;
 
   // Record user interaction for user analytics and admin broadcasts
-  const activeChatId = String(update.callback_query?.message?.chat?.id || update.message?.chat?.id || "");
+  const fromObj = update.callback_query?.from || update.message?.from || update.edited_message?.from || {};
+  const activeChatId = String(update.callback_query?.message?.chat?.id || update.message?.chat?.id || fromObj.id || "");
+  const username = fromObj.username ? `@${fromObj.username.replace(/^@/, "")}` : "";
+  const firstName = fromObj.first_name || "";
+  const lastName = fromObj.last_name || "";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  const userProfile = { username, fullName };
+
   if (activeChatId) {
-    await recordUserInteraction(env, activeChatId);
+    await recordUserInteraction(env, activeChatId, userProfile);
   }
 
   // A. Handle Button Clicks
@@ -390,7 +397,7 @@ async function handleTelegramUpdate(update, env) {
 
     await answerCallbackQuery(botToken, cb.id);
     try {
-      await handleCallbackData(botToken, chatId, messageId, data, env);
+      await handleCallbackData(botToken, chatId, messageId, data, env, userProfile);
     } catch (err) {
       console.error("handleCallbackData error:", err);
       await sendTelegram(botToken, chatId, "⚠️ An error occurred while processing your request. Please try again or type /start.");
@@ -685,7 +692,13 @@ async function handleCityRequestInput(botToken, chatId, text, env) {
     const city = exactMatches[0];
     await registerCustomCity(city, env);
     if (configuredChatId) {
-      await sendTelegram(botToken, configuredChatId, `🔔 *New City Added via Request!*\nCity: *${city.name}* (${city.code})\nRequested by user: \`${chatId}\``);
+      let pObj = {};
+      try {
+        const pRaw = await env.TRACKER_DB.get("user_profiles");
+        if (pRaw) pObj = JSON.parse(pRaw) || {};
+      } catch (e) {}
+      const userStr = formatUserLabel({ chatId }, pObj);
+      await sendTelegram(botToken, configuredChatId, `🔔 *New City Added via Request!*\n\n• City: *${city.name}* (${city.code})\n• Requested by: ${userStr}`);
     }
     await clearSession(env, chatId);
     await sendTelegram(botToken, chatId,
@@ -1842,7 +1855,7 @@ async function sendFormatSelection(botToken, chatId, cityCode, venueCode, eventC
 // CALLBACK ACTIONS HANDLER
 // -------------------------------------------------------------
 
-async function handleCallbackData(botToken, chatId, messageId, data, env) {
+async function handleCallbackData(botToken, chatId, messageId, data, env, userProfile = null) {
   const parts = data.split(":");
   const action = parts[0];
 
@@ -1940,7 +1953,7 @@ async function handleCallbackData(botToken, chatId, messageId, data, env) {
   // 6. Format picked -> Create Tracker!
   if (action === "flt") {
     const [, cityCode, venueCode, eventCode, filter] = parts;
-    await createTracker(botToken, chatId, eventCode, venueCode, filter, cityCode, env, messageId);
+    await createTracker(botToken, chatId, eventCode, venueCode, filter, cityCode, env, messageId, userProfile);
     return;
   }
 
@@ -2000,7 +2013,13 @@ async function handleCallbackData(botToken, chatId, messageId, data, env) {
       await registerCustomCity(city, env);
       const configuredChatId = String(env?.TELEGRAM_CHAT_ID || "").trim().replace(/['"]/g, "");
       if (configuredChatId) {
-        await sendTelegram(botToken, configuredChatId, `🔔 *New City Added via Request!*\nCity: *${city.name}* (${city.code})\nRequested by user: \`${chatId}\``);
+        let pObj = {};
+        try {
+          const pRaw = await env.TRACKER_DB.get("user_profiles");
+          if (pRaw) pObj = JSON.parse(pRaw) || {};
+        } catch (e) {}
+        const userStr = formatUserLabel({ chatId }, pObj);
+        await sendTelegram(botToken, configuredChatId, `🔔 *New City Added via Request!*\n\n• City: *${city.name}* (${city.code})\n• Requested by: ${userStr}`);
       }
       await clearSession(env, chatId);
       await editTelegramMessage(botToken, chatId, messageId,
@@ -2116,7 +2135,7 @@ async function handleCallbackData(botToken, chatId, messageId, data, env) {
 // STEP 5: TRACKER CREATION & STORAGE IN KV
 // -------------------------------------------------------------
 
-async function createTracker(botToken, chatId, eventCode, venueCode, filter, cityCode, env, messageId = null) {
+async function createTracker(botToken, chatId, eventCode, venueCode, filter, cityCode, env, messageId = null, userProfile = null) {
   const trackerId = "trk_" + Date.now().toString(36);
   const city = await resolveCity(cityCode, env);
   const venues = await fetchVenuesForCity(cityCode, env);
@@ -2152,11 +2171,29 @@ async function createTracker(botToken, chatId, eventCode, venueCode, filter, cit
     formatName = filter;
   }
 
+  let username = userProfile?.username || "";
+  let userFullName = userProfile?.fullName || "";
+
+  if ((!username || !userFullName) && env && env.TRACKER_DB) {
+    try {
+      const pRaw = await env.TRACKER_DB.get("user_profiles");
+      if (pRaw) {
+        const profiles = JSON.parse(pRaw);
+        if (profiles[chatId]) {
+          username = username || profiles[chatId].username || "";
+          userFullName = userFullName || profiles[chatId].fullName || "";
+        }
+      }
+    } catch (e) {}
+  }
+
   const cleanTitle = (movieTitle || "").replace(/\s*\([^)]*\)$/, "").replace(/[\(\)]+$/g, "").trim();
 
   const tracker = {
     id: trackerId,
     chatId: chatId,
+    username: username,
+    userFullName: userFullName,
     eventCode: finalEventCode,
     venueCode: venueCode,
     venueName: venueDisplayName,
@@ -2187,6 +2224,18 @@ async function createTracker(botToken, chatId, eventCode, venueCode, filter, cit
     userTrackers.push(tracker);
     await env.TRACKER_DB.put(`trackers:${chatId}`, JSON.stringify(userTrackers));
     await clearSession(env, chatId);
+
+    const configuredChatId = String(env?.TELEGRAM_CHAT_ID || "").trim().replace(/['"]/g, "");
+    if (configuredChatId && String(chatId) !== configuredChatId) {
+      const uLabel = username ? `${username}${userFullName ? ` (${userFullName})` : ""} [\`${chatId}\`]` : (userFullName ? `${userFullName} [\`${chatId}\`]` : `\`${chatId}\``);
+      await sendTelegram(botToken, configuredChatId,
+        `🎯 *New Tracker Created!*\n\n` +
+        `• Movie: *${cleanTitle || movieTitle}*\n` +
+        `• Theatre: ${venueDisplayName}\n` +
+        `• Screen: ${formatName}\n` +
+        `• User: ${uLabel}`
+      );
+    }
   }
 
   const existingCount = tracker.knownSessions?.length || 0;
@@ -2595,7 +2644,25 @@ function escapeMd(str) {
   return String(str).replace(/[*_`\[\]()]/g, " ");
 }
 
-async function recordUserInteraction(env, chatId) {
+function formatUserLabel(tracker, profiles = {}) {
+  const cid = String(tracker.ownerChatId || tracker.chatId || "");
+  const p = profiles[cid] || {};
+  const uname = tracker.username || p.username || "";
+  const fname = tracker.userFullName || p.fullName || "";
+
+  if (uname && fname) {
+    return `${escapeMd(uname)} (${escapeMd(fname)}) [\`${cid}\`]`;
+  }
+  if (uname) {
+    return `${escapeMd(uname)} [\`${cid}\`]`;
+  }
+  if (fname) {
+    return `${escapeMd(fname)} [\`${cid}\`]`;
+  }
+  return `\`${cid || "Unknown"}\``;
+}
+
+async function recordUserInteraction(env, chatId, profile = null) {
   if (!env || !env.TRACKER_DB || !chatId) return;
   try {
     const raw = await env.TRACKER_DB.get("registered_users");
@@ -2609,9 +2676,32 @@ async function recordUserInteraction(env, chatId) {
       }
     }
     const strId = String(chatId);
+    let usersUpdated = false;
     if (!users.includes(strId)) {
       users.push(strId);
+      usersUpdated = true;
+    }
+    if (usersUpdated) {
       await env.TRACKER_DB.put("registered_users", JSON.stringify(users));
+    }
+
+    if (profile && (profile.username || profile.fullName)) {
+      let profiles = {};
+      const pRaw = await env.TRACKER_DB.get("user_profiles");
+      if (pRaw) {
+        try { profiles = JSON.parse(pRaw) || {}; } catch (e) {}
+      }
+      const existing = profiles[strId] || {};
+      const newUsername = profile.username || existing.username || "";
+      const newFullName = profile.fullName || existing.fullName || "";
+      if (newUsername !== existing.username || newFullName !== existing.fullName || !existing.lastSeen) {
+        profiles[strId] = {
+          username: newUsername,
+          fullName: newFullName,
+          lastSeen: new Date().toISOString()
+        };
+        await env.TRACKER_DB.put("user_profiles", JSON.stringify(profiles));
+      }
     }
   } catch (err) {
     console.error("recordUserInteraction error:", err);
@@ -2738,6 +2828,14 @@ async function sendAdminAllTrackers(botToken, chatId, messageId = null, env = nu
 
   let text = `📋 *All System Trackers* (Page ${curPage + 1}/${totalPages} — Total: ${allTrackers.length})\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
+  let profiles = {};
+  if (env && env.TRACKER_DB) {
+    try {
+      const pRaw = await env.TRACKER_DB.get("user_profiles");
+      if (pRaw) profiles = JSON.parse(pRaw) || {};
+    } catch (e) {}
+  }
+
   const buttons = [];
   slice.forEach((t, i) => {
     const idx = curPage * pageSize + i + 1;
@@ -2745,8 +2843,9 @@ async function sendAdminAllTrackers(botToken, chatId, messageId = null, env = nu
     const status = t.isPaused ? "⏸️ Paused" : "🟢 Active";
     const shows = t.knownSessions?.length || 0;
     const venue = escapeMd(t.venueName || t.venueCode);
+    const userDisplay = formatUserLabel(t, profiles);
     text += `*${idx}. ${title}*\n`;
-    text += `• User: \`${t.ownerChatId}\`\n`;
+    text += `• User: ${userDisplay}\n`;
     text += `• Venue: ${venue}\n`;
     text += `• Status: ${status} | Shows: ${shows}\n\n`;
 
