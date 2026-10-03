@@ -125,7 +125,7 @@ def scrape_venue_movies(item):
     parse_error = None
 
     # Polite jitter to avoid Cloudflare rate limit burst detection
-    time.sleep(random.uniform(0.08, 0.20))
+    time.sleep(random.uniform(0.04, 0.10))
 
     try:
         # Primary attempt with chrome131
@@ -335,7 +335,7 @@ def main():
             pass
 
     print(f"[CATALOG SYNC] Total cities queued for sync: {len(ordered_cities)}")
-    print(f"[CATALOG SYNC] Running city-batched sync (max 3 workers per city)...\n")
+    print(f"[CATALOG SYNC] Running city-batched sync (max 4 workers per city)...\n")
 
     synced_cities = 0
     total_active_venues = 0
@@ -355,8 +355,8 @@ def main():
         active_in_city = 0
         status_counts = {}
 
-        # Scrape all venues in this city concurrently (3 workers for smooth pacing)
-        with ThreadPoolExecutor(max_workers=min(3, len(venue_items) or 1)) as executor:
+        # Scrape all venues in this city concurrently (4 workers for smooth pacing)
+        with ThreadPoolExecutor(max_workers=min(4, len(venue_items) or 1)) as executor:
             futures = {executor.submit(scrape_venue_movies, it): it for it in venue_items}
             for fut in as_completed(futures):
                 vcode, _, movies, status = fut.result()
@@ -429,7 +429,7 @@ def main():
                 )
             )
 
-        time.sleep(1.2)
+        time.sleep(0.8)
 
 
     elapsed = time.time() - start_time
