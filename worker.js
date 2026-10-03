@@ -1090,14 +1090,35 @@ async function findTheatresForMovieGroup(cityCode, movieGroup, env) {
     } catch (e) {}
   }
 
-  // 1. Check KV cityVenuesMap first, then local in-memory VENUE_MOVIES_MAP
+  // 1. Combine dynamic KV cityVenuesMap with static VENUE_MOVIES_MAP
   // CRITICAL: NEVER do env.TRACKER_DB.get in a loop here! Cloudflare Workers Free limits subrequests to 50 per invocation.
   for (const v of allVenues) {
-    let list = cityVenuesMap ? cityVenuesMap[v.code] : null;
-    if (!list && typeof VENUE_MOVIES_MAP !== "undefined" && VENUE_MOVIES_MAP[v.code]) {
-      list = VENUE_MOVIES_MAP[v.code];
+    const list = [];
+    const seenCodes = new Set();
+
+    // Fresh live listings from KV
+    if (cityVenuesMap && Array.isArray(cityVenuesMap[v.code])) {
+      for (const m of cityVenuesMap[v.code]) {
+        const c = m.code || m;
+        if (!seenCodes.has(c)) {
+          seenCodes.add(c);
+          list.push(m);
+        }
+      }
     }
-    if (list && Array.isArray(list)) {
+
+    // Safety fallback from verified static mapping so daytime shows/venues are never wiped
+    if (typeof VENUE_MOVIES_MAP !== "undefined" && Array.isArray(VENUE_MOVIES_MAP[v.code])) {
+      for (const m of VENUE_MOVIES_MAP[v.code]) {
+        const c = m.code || m;
+        if (!seenCodes.has(c)) {
+          seenCodes.add(c);
+          list.push(m);
+        }
+      }
+    }
+
+    if (list.length > 0) {
       const matched = list.filter(m => variantCodes.has(m.code || m));
       if (matched.length > 0) {
         let formats = matched.map(m => {
@@ -1373,10 +1394,28 @@ async function getShowsForVenueAndMovie(cityCode, venueCode, movieGroup, env) {
         if (raw) vList = JSON.parse(raw);
       } catch (e) {}
     }
-    if (!vList && typeof VENUE_MOVIES_MAP !== "undefined" && VENUE_MOVIES_MAP[venueCode]) {
-      vList = VENUE_MOVIES_MAP[venueCode];
-    }
+    const combinedList = [];
+    const seenCodes = new Set();
     if (vList && Array.isArray(vList)) {
+      for (const m of vList) {
+        const c = m.code || m;
+        if (!seenCodes.has(c)) {
+          seenCodes.add(c);
+          combinedList.push(m);
+        }
+      }
+    }
+    if (typeof VENUE_MOVIES_MAP !== "undefined" && Array.isArray(VENUE_MOVIES_MAP[venueCode])) {
+      for (const m of VENUE_MOVIES_MAP[venueCode]) {
+        const c = m.code || m;
+        if (!seenCodes.has(c)) {
+          seenCodes.add(c);
+          combinedList.push(m);
+        }
+      }
+    }
+    vList = combinedList;
+    if (vList.length > 0) {
       const vCodes = new Set(movieGroup.variants.map(v => v.code));
       if (typeof MULTILINGUAL_SIBLINGS !== "undefined") {
         for (const v of movieGroup.variants) {
@@ -1840,18 +1879,33 @@ async function fetchMoviesForCity(cityCode, venueCode = "ALL", showAllCity = fal
     return { movies: resolved, isVenueSpecific: true };
   }
 
-  // 3. Fallback to city-wide movies
+  // 3. Fallback to city-wide movies (union KV with static catalog)
   let list = [];
-  if (ALL_MOVIES_BY_CITY[cityCode] && ALL_MOVIES_BY_CITY[cityCode].length > 0) {
-    list = [...ALL_MOVIES_BY_CITY[cityCode]];
-  }
+  const seenMovieCodes = new Set();
   if (env && env.TRACKER_DB) {
     const cached = await env.TRACKER_DB.get(`movies:${cityCode}`);
     if (cached) {
       try {
         const kvMovies = JSON.parse(cached);
-        if (Array.isArray(kvMovies) && kvMovies.length > 0) list = kvMovies;
+        if (Array.isArray(kvMovies)) {
+          for (const m of kvMovies) {
+            const c = m.code || m;
+            if (!seenMovieCodes.has(c)) {
+              seenMovieCodes.add(c);
+              list.push(m);
+            }
+          }
+        }
       } catch (e) {}
+    }
+  }
+  if (ALL_MOVIES_BY_CITY[cityCode] && ALL_MOVIES_BY_CITY[cityCode].length > 0) {
+    for (const m of ALL_MOVIES_BY_CITY[cityCode]) {
+      const c = m.code || m;
+      if (!seenMovieCodes.has(c)) {
+        seenMovieCodes.add(c);
+        list.push(m);
+      }
     }
   }
   if (list.length === 0) list = [...POPULAR_MOVIES];

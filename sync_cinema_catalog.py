@@ -203,26 +203,52 @@ def scrape_venue_movies(item):
 
         # Multi-Date Lookahead: If upcoming active dates exist (e.g. tomorrow), inspect next active date
         # so weekend/daytime shows (like Sunday 3D) are never missed when today's daytime shows have rolled off.
+        res_next_text = ""
         if len(active_dates) > 1:
             try:
-                next_date_url = f"{url}/{active_dates[1]}"
-                res_next = cffi_requests.get(next_date_url, headers=headers, impersonate="chrome131", timeout=REQUEST_TIMEOUT)
+                canonical_base = res.url.rstrip("/")
+                if re.search(r"/\d{8}$", canonical_base):
+                    canonical_base = canonical_base.rsplit("/", 1)[0]
+                next_date_url = f"{canonical_base}/{active_dates[1]}"
+                res_next = cffi_requests.get(
+                    next_date_url,
+                    headers=headers,
+                    impersonate="chrome131",
+                    timeout=REQUEST_TIMEOUT,
+                    allow_redirects=True,
+                )
                 if res_next.status_code == 200:
+                    res_next_text = res_next.text
                     parse_initial_state_events(res_next.text)
+                elif res_next.status_code in (403, 429):
+                    time.sleep(random.uniform(0.5, 1.2))
+                    res_next_fb = cffi_requests.get(
+                        next_date_url,
+                        headers=headers,
+                        impersonate="safari18_0",
+                        timeout=REQUEST_TIMEOUT,
+                        allow_redirects=True,
+                    )
+                    if res_next_fb.status_code == 200:
+                        res_next_text = res_next_fb.text
+                        parse_initial_state_events(res_next_fb.text)
             except Exception:
                 pass
 
         # Method 2: Extract from HTML links as fallback/supplement
         # Filters out bottom SEO/footer links by enforcing /movies/{city_slug}/ in path
         pattern = rf'<a\s+href="[^"]*?/movies/{cslug}/([^"]+)/(ET\d{{8}})"[^>]*>([^<]+)</a>'
-        matches = re.findall(pattern, res.text)
-        for _, code, raw_title in matches:
-            if code not in seen:
-                seen.add(code)
-                clean_title = html.unescape(raw_title).strip()
-                clean_title = re.sub(r"\s*\((?:UA|U/A|A|U|16\+|18\+|12\+|13\+|15\+|7\+|R)[^)]*\)", "", clean_title).strip()
-                clean_title = re.sub(r"\s*[\(\)]+$", "", clean_title).strip()
-                movies.append({"code": code, "title": clean_title})
+        for page_html in [res.text, res_next_text]:
+            if not page_html:
+                continue
+            matches = re.findall(pattern, page_html)
+            for _, code, raw_title in matches:
+                if code not in seen:
+                    seen.add(code)
+                    clean_title = html.unescape(raw_title).strip()
+                    clean_title = re.sub(r"\s*\((?:UA|U/A|A|U|16\+|18\+|12\+|13\+|15\+|7\+|R)[^)]*\)", "", clean_title).strip()
+                    clean_title = re.sub(r"\s*[\(\)]+$", "", clean_title).strip()
+                    movies.append({"code": code, "title": clean_title})
 
         # Return status 901 if we got 200 but no __INITIAL_STATE__ (JS challenge page)
         if not movies and "window.__INITIAL_STATE__" not in res.text:
