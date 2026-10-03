@@ -9,6 +9,7 @@ import datetime
 import html
 import json
 import os
+import random
 import re
 import sys
 import time
@@ -123,12 +124,17 @@ def scrape_venue_movies(item):
     seen = set()
     parse_error = None
 
+    # Polite jitter to avoid Cloudflare rate limit burst detection
+    time.sleep(random.uniform(0.08, 0.20))
+
     try:
         # Primary attempt with chrome131
         res = cffi_requests.get(url, headers=headers, impersonate="chrome131", timeout=REQUEST_TIMEOUT)
 
-        # Fallback attempt with safari18_0 if chrome131 gets 403 or non-200
+        # Fallback attempt with backoff if chrome131 gets rate-limited or non-200
         if res.status_code != 200:
+            if "Attention Required" in res.text or res.status_code in (403, 429):
+                time.sleep(random.uniform(1.5, 2.5))
             try:
                 res_fallback = cffi_requests.get(url, headers=headers, impersonate="safari18_0", timeout=REQUEST_TIMEOUT)
                 if res_fallback.status_code == 200:
@@ -292,23 +298,20 @@ def main():
 
     # 2. Identify Priority User-Tracked Venues & Cities
     tracked_venues = get_user_tracked_venues(token)
-    priority_cities = set()
+    ordered_cities = []
     if tracked_venues:
         print(f"[CATALOG SYNC] Found {len(tracked_venues)} active user-tracked cinema hall(s).")
         for vcode, info in tracked_venues.items():
-            if info.get("cityCode"):
-                priority_cities.add(info["cityCode"])
+            cc = info.get("cityCode")
+            if cc and cc in venues_by_city and cc not in ordered_cities:
+                ordered_cities.append(cc)
 
-    # Core high-traffic cities (Kanpur, Hyderabad, Mumbai, NCR, Bangalore, etc.)
-    core_cities = ["HYD", "KANP", "MUMBAI", "NCR", "BANG", "CHD", "PUNE", "KOLK", "CHEN", "AHD", "KOCH", "JAIP"]
+    # Core high-traffic cities (Hyderabad, Delhi-NCR, Kanpur, Mumbai, Bangalore, etc.)
+    # In deterministic priority order
+    core_cities = ["HYD", "NCR", "KANP", "MUMBAI", "BANG", "CHD", "PUNE", "KOLK", "CHEN", "AHD", "KOCH", "JAIP"]
     for c in core_cities:
-        priority_cities.add(c)
-
-    # 3. Order Cities: Priority cities first (active user-tracked + top metros)
-    ordered_cities = []
-    for ccode in priority_cities:
-        if ccode in venues_by_city and ccode not in ordered_cities:
-            ordered_cities.append(ccode)
+        if c in venues_by_city and c not in ordered_cities:
+            ordered_cities.append(c)
 
     # Only append remaining long-tail cities if explicitly enabled via SYNC_ALL_CITIES=true
     sync_all = os.getenv("SYNC_ALL_CITIES", "false").lower() == "true"
@@ -332,7 +335,7 @@ def main():
             pass
 
     print(f"[CATALOG SYNC] Total cities queued for sync: {len(ordered_cities)}")
-    print(f"[CATALOG SYNC] Running city-batched sync (max 6 workers per city)...\n")
+    print(f"[CATALOG SYNC] Running city-batched sync (max 3 workers per city)...\n")
 
     synced_cities = 0
     total_active_venues = 0
@@ -352,8 +355,8 @@ def main():
         active_in_city = 0
         status_counts = {}
 
-        # Scrape all venues in this city concurrently
-        with ThreadPoolExecutor(max_workers=min(6, len(venue_items) or 1)) as executor:
+        # Scrape all venues in this city concurrently (3 workers for smooth pacing)
+        with ThreadPoolExecutor(max_workers=min(3, len(venue_items) or 1)) as executor:
             futures = {executor.submit(scrape_venue_movies, it): it for it in venue_items}
             for fut in as_completed(futures):
                 vcode, _, movies, status = fut.result()
@@ -426,7 +429,7 @@ def main():
                 )
             )
 
-        time.sleep(0.05)
+        time.sleep(1.2)
 
 
     elapsed = time.time() - start_time
