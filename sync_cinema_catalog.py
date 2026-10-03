@@ -157,38 +157,60 @@ def scrape_venue_movies(item):
             return vcode, ccode, [], res.status_code
 
         # Method 1: Extract from React window.__INITIAL_STATE__ (highest quality clean titles with format & language)
-        if "window.__INITIAL_STATE__" in res.text:
-            idx = res.text.find("window.__INITIAL_STATE__ = ")
-            if idx != -1:
-                raw = res.text[idx + 27:]
-                try:
-                    data, _ = json.JSONDecoder().raw_decode(raw)
-                    queries = data.get("venueShowtimesFunctionalApi", {}).get("queries", {})
-                    for qk in queries:
-                        if "getShowtimesByVenue" in qk:
-                            events = queries[qk].get("data", {}).get("showDetailsTransformed", {}).get("Event", [])
-                            for e in events:
-                                base_title = (e.get("EventTitle") or "").strip()
-                                if not base_title:
-                                    continue
-                                children = e.get("ChildEvents", [])
-                                if children:
-                                    for ce in children:
-                                        code = ce.get("EventCode")
-                                        if code and code not in seen:
-                                            seen.add(code)
-                                            dim = (ce.get("EventDimension") or "").strip()
-                                            lang = (ce.get("EventLanguage") or "").strip()
-                                            parts = [p for p in [lang, dim] if p]
-                                            full_title = "{} ({})".format(base_title, " ".join(parts)) if parts else base_title
-                                            movies.append({"code": code, "title": full_title})
-                                else:
-                                    code = e.get("EventCode")
+        active_dates = []
+        def parse_initial_state_events(html_text):
+            nonlocal active_dates, parse_error
+            if "window.__INITIAL_STATE__" not in html_text:
+                return
+            idx = html_text.find("window.__INITIAL_STATE__ = ")
+            if idx == -1:
+                return
+            raw = html_text[idx + 27:]
+            try:
+                data, _ = json.JSONDecoder().raw_decode(raw)
+                queries = data.get("venueShowtimesFunctionalApi", {}).get("queries", {})
+                for qk in queries:
+                    if "getShowtimesByVenue" in qk:
+                        qdata = queries[qk].get("data", {})
+                        if not active_dates:
+                            dates_array = qdata.get("ShowDatesArray", [])
+                            active_dates = [d.get("DateCode") for d in dates_array if not d.get("isDisabled") and d.get("DateCode")]
+                        events = qdata.get("showDetailsTransformed", {}).get("Event", [])
+                        for e in events:
+                            base_title = (e.get("EventTitle") or "").strip()
+                            if not base_title:
+                                continue
+                            children = e.get("ChildEvents", [])
+                            if children:
+                                for ce in children:
+                                    code = ce.get("EventCode")
                                     if code and code not in seen:
                                         seen.add(code)
-                                        movies.append({"code": code, "title": base_title})
-                except Exception as ex:
-                    parse_error = str(ex)
+                                        dim = (ce.get("EventDimension") or "").strip()
+                                        lang = (ce.get("EventLanguage") or "").strip()
+                                        parts = [p for p in [lang, dim] if p]
+                                        full_title = "{} ({})".format(base_title, " ".join(parts)) if parts else base_title
+                                        movies.append({"code": code, "title": full_title})
+                            else:
+                                code = e.get("EventCode")
+                                if code and code not in seen:
+                                    seen.add(code)
+                                    movies.append({"code": code, "title": base_title})
+            except Exception as ex:
+                parse_error = str(ex)
+
+        parse_initial_state_events(res.text)
+
+        # Multi-Date Lookahead: If upcoming active dates exist (e.g. tomorrow), inspect next active date
+        # so weekend/daytime shows (like Sunday 3D) are never missed when today's daytime shows have rolled off.
+        if len(active_dates) > 1:
+            try:
+                next_date_url = f"{url}/{active_dates[1]}"
+                res_next = cffi_requests.get(next_date_url, headers=headers, impersonate="chrome131", timeout=REQUEST_TIMEOUT)
+                if res_next.status_code == 200:
+                    parse_initial_state_events(res_next.text)
+            except Exception:
+                pass
 
         # Method 2: Extract from HTML links as fallback/supplement
         # Filters out bottom SEO/footer links by enforcing /movies/{city_slug}/ in path
