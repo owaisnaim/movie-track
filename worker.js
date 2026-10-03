@@ -367,6 +367,8 @@ async function handleTelegramUpdate(update, env) {
   const configuredChatId = String(env.TELEGRAM_CHAT_ID || "").trim().replace(/['"]/g, "");
 
   // Optional whitelist if explicitly configured in env.ALLOWED_CHAT_IDS
+  const allowedList = env.ALLOWED_CHAT_IDS ? env.ALLOWED_CHAT_IDS.split(",").map(s => s.trim()) : null;
+
   // Record user interaction for user analytics and admin broadcasts
   const activeChatId = String(update.callback_query?.message?.chat?.id || update.message?.chat?.id || "");
   if (activeChatId) {
