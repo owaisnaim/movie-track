@@ -491,7 +491,7 @@ async function handleTelegramUpdate(update, env) {
   }
 
   if (session && session.step === "AWAITING_MOVIE_QUERY") {
-    await handleMovieSearchInput(botToken, chatId, session.cityCode, text, env);
+    await handleMovieSearchInput(botToken, chatId, session.cityCode, text, env, session.venueCode);
     return;
   }
 
@@ -513,7 +513,7 @@ async function handleTelegramUpdate(update, env) {
   const parsed = parseBmsUrl(text);
   if (parsed.eventCode) {
     const cityCode = parsed.cityCode || "HYD";
-    await sendMovieTheatreSelection(botToken, chatId, cityCode, parsed.eventCode, 0, null, env);
+    await sendMovieTheatreSelection(botToken, chatId, cityCode, parsed.eventCode, 0, null, env, parsed.movieTitle);
     return;
   }
 
@@ -528,6 +528,15 @@ function parseBmsUrl(input) {
   const codeMatch = input.match(/ET\d{6,10}/i);
   const eventCode = codeMatch ? codeMatch[0].toUpperCase() : null;
 
+  let movieTitle = null;
+  const slugMatch = input.match(/\/movies\/([^/?#]+)\/ET\d{6,10}/i);
+  if (slugMatch && slugMatch[1]) {
+    movieTitle = slugMatch[1]
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, l => l.toUpperCase())
+      .trim();
+  }
+
   let cityCode = "HYD";
   const lower = input.toLowerCase();
   for (const [c, info] of Object.entries(TOP_CITIES)) {
@@ -537,7 +546,16 @@ function parseBmsUrl(input) {
     }
   }
 
-  return { eventCode, cityCode };
+  if (cityCode === "HYD" && typeof BMS_ALL_REGIONS !== "undefined") {
+    for (const [c, info] of Object.entries(BMS_ALL_REGIONS)) {
+      if (info.slug && (lower.includes(`/${info.slug}/`) || lower.includes(`/${info.name.toLowerCase()}/`))) {
+        cityCode = c;
+        break;
+      }
+    }
+  }
+
+  return { eventCode, cityCode, movieTitle };
 }
 
 // -------------------------------------------------------------
@@ -958,10 +976,10 @@ async function sendCityMovieSelection(botToken, chatId, cityCode, page = 0, mess
 // STEP 3: THEATRE SELECTION FOR MOVIE (BOOKMYSHOW FLOW)
 // -------------------------------------------------------------
 
-async function sendMovieTheatreSelection(botToken, chatId, cityCode, masterCode, page = 0, messageId = null, env = null) {
+async function sendMovieTheatreSelection(botToken, chatId, cityCode, masterCode, page = 0, messageId = null, env = null, overrideTitle = null) {
   const city = await resolveCity(cityCode, env);
   const movieGroup = await getMovieGroup(cityCode, masterCode, env);
-  const movieTitle = movieGroup?.baseTitle || await resolveMovieTitle(masterCode, null, cityCode, env);
+  const movieTitle = overrideTitle || movieGroup?.baseTitle || await resolveMovieTitle(masterCode, null, cityCode, env);
 
   const theatres = await findTheatresForMovieGroup(cityCode, movieGroup, env);
   const totalTheatres = theatres.length;
@@ -1016,9 +1034,18 @@ async function sendMovieTheatreSelection(botToken, chatId, cityCode, masterCode,
 
   let statusText = "";
   if (totalTheatres === 0) {
-    statusText = `❌ *No Theatres Available*\n\n` +
-      `No theatres in *${city.name}* are currently showing *${movieTitle}*.\n\n` +
-      `Please select a different movie from the list:`;
+    await setSession(env, chatId, {
+      step: "UPCOMING_MOVIE_SETUP",
+      cityCode: cityCode,
+      movieTitle: movieTitle,
+      eventCode: masterCode,
+    });
+    buttons.unshift([
+      { text: `🏛️ Pick Cinema Hall to Track Shows`, callback_data: `pre_th:0` }
+    ]);
+    statusText = `🔮 *Upcoming / Unlisted Movie*\n\n` +
+      `No theatres in *${city.name}* have opened bookings for *${movieTitle}* yet.\n\n` +
+      `You can choose a cinema hall below to be notified the instant tickets open!`;
   } else {
     statusText = `Showing at *${totalTheatres}* theatre(s) in ${city.name}.\n` +
       `Select a cinema below to view all screen formats & shows:`;
@@ -1704,11 +1731,18 @@ async function sendMovieSelection(botToken, chatId, cityCode, venueCode, page = 
   }
 }
 
-async function handleMovieSearchInput(botToken, chatId, cityCode, text, env) {
+async function handleMovieSearchInput(botToken, chatId, cityCode, text, env, venueCode = null) {
   const city = await resolveCity(cityCode, env);
+  const q = text.toLowerCase().trim();
+
+  if (q === "/cancel") {
+    await clearSession(env, chatId);
+    await sendCityMovieSelection(botToken, chatId, cityCode, 0, null, env);
+    return;
+  }
+
   const { movies } = await fetchMoviesForCity(cityCode, "ALL", true, env);
   const groups = groupCityMovies(movies);
-  const q = text.toLowerCase().trim();
 
   const matched = groups.filter(g =>
     g.baseTitle.toLowerCase().includes(q) ||
@@ -1716,14 +1750,38 @@ async function handleMovieSearchInput(botToken, chatId, cityCode, text, env) {
   );
 
   if (matched.length === 0) {
+    await setSession(env, chatId, {
+      step: "UPCOMING_MOVIE_SETUP",
+      cityCode: cityCode,
+      movieTitle: text.trim(),
+      venueCode: venueCode || null,
+    });
+
     const keyboard = {
-      inline_keyboard: [
-        [{ text: `🔍 Search Again in ${city.name}`, callback_data: `act:search_mv:${cityCode}` }],
-        [{ text: `« Browse All Movies (${groups.length})`, callback_data: `c:${cityCode}` }]
-      ]
+      inline_keyboard: []
     };
+
+    if (venueCode && venueCode !== "ALL") {
+      const venues = await fetchVenuesForCity(cityCode, env);
+      const vObj = venues.find(v => v.code === venueCode);
+      const vName = vObj?.name ? (vObj.name.length > 25 ? vObj.name.slice(0, 23) + "…" : vObj.name) : "This Cinema";
+      keyboard.inline_keyboard.push([
+        { text: `🎟️ Track at ${vName}`, callback_data: `pre_v:${venueCode}` }
+      ]);
+    }
+
+    keyboard.inline_keyboard.push([
+      { text: `🏛️ Track at a Specific Theatre`, callback_data: `pre_th:0` }
+    ]);
+    keyboard.inline_keyboard.push([
+      { text: `✏️ Edit Title / Fix Spelling`, callback_data: `act:search_mv:${cityCode}:${venueCode || ""}` },
+      { text: `« Back to Movies`, callback_data: `c:${cityCode}` }
+    ]);
+
     await sendTelegram(botToken, chatId,
-      `❌ No movies found in *${city.name}* matching "*${text}*".\n\nPlease check spelling or try another movie name:`,
+      `🔮 *Upcoming / Unlisted Movie*\n\n` +
+      `"*${text.trim()}*" is not currently showing in *${city.name}*.\n\n` +
+      `Would you like to track it and get notified the instant tickets open?`,
       keyboard
     );
     return;
@@ -1851,6 +1909,189 @@ async function resolveMovieTitle(eventCode, venueCode, cityCode, env) {
 async function sendFormatSelection(botToken, chatId, cityCode, venueCode, eventCode, messageId = null, env = null) {
   return sendTheatreShowsSelection(botToken, chatId, cityCode, venueCode, eventCode, messageId, env);
 }
+
+// -------------------------------------------------------------
+// UPCOMING / PRE-RELEASE TRACKER HELPERS
+// -------------------------------------------------------------
+
+async function sendUpcomingTheatreSelection(botToken, chatId, cityCode, page = 0, messageId = null, env = null, movieTitle = "Movie") {
+  const city = await resolveCity(cityCode, env);
+  const venues = await fetchVenuesForCity(cityCode, env);
+
+  const PAGE_SIZE = 6;
+  const totalVenues = venues.length;
+  const totalPages = Math.max(1, Math.ceil(totalVenues / PAGE_SIZE));
+  const safePage = Math.max(0, Math.min(page, totalPages - 1));
+
+  const startIdx = safePage * PAGE_SIZE;
+  const pageVenues = venues.slice(startIdx, startIdx + PAGE_SIZE);
+
+  const buttons = [];
+  for (const v of pageVenues) {
+    const label = v.name.length > 36 ? v.name.slice(0, 34) + "…" : v.name;
+    buttons.push([
+      { text: `🏛️ ${label}`, callback_data: `pre_v:${v.code}` }
+    ]);
+  }
+
+  // Pagination navigation row
+  if (totalPages > 1) {
+    const navRow = [];
+    if (safePage > 0) {
+      navRow.push({ text: "◀️ Prev", callback_data: `pre_th:${safePage - 1}` });
+    } else {
+      navRow.push({ text: "·", callback_data: "noop" });
+    }
+    navRow.push({ text: `📄 ${safePage + 1}/${totalPages}`, callback_data: "noop" });
+    if (safePage < totalPages - 1) {
+      navRow.push({ text: "Next ▶️", callback_data: `pre_th:${safePage + 1}` });
+    } else {
+      navRow.push({ text: "·", callback_data: "noop" });
+    }
+    buttons.push(navRow);
+  }
+
+  // Back button
+  buttons.push([
+    { text: `« Back to Movies (${city.name})`, callback_data: `c:${cityCode}` }
+  ]);
+
+  const text =
+    `🏛️ *Step 2/3: Choose Cinema Hall for ${movieTitle}*\n\n` +
+    `• City: *${city.name}*\n` +
+    `• Upcoming Movie: *${movieTitle}*\n\n` +
+    `Select which cinema hall you want to monitor for opening ticket drops:`;
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
+  } else {
+    await sendTelegram(botToken, chatId, text, { inline_keyboard: buttons });
+  }
+}
+
+async function sendUpcomingFormatSelection(botToken, chatId, cityCode, venueCode, messageId = null, env = null, movieTitle = "Movie") {
+  const city = await resolveCity(cityCode, env);
+  const venues = await fetchVenuesForCity(cityCode, env);
+  const vObj = venues.find(v => v.code === venueCode);
+  const venueName = vObj?.name || venueCode;
+
+  const buttons = [
+    [{ text: "🎟️ All Formats / Screens (Recommended)", callback_data: "pre_fmt:ALL" }],
+    [{ text: "🌟 Premium Screens Only (IMAX / PCX / 4DX)", callback_data: "pre_fmt:PCX" }],
+    [{ text: "👓 3D Shows Only", callback_data: "pre_fmt:3D" }],
+    [{ text: "🪑 2D Shows Only", callback_data: "pre_fmt:2D" }],
+    [{ text: "« Back to Theatres", callback_data: "pre_th:0" }]
+  ];
+
+  const text =
+    `🎯 *Step 3/3: Screen Format Filter*\n\n` +
+    `• Upcoming Movie: *${movieTitle}*\n` +
+    `• Cinema: *${venueName}*\n` +
+    `• City: *${city.name}*\n\n` +
+    `Choose which screen format to track. We will alert you immediately the moment BookMyShow publishes tickets!`;
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
+  } else {
+    await sendTelegram(botToken, chatId, text, { inline_keyboard: buttons });
+  }
+}
+
+async function createPreReleaseTracker(botToken, chatId, session, filter, env, messageId = null, userProfile = null) {
+  const trackerId = "trk_" + Date.now().toString(36);
+  const city = await resolveCity(session.cityCode, env);
+  const venues = await fetchVenuesForCity(session.cityCode, env);
+  const vObj = venues.find(v => v.code === session.venueCode);
+  const venueDisplayName = vObj?.name || session.venueCode;
+
+  let formatName = "All Formats / Screens";
+  if (filter === "PCX") formatName = "Premium Screens (IMAX / PCX / 4DX)";
+  else if (filter === "3D") formatName = "3D Shows Only";
+  else if (filter === "2D") formatName = "2D Shows Only";
+
+  let username = userProfile?.username || "";
+  let userFullName = userProfile?.fullName || "";
+
+  if ((!username || !userFullName) && env && env.TRACKER_DB) {
+    try {
+      const pRaw = await env.TRACKER_DB.get("user_profiles");
+      if (pRaw) {
+        const profiles = JSON.parse(pRaw);
+        if (profiles[chatId]) {
+          username = username || profiles[chatId].username || "";
+          userFullName = userFullName || profiles[chatId].fullName || "";
+        }
+      }
+    } catch (e) {}
+  }
+
+  const tracker = {
+    id: trackerId,
+    chatId: String(chatId),
+    username: username,
+    userFullName: userFullName,
+    movieTitle: session.movieTitle,
+    eventCode: session.eventCode || "",
+    venueCode: session.venueCode,
+    venueName: venueDisplayName,
+    formatName: formatName,
+    filter: filter,
+    cityCode: session.cityCode,
+    cityName: city.name,
+    citySlug: city.slug,
+    lat: city.lat,
+    lon: city.lon,
+    isPaused: false,
+    isPreRelease: true,
+    isInitialized: true,
+    knownSessions: [],
+    createdAt: new Date().toISOString()
+  };
+
+  if (env && env.TRACKER_DB) {
+    const userTrackers = await getTrackersForUser(env, chatId);
+    userTrackers.push(tracker);
+    await env.TRACKER_DB.put(`trackers:${chatId}`, JSON.stringify(userTrackers));
+    await clearSession(env, chatId);
+
+    const configuredChatId = String(env?.TELEGRAM_CHAT_ID || "").trim().replace(/['"]/g, "");
+    if (configuredChatId && String(chatId) !== configuredChatId) {
+      const uLabel = username ? `${username}${userFullName ? ` (${userFullName})` : ""} [\`${chatId}\`]` : (userFullName ? `${userFullName} [\`${chatId}\`]` : `\`${chatId}\``);
+      await sendTelegram(botToken, configuredChatId,
+        `🎯 *New Pre-Release Tracker Created!*\n\n` +
+        `• Movie: *${session.movieTitle}*\n` +
+        `• Cinema: ${venueDisplayName}\n` +
+        `• Screen: ${formatName}\n` +
+        `• User: ${uLabel}`
+      );
+    }
+  }
+
+  const successText =
+    `✅ *Pre-Release Ticket Tracker Activated!*\n\n` +
+    `• City: *${city.name}*\n` +
+    `• Cinema: *${venueDisplayName}*\n` +
+    `• Movie: *${session.movieTitle}*\n` +
+    `• Screen Format: *${formatName}*\n` +
+    `• Status: ⏳ *Waiting for Bookings to Open*\n\n` +
+    `🔔 *You will receive an instant notification the moment tickets drop on BookMyShow!*`;
+
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: "📋 View My Trackers", callback_data: "act:list" },
+        { text: "⏸️ Pause", callback_data: `t_pause:${trackerId}` }
+      ]
+    ]
+  };
+
+  if (messageId) {
+    await editTelegramMessage(botToken, chatId, messageId, successText, keyboard);
+  } else {
+    await sendTelegram(botToken, chatId, successText, keyboard);
+  }
+}
+
 // -------------------------------------------------------------
 // CALLBACK ACTIONS HANDLER
 // -------------------------------------------------------------
@@ -1982,12 +2223,44 @@ async function handleCallbackData(botToken, chatId, messageId, data, env, userPr
   // Search movie clicked
   if (action === "act" && parts[1] === "search_mv") {
     const cityCode = parts[2] || "HYD";
+    const venueCode = parts[3] || null;
     const city = await resolveCity(cityCode, env);
-    await setSession(env, chatId, { step: "AWAITING_MOVIE_QUERY", cityCode });
+    await setSession(env, chatId, { step: "AWAITING_MOVIE_QUERY", cityCode, venueCode });
     await editTelegramMessage(botToken, chatId, messageId,
       `🔍 *Search Movie in ${city.name}*\n\n` +
       `Please type the movie name (e.g. \`Avengers\`, \`Resident Evil\`, \`Spider-Man\`, \`Ramayan\`, \`Devara\`, \`Paradise\`):`
     );
+    return;
+  }
+
+  // Pre-release / Upcoming Theatre Selection
+  if (action === "pre_th") {
+    const session = await getSession(env, chatId);
+    const cityCode = session?.cityCode || "HYD";
+    const page = parseInt(parts[1], 10) || 0;
+    await sendUpcomingTheatreSelection(botToken, chatId, cityCode, page, messageId, env, session?.movieTitle);
+    return;
+  }
+
+  // Pre-release / Upcoming Venue Picked -> Screen Format Preference
+  if (action === "pre_v") {
+    const venueCode = parts[1];
+    const session = (await getSession(env, chatId)) || {};
+    session.venueCode = venueCode;
+    await setSession(env, chatId, session);
+    await sendUpcomingFormatSelection(botToken, chatId, session.cityCode || "HYD", venueCode, messageId, env, session.movieTitle);
+    return;
+  }
+
+  // Pre-release / Upcoming Format Picked -> Create Tracker in KV!
+  if (action === "pre_fmt") {
+    const filter = parts[1] || "ALL";
+    const session = await getSession(env, chatId);
+    if (!session || !session.movieTitle || !session.venueCode) {
+      await editTelegramMessage(botToken, chatId, messageId, "⚠️ Session expired. Please send /start to begin again.");
+      return;
+    }
+    await createPreReleaseTracker(botToken, chatId, session, filter, env, messageId, userProfile);
     return;
   }
 
@@ -2569,7 +2842,7 @@ function getTrackerFormatDesc(t) {
 }
 
 function renderTrackerCard(t) {
-  const status = t.isPaused ? "Paused ⏸️" : "Active 🟢";
+  const status = t.isPaused ? "Paused ⏸️" : (t.isPreRelease ? "Active 🟢 (Pre-Release)" : "Active 🟢");
   const buttons = [
     [
       t.isPaused
@@ -2583,9 +2856,14 @@ function renderTrackerCard(t) {
   const fmt = getTrackerFormatDesc(t);
   const existingCount = t.knownSessions?.length || 0;
   const isInit = t.isInitialized !== false;
-  const showsDisplay = (!isInit && existingCount === 0)
-    ? "Syncing baseline on first scan"
-    : `${existingCount} (monitoring for new drops)`;
+  let showsDisplay = "";
+  if (t.isPreRelease && existingCount === 0) {
+    showsDisplay = "⏳ Waiting for bookings to open (instant alert on drop)";
+  } else if (!isInit && existingCount === 0) {
+    showsDisplay = "Syncing baseline on first scan";
+  } else {
+    showsDisplay = `${existingCount} (monitoring for new drops)`;
+  }
 
   const card =
     `🎬 *${displayTitle}*\n` +
@@ -2621,14 +2899,19 @@ async function sendStatusReport(botToken, chatId, env) {
 
   let text = "📊 *Live Tracker Status Summary:*\n\n";
   for (const t of trackers) {
-    const status = t.isPaused ? "⏸️ Paused" : "🟢 Active";
+    const status = t.isPaused ? "⏸️ Paused" : (t.isPreRelease ? "🟢 Active (Pre-Release)" : "🟢 Active");
     const displayTitle = (t.movieTitle || t.eventCode).replace(/\s*\([^)]*\)$/, "").replace(/[\(\)]+$/g, "").trim();
     const fmt = getTrackerFormatDesc(t);
     const existingCount = t.knownSessions?.length || 0;
     const isInit = t.isInitialized !== false;
-    const showsDisplay = (!isInit && existingCount === 0)
-      ? "Syncing baseline"
-      : `${existingCount}`;
+    let showsDisplay = "";
+    if (t.isPreRelease && existingCount === 0) {
+      showsDisplay = "⏳ Waiting for opening drop";
+    } else if (!isInit && existingCount === 0) {
+      showsDisplay = "Syncing baseline";
+    } else {
+      showsDisplay = `${existingCount}`;
+    }
     text += `• *${displayTitle}* (${status})\n  Theatre: ${t.venueName}\n  Format: ${fmt}\n  Existing Shows: ${showsDisplay}\n\n`;
   }
   text += "💡 Use /list to pause, resume, or remove trackers.";

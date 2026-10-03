@@ -1,4 +1,5 @@
 import datetime
+import difflib
 import json
 import os
 import re
@@ -21,22 +22,80 @@ def slugify(text: str) -> str:
 FORMAT_WORDS = {
     "english", "hindi", "telugu", "tamil", "kannada", "malayalam", "bengali", "marathi", "gujarati",
     "3d", "2d", "4dx", "imax", "pcx", "atmos", "hdr", "barco", "laser",
-    "vsn", "vision", "re-release", "rerelease", "dubbed", "subbed"
+    "vsn", "vision", "re-release", "rerelease", "dubbed", "subbed",
+    "single", "screen", "multiplex"
 }
+
+STOP_WORDS = {
+    "the", "a", "an", "and", "of", "in", "to", "for", "on", "at", "by", "with", "from"
+}
+
+def clean_squash(text: str) -> str:
+    """Removes punctuation, format words, and spaces into a single lowercase continuous string."""
+    clean = re.sub(r"[^a-zA-Z0-9\s]", " ", text.lower())
+    tokens = [w for w in clean.split() if w not in FORMAT_WORDS and w not in STOP_WORDS]
+    return "".join(tokens)
 
 def normalize_title(title: str) -> set:
     clean = re.sub(r"[^a-zA-Z0-9\s]", " ", title.lower())
-    words = [w for w in clean.split() if len(w) > 2]
-    core = [w for w in words if w not in FORMAT_WORDS]
+    words = [w for w in clean.split() if len(w) > 1 or w.isdigit()]
+    core = [w for w in words if w not in FORMAT_WORDS and w not in STOP_WORDS]
     return set(core if core else words)
 
 def match_movie(target_title: str, candidate_title: str) -> bool:
-    target_words = normalize_title(target_title)
-    cand_clean = re.sub(r"[^a-zA-Z0-9\s]", " ", candidate_title.lower())
-    cand_words = set(cand_clean.split())
-    if not target_words:
+    if not target_title or not candidate_title:
         return False
-    return target_words.issubset(cand_words)
+    u = clean_squash(target_title)
+    b = clean_squash(candidate_title)
+    if not u or not b:
+        return False
+
+    # 1. Exact squashed equality or substring (e.g. 'avengers dooms day' == 'avengers doomsday')
+    if u in b or b in u:
+        return True
+
+    # 2. Token subset match
+    target_words = normalize_title(target_title)
+    cand_words = normalize_title(candidate_title)
+    if target_words and target_words.issubset(cand_words):
+        return True
+
+    # 3. Fuzzy similarity for user typos (e.g. 'aveners doomsda' vs 'avengers doomsday' = 93.3%)
+    if len(u) >= 7:
+        ratio = difflib.SequenceMatcher(None, u, b).ratio()
+        if ratio >= 0.82:
+            return True
+        if len(b) > len(u):
+            window = b[:len(u) + 3]
+            w_ratio = difflib.SequenceMatcher(None, u, window).ratio()
+            if w_ratio >= 0.82:
+                return True
+
+    return False
+
+def is_event_match(ev: dict, target_title: str, target_event_code: str = "") -> bool:
+    """Checks if a BookMyShow Event object matches the target title or event code."""
+    childs = ev.get("ChildEvents", []) or []
+
+    # 1. EventCode exact match across ChildEvents
+    if target_event_code:
+        target_codes = set(c.strip() for c in target_event_code.split(",") if c.strip())
+        ev_codes = set(ch.get("EventCode") for ch in childs if ch.get("EventCode"))
+        if target_codes.intersection(ev_codes):
+            return True
+
+    # 2. Main EventTitle match
+    ev_title = (ev.get("EventTitle") or "").strip()
+    if match_movie(target_title, ev_title):
+        return True
+
+    # 3. ChildEvent EventName match
+    for ch in childs:
+        ch_name = (ch.get("EventName") or "").strip()
+        if ch_name and match_movie(target_title, ch_name):
+            return True
+
+    return False
 
 
 VENUE = "PRHN"
@@ -430,12 +489,18 @@ def sync_dynamic_tracker(token: str, tracker_id: str, known_sessions: list, is_i
         print(f"[DYNAMIC] Failed to sync tracker {tracker_id}: {e}")
         return False
 
+SCRAPE_CACHE = {}
+
 def fetch_bms_html(url: str, headers: dict) -> tuple[int, str]:
     """Fetch BMS HTML page with browser impersonation, and optional Tier-2 scraping proxy fallback."""
+    if url in SCRAPE_CACHE:
+        return SCRAPE_CACHE[url]
+
     try:
         # Primary attempt with chrome131
         res = cffi_requests.get(url, headers=headers, timeout=15, impersonate="chrome131", allow_redirects=True)
         if res.status_code == 200 and "window.__INITIAL_STATE__" in res.text:
+            SCRAPE_CACHE[url] = (200, res.text)
             return 200, res.text
 
         # Fallback attempt with safari18_0 if chrome131 gets non-200
@@ -443,6 +508,7 @@ def fetch_bms_html(url: str, headers: dict) -> tuple[int, str]:
             try:
                 res_fallback = cffi_requests.get(url, headers=headers, timeout=15, impersonate="safari18_0", allow_redirects=True)
                 if res_fallback.status_code == 200 and "window.__INITIAL_STATE__" in res_fallback.text:
+                    SCRAPE_CACHE[url] = (200, res_fallback.text)
                     return 200, res_fallback.text
             except Exception:
                 pass
@@ -460,6 +526,7 @@ def fetch_bms_html(url: str, headers: dict) -> tuple[int, str]:
             proxy_url = f"https://api.scrapingant.com/v2/general?url={urllib.parse.quote(url)}&x-api-key={scraping_key}&browser=false"
             res = cffi_requests.get(proxy_url, timeout=25)
             if res.status_code == 200:
+                SCRAPE_CACHE[url] = (200, res.text)
                 return 200, res.text
             print(f"[FETCH] Scraping proxy returned HTTP {res.status_code}")
         except Exception as e:
@@ -473,6 +540,134 @@ def sync_city_movies_to_cloudflare(token: str, city_code: str = "HYD"):
     return True
 
 
+def check_dynamic_all_venues(tracker: dict, token: str) -> bool:
+    """Scans all venues in a city for an active movie using the BMS showtimes-by-event API."""
+    chat_id = tracker.get("chatId")
+    city_code = tracker.get("cityCode", "HYD")
+    city_slug = tracker.get("citySlug", "hyderabad")
+    lat = tracker.get("lat", "17.385")
+    lon = tracker.get("lon", "78.487")
+    movie_title = tracker.get("movieTitle", "Movie")
+    screen_filter = tracker.get("filter", "ANY")
+    event_code = tracker.get("eventCode", "").strip()
+    known_sessions = set(str(sid) for sid in tracker.get("knownSessions", []))
+    is_initialized = tracker.get("isInitialized")
+    is_pre_release = tracker.get("isPreRelease", False)
+    if is_initialized is None:
+        is_initialized = len(known_sessions) > 0
+
+    print(f"\n[DYNAMIC] 🔍 Checking ALL venues tracker: {movie_title} in {city_code} | Filter: {screen_filter} | Initialized: {is_initialized}")
+
+    codes = [c.strip() for c in event_code.split(",") if c.strip()]
+    if not codes:
+        print(f"[DYNAMIC] Notice: No event code found for ALL venues tracker {movie_title}.")
+        return False
+
+    headers = {
+        "Referer": "https://in.bookmyshow.com/",
+        "x-app-code": "WEB",
+        "x-region-code": city_code,
+        "Cookie": f"Rgn=|Code={city_code}|; bms_region={city_code.lower()}; bms_location={city_slug}",
+    }
+
+    matching_sessions = set()
+    new_shows = []
+
+    for ev_code in codes:
+        url = f"https://in.bookmyshow.com/api/movies-data/v4/showtimes-by-event/primary-dynamic?eventCode={ev_code}&isDesktop=true&regionCode={city_code}&lat={lat}&lon={lon}"
+        try:
+            res = cffi_requests.get(url, headers=headers, timeout=15, impersonate="chrome131", allow_redirects=True)
+            if res.status_code != 200:
+                continue
+            data = res.json()
+            widgets = data.get("data", {}).get("showtimeWidgets", []) or []
+            for w in widgets:
+                if w.get("type") != "groupList":
+                    continue
+                for grp in w.get("data", []) or []:
+                    for item in grp.get("data", []) or []:
+                        v_name = item.get("additionalData", {}).get("venueName") or item.get("title") or "Cinema"
+                        v_code = item.get("additionalData", {}).get("venueCode") or ""
+                        shows = item.get("showtimes", []) or []
+                        for s in shows:
+                            sid = str(s.get("additionalData", {}).get("sessionId") or "").strip()
+                            if not sid:
+                                continue
+                            attr = (s.get("screenAttr") or s.get("additionalData", {}).get("attributes") or "").strip()
+                            s_name = (s.get("additionalData", {}).get("screenName") or "").strip()
+
+                            attr_lower = attr.lower()
+                            name_lower = s_name.lower()
+                            if screen_filter in ("EXACT", "ALL", "ANY"):
+                                pass
+                            elif screen_filter == "PCX":
+                                is_pcx = (
+                                    "pcx" in attr_lower or "pcx" in name_lower
+                                    or "infinity" in attr_lower or "infinity" in name_lower
+                                    or "screen 1" in name_lower
+                                    or "imax" in attr_lower or "4dx" in attr_lower
+                                )
+                                if not is_pcx:
+                                    continue
+                            elif screen_filter == "3D":
+                                if "3d" not in attr_lower and "3d" not in name_lower:
+                                    continue
+                            elif screen_filter == "2D":
+                                if "3d" in attr_lower or "3d" in name_lower:
+                                    continue
+
+                            matching_sessions.add(sid)
+                            show_time = str(s.get("title") or s.get("additionalData", {}).get("showTime") or "Show").strip()
+                            d_code = str(s.get("additionalData", {}).get("eventDateCode") or "").strip()
+                            d_str = f"{d_code[:4]}-{d_code[4:6]}-{d_code[6:8]}" if len(d_code) == 8 else "Upcoming"
+                            booking_url = f"https://in.bookmyshow.com/buytickets/{city_slug}/movie-{city_code.lower()}-{ev_code}/MT/{v_code}"
+
+                            if sid not in known_sessions:
+                                new_shows.append({
+                                    "sessionId": sid,
+                                    "date": d_str,
+                                    "time": show_time,
+                                    "screen": attr or s_name or "Standard",
+                                    "venue": v_name,
+                                    "url": booking_url,
+                                    "movieTitle": movie_title,
+                                })
+        except Exception as e:
+            print(f"[DYNAMIC] Notice: Error checking ALL venues for {movie_title} ({e})")
+
+    if not is_initialized and not is_pre_release:
+        print(f"[DYNAMIC] 🎯 Initializing baseline for ALL venues {movie_title}: recorded {len(matching_sessions)} existing show(s).")
+        sync_dynamic_tracker(token, tracker["id"], list(matching_sessions), is_initialized=True)
+        return False
+
+    if new_shows:
+        is_first_drop = len(known_sessions) == 0
+        header_title = "🚨 *SHOWS OPEN ON BOOKMYSHOW!* 🚨" if is_first_drop else "🚨 *NEW SHOWS ADDED ON BOOKMYSHOW!* 🚨"
+        print(f"[DYNAMIC] 🚨 Found {len(new_shows)} new show(s) for {movie_title} across ALL venues (first_drop={is_first_drop})!")
+
+        new_shows.sort(key=lambda s: (s.get("date", ""), s.get("time", "")))
+        alert_lines = []
+        for s in new_shows[:10]:
+            alert_lines.append(f"• *{s['date']}* at *{s['time']}* ({s['screen']})\n  📍 {s['venue']}")
+        if len(new_shows) > 10:
+            alert_lines.append(f"_...and {len(new_shows) - 10} more show(s)_")
+
+        alert_text = (
+            f"{header_title}\n\n"
+            f"🎬 *{movie_title}*\n\n"
+            + "\n\n".join(alert_lines) + "\n\n"
+            f"🎟️ [Book Instantly on BookMyShow]({new_shows[0]['url']})\n\n"
+            f"⚡ _Alert sent autonomously by your 24/7 Movie Tracker_"
+        )
+        send_telegram_msg(token, chat_id, alert_text)
+        updated_known = list(known_sessions.union({s["sessionId"] for s in new_shows}))
+        sync_dynamic_tracker(token, tracker["id"], updated_known, is_initialized=True)
+        return True
+
+    print(f"[DYNAMIC] No new shows for ALL venues {movie_title} ({len(matching_sessions)} active matching shows).")
+    return False
+
+
 def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
     if tracker.get("isPaused", False):
         print(f"[DYNAMIC] Tracker {tracker.get('id')} ({tracker.get('movieTitle')}) is paused.")
@@ -482,18 +677,25 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
     if not chat_id:
         return False
 
+    venue_code = tracker.get("venueCode", "PRHN")
+    event_code = tracker.get("eventCode", "").strip()
+
+    # Route ALL venues tracker with eventCode to showtimes-by-event API
+    if venue_code == "ALL" and event_code:
+        return check_dynamic_all_venues(tracker, token)
+
     city_code = tracker.get("cityCode", "HYD")
     city_slug = tracker.get("citySlug", "hyderabad")
-    venue_code = tracker.get("venueCode", "PRHN")
     venue_name = tracker.get("venueName", "Prasads Multiplex")
     movie_title = tracker.get("movieTitle", "Movie")
     screen_filter = tracker.get("filter", "ANY")
+    is_pre_release = tracker.get("isPreRelease", False)
     known_sessions = set(str(sid) for sid in tracker.get("knownSessions", []))
     is_initialized = tracker.get("isInitialized")
     if is_initialized is None:
         is_initialized = len(known_sessions) > 0
 
-    print(f"\n[DYNAMIC] 🔍 Checking tracker: {movie_title} in {city_code} ({venue_name}) | Filter: {screen_filter} | Initialized: {is_initialized}")
+    print(f"\n[DYNAMIC] 🔍 Checking tracker: {movie_title} in {city_code} ({venue_name}) | Filter: {screen_filter} | PreRelease: {is_pre_release} | Initialized: {is_initialized}")
 
     venue_slug = slugify(venue_name)
     base_url = f"https://in.bookmyshow.com/cinemas/{city_slug}/{venue_slug}/{venue_code}"
@@ -505,7 +707,6 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
         "x-region-code": city_code,
         "Cookie": f"Rgn=|Code={city_code}|; bms_region={city_code.lower()}; bms_location={city_slug}",
     }
-
 
     status, html_content = fetch_bms_html(base_url, headers)
     if status != 200 or not html_content:
@@ -549,7 +750,7 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
         matched_shows = []
         for ev in events_list:
             ev_title = (ev.get("EventTitle") or "").strip()
-            if not match_movie(movie_title, ev_title):
+            if not is_event_match(ev, movie_title, event_code):
                 continue
 
             childs = ev.get("ChildEvents", []) or []
@@ -628,8 +829,8 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
             except Exception as e:
                 print(f"[DYNAMIC] Notice: Could not parse date {date_code} for {venue_name} ({e})")
 
-    # Silent baseline capture on first scan:
-    if not is_initialized:
+    # Silent baseline capture on first scan (never suppress for pre-release):
+    if not is_initialized and not is_pre_release:
         print(f"[DYNAMIC] 🎯 Initializing baseline for {movie_title}: recorded {len(matching_sessions)} existing shows across {len(active_dates)} date(s) (silent baseline, no false alarm).")
         sync_dynamic_tracker(token, tracker["id"], list(matching_sessions), is_initialized=True)
         return False
@@ -665,7 +866,9 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
     print(f"[DYNAMIC] No new shows for {movie_title} ({len(matching_sessions)} active matching shows across {len(active_dates)} date(s)).")
     return False
 
+
 def main():
+    SCRAPE_CACHE.clear()
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
