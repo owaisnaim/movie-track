@@ -947,7 +947,7 @@ async function sendCityMovieSelection(botToken, chatId, cityCode, page = 0, mess
 
   // Search Movie button
   buttons.push([
-    { text: `🔍 Search Movie in ${city.name}`, callback_data: `act:search_mv:${cityCode}` }
+    { text: `🔍 Search Any Movie (Current or Upcoming)`, callback_data: `act:search_mv:${cityCode}` }
   ]);
 
   // Option to browse all theatres in city directly
@@ -962,8 +962,8 @@ async function sendCityMovieSelection(botToken, chatId, cityCode, page = 0, mess
 
   const text =
     `🎬 *Step 2/4: Choose Movie in ${city.name}*\n\n` +
-    `Found *${totalMovies}* active movie(s) showing in *${city.name}*:\n\n` +
-    `Select a movie below to see all theatres & showtimes:`;
+    `Showing *${totalMovies}* currently playing movie(s) in *${city.name}*.\n\n` +
+    `💡 *Tracking an unreleased movie?* Click *Search Any Movie* below to track upcoming titles (like *Avengers: Doomsday*, *Avatar 3*, *Kalki 2*) before bookings open!`;
 
   if (messageId) {
     await editTelegramMessage(botToken, chatId, messageId, text, { inline_keyboard: buttons });
@@ -1689,7 +1689,7 @@ async function sendMovieSelection(botToken, chatId, cityCode, venueCode, page = 
 
   // Search Movie button
   buttons.push([
-    { text: `🔍 Search Movie by Name`, callback_data: `act:search_mv:${cityCode}:${venueCode}` }
+    { text: `🔍 Search Any Movie (Current or Upcoming)`, callback_data: `act:search_mv:${cityCode}:${venueCode}` }
   ]);
 
   // Paste Custom Link button
@@ -1710,7 +1710,7 @@ async function sendMovieSelection(botToken, chatId, cityCode, venueCode, page = 
       { text: `🌟 Browse All ${city.name} Movies to Track Here`, callback_data: `mv_all:${cityCode}:${venueCode}` }
     ]);
     buttons.push([
-      { text: `🔍 Search Movie to Track Here`, callback_data: `act:search_mv:${cityCode}:${venueCode}` }
+      { text: `🔍 Search Any Movie to Track Here`, callback_data: `act:search_mv:${cityCode}:${venueCode}` }
     ]);
     buttons.push([
       { text: "🔗 Paste Custom BMS Link / Code...", callback_data: `custom:${cityCode}:${venueCode}` }
@@ -2225,10 +2225,20 @@ async function handleCallbackData(botToken, chatId, messageId, data, env, userPr
     const cityCode = parts[2] || "HYD";
     const venueCode = parts[3] || null;
     const city = await resolveCity(cityCode, env);
+    let venueLabel = "";
+    if (venueCode) {
+      const venues = await fetchVenuesForCity(cityCode, env);
+      const v = venues.find(x => x.code === venueCode);
+      if (v) venueLabel = `\n🏛️ Cinema: *${v.name}*`;
+    }
     await setSession(env, chatId, { step: "AWAITING_MOVIE_QUERY", cityCode, venueCode });
     await editTelegramMessage(botToken, chatId, messageId,
-      `🔍 *Search Movie in ${city.name}*\n\n` +
-      `Please type the movie name (e.g. \`Avengers\`, \`Resident Evil\`, \`Spider-Man\`, \`Ramayan\`, \`Devara\`, \`Paradise\`):`
+      `🔍 *Search Any Movie (Current or Upcoming)*\n` +
+      `📍 City: *${city.name}*${venueLabel}\n\n` +
+      `Type any movie title to track tickets:\n` +
+      `• 🎟️ *Now Showing:* e.g. \`Spider-Man\`, \`Devara\`, \`Resident Evil\`\n` +
+      `• ⏳ *Upcoming / Unreleased:* e.g. \`Avengers: Doomsday\`, \`Avatar 3\`, \`Kalki 2\`\n\n` +
+      `💡 _If bookings haven't opened yet, you can still set up an alert to notify you the instant BookMyShow drops tickets!_`
     );
     return;
   }
@@ -2399,7 +2409,14 @@ async function handleCallbackData(botToken, chatId, messageId, data, env, userPr
   }
   if (action === "t_del") {
     await deleteTracker(env, parts[1], chatId);
-    await editTelegramMessage(botToken, chatId, messageId, "🗑️ *Tracker Deleted.*");
+    await editTelegramMessage(botToken, chatId, messageId, "🗑️ *Tracker Deleted.*", {
+      inline_keyboard: [
+        [
+          { text: "📋 View Remaining Trackers", callback_data: "act:list" },
+          { text: "➕ Track Another Movie", callback_data: "act:cities" }
+        ]
+      ]
+    });
     return;
   }
 }
@@ -2879,7 +2896,12 @@ async function sendTrackerList(botToken, chatId, env) {
   const trackers = await getTrackersForUser(env, chatId);
   if (!trackers || trackers.length === 0) {
     await sendTelegram(botToken, chatId,
-      "📋 *No active trackers found.*\n\nSend /start or paste a BookMyShow link to start tracking a movie!"
+      "📋 *No active trackers found.*\n\nSend /start or tap the button below to start tracking a movie!",
+      {
+        inline_keyboard: [
+          [{ text: "➕ Track a Movie (/start)", callback_data: "act:cities" }]
+        ]
+      }
     );
     return;
   }
@@ -2888,12 +2910,25 @@ async function sendTrackerList(botToken, chatId, env) {
     const { text, buttons } = renderTrackerCard(t);
     await sendTelegram(botToken, chatId, text, { inline_keyboard: buttons });
   }
+
+  await sendTelegram(botToken, chatId, "💡 *Tip:* Tap Pause or Delete on any card above to manage your trackers.", {
+    inline_keyboard: [
+      [
+        { text: "➕ Track Another Movie", callback_data: "act:cities" },
+        { text: "🔄 Refresh List", callback_data: "act:list" }
+      ]
+    ]
+  });
 }
 
 async function sendStatusReport(botToken, chatId, env) {
   const trackers = await getTrackersForUser(env, chatId);
   if (!trackers || trackers.length === 0) {
-    await sendTelegram(botToken, chatId, "📊 *No trackers configured yet.*\n\nSend /start to create one!");
+    await sendTelegram(botToken, chatId, "📊 *No trackers configured yet.*\n\nSend /start to create one!", {
+      inline_keyboard: [
+        [{ text: "➕ Track a Movie (/start)", callback_data: "act:cities" }]
+      ]
+    });
     return;
   }
 
@@ -2914,8 +2949,12 @@ async function sendStatusReport(botToken, chatId, env) {
     }
     text += `• *${displayTitle}* (${status})\n  Theatre: ${t.venueName}\n  Format: ${fmt}\n  Existing Shows: ${showsDisplay}\n\n`;
   }
-  text += "💡 Use /list to pause, resume, or remove trackers.";
-  await sendTelegram(botToken, chatId, text);
+  text += "💡 Manage your trackers anytime via /start ➔ 📋 View Active Trackers.";
+  await sendTelegram(botToken, chatId, text, {
+    inline_keyboard: [
+      [{ text: "« Back to Main Menu (/start)", callback_data: "act:cities" }]
+    ]
+  });
 }
 
 // -------------------------------------------------------------
