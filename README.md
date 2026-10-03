@@ -70,11 +70,11 @@ The system uses a decoupled two-tier architecture designed to run continuously o
 ## Features
 
 - **Autonomous 24/7 Monitoring**: Runs continuously in the background using GitHub Actions scheduled workflows or external cron services (e.g., cron-job.org).
-- **WAF Bypass**: Uses `curl_cffi` with Chrome 124 TLS fingerprint impersonation (JA3/JA4) to query BookMyShow endpoints without triggering Cloudflare anti-bot blocks or HTTP 429 rate limits.
+- **Anti-403 WAF Architecture**: Uses `curl_cffi` with `chrome131` & `safari18_0` dual-fallback and React `window.__INITIAL_STATE__` parsing to query BookMyShow without triggering Cloudflare anti-bot blocks or HTTP 429 rate limits.
 - **Silent Baseline Initialization (Zero False Alarms)**: Newly created trackers for ongoing movies capture the existing showtimes silently on their first scan. You will never receive false alarms for shows that were already open before tracker creation.
 - **Zero-Guessing Movie Catalog**: Automatically syncs confirmed active BookMyShow movies by city into Cloudflare KV, ensuring only movies actually running or upcoming in your city are selectable.
 - **Exact Official BMS Screen Formats**: Matches official BookMyShow attributes (e.g. `PCX Infinity Vis 3D`, `Infinity Vision 2D`, `IMAX 3D`, `4DX 3D`, `Screen 1`) without artificial labels or clutter.
-- **640+ Cinema Halls**: Pre-mapped database covering major metro areas including Kanpur, Lucknow, Hyderabad, Mumbai, NCR (Delhi/Gurgaon/Noida), Bengaluru, Pune, and Kolkata.
+- **Pan-India City Coverage (2,076+ Regions)**: Supports all 2,076 official BookMyShow regions across India, with 6 core quick-select cities (Hyderabad, Delhi-NCR, Mumbai, Bengaluru, Kanpur, Lucknow) + self-serve fuzzy search with typo tolerance (Levenshtein distance) to instantly add and track any town or city across India.
 - **Multi-User Isolation**: Independent users can track different cinemas and movies simultaneously; alerts route directly to each user's Telegram chat ID.
 
 ---
@@ -220,10 +220,16 @@ movie-tracker/
 ├── .github/
 │   └── workflows/
 │       ├── movie-tracker.yml       # Background ticket scanner workflow
+│       ├── daily-cinema-sync.yml   # Twice-daily cinema catalog synchronization
 │       └── test-telegram.yml       # Diagnostic test for Telegram messaging
+├── data/
+│   ├── all_cities.json             # Master index of all 2,076 BookMyShow regions
+│   ├── cities.json                 # Core active cities directory
+│   └── venues.json                 # Cinema hall mapping by city
 ├── monitor.py                      # Core scraper, baseline initializer, and alert engine
 ├── worker.js                       # Cloudflare Worker handling Telegram webhooks, UI, and KV state
 ├── sync_cinema_catalog.py          # Cinema hall catalog and venue synchronization utility
+├── extract_bms_regions.py          # BookMyShow official region extractor (2,076 cities)
 ├── requirements.txt                # Python dependencies (curl_cffi)
 ├── telegram_notify.py              # Fallback notification helper
 ├── telegram_test.py                # Credential testing utility
