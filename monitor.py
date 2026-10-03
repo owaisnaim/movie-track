@@ -433,9 +433,20 @@ def sync_dynamic_tracker(token: str, tracker_id: str, known_sessions: list, is_i
 def fetch_bms_html(url: str, headers: dict) -> tuple[int, str]:
     """Fetch BMS HTML page with browser impersonation, and optional Tier-2 scraping proxy fallback."""
     try:
-        res = cffi_requests.get(url, headers=headers, timeout=15, impersonate="chrome124", allow_redirects=True)
+        # Primary attempt with chrome131
+        res = cffi_requests.get(url, headers=headers, timeout=15, impersonate="chrome131", allow_redirects=True)
         if res.status_code == 200 and "window.__INITIAL_STATE__" in res.text:
             return 200, res.text
+
+        # Fallback attempt with safari18_0 if chrome131 gets non-200
+        if res.status_code != 200 or "window.__INITIAL_STATE__" not in res.text:
+            try:
+                res_fallback = cffi_requests.get(url, headers=headers, timeout=15, impersonate="safari18_0", allow_redirects=True)
+                if res_fallback.status_code == 200 and "window.__INITIAL_STATE__" in res_fallback.text:
+                    return 200, res_fallback.text
+            except Exception:
+                pass
+
         if res.status_code != 200:
             print(f"[FETCH] Direct fetch HTTP {res.status_code} for {url}")
     except Exception as e:
@@ -487,19 +498,14 @@ def check_single_dynamic_tracker(tracker: dict, token: str) -> bool:
     venue_slug = slugify(venue_name)
     base_url = f"https://in.bookmyshow.com/cinemas/{city_slug}/{venue_slug}/{venue_code}"
 
+    # Do not manually set User-Agent, sec-ch-ua, or Accept-Encoding!
+    # Overriding them causes fingerprint mismatch with curl_cffi TLS on Linux and triggers Cloudflare 403.
     headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/131.0.0.0 Safari/537.36"
-        ),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-IN,en;q=0.9",
-        "x-region-code": city_code,
-        "x-region-slug": city_slug,
-        "Cookie": f"Rgn=|Code={city_code}|",
         "Referer": "https://in.bookmyshow.com/",
+        "x-region-code": city_code,
+        "Cookie": f"Rgn=|Code={city_code}|; bms_region={city_code.lower()}; bms_location={city_slug}",
     }
+
 
     status, html_content = fetch_bms_html(base_url, headers)
     if status != 200 or not html_content:
