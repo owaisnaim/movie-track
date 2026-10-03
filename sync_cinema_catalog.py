@@ -103,33 +103,20 @@ def get_user_tracked_venues(token: str):
     return tracked
 
 
+LAST_FAILURE_DIAG = {}
+
 def scrape_venue_movies(item):
     """Scrape movies playing at a specific cinema hall using curl_cffi."""
     ccode, cslug, vcode, vname = item
     vslug = slugify(vname)
     url = f"https://in.bookmyshow.com/cinemas/{cslug}/{vslug}/{vcode}"
 
+    # Do not manually set User-Agent, sec-ch-ua, or Accept-Encoding!
+    # Overriding them causes fingerprint mismatch with curl_cffi TLS on Linux and triggers Cloudflare 403.
     headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/131.0.0.0 Safari/537.36"
-        ),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "en-IN,en-GB;q=0.9,en;q=0.8,hi;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
-        "sec-ch-ua": '"Chromium";v="131", "Google Chrome";v="131", "Not?A_Brand";v="99"',
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"Windows"',
-        "sec-fetch-dest": "document",
-        "sec-fetch-mode": "navigate",
-        "sec-fetch-site": "same-origin",
-        "sec-fetch-user": "?1",
-        "upgrade-insecure-requests": "1",
-        "cache-control": "max-age=0",
         "Referer": "https://in.bookmyshow.com/",
         "x-region-code": ccode,
-        "Cookie": "Rgn=|Code={0}|; bms_region={1}; bms_location={2}".format(ccode, ccode.lower(), cslug),
+        "Cookie": f"Rgn=|Code={ccode}|; bms_region={ccode.lower()}; bms_location={cslug}",
     }
 
     movies = []
@@ -137,8 +124,30 @@ def scrape_venue_movies(item):
     parse_error = None
 
     try:
+        # Primary attempt with chrome131
         res = cffi_requests.get(url, headers=headers, impersonate="chrome131", timeout=REQUEST_TIMEOUT)
+
+        # Fallback attempt with safari18_0 if chrome131 gets 403 or non-200
         if res.status_code != 200:
+            try:
+                res_fallback = cffi_requests.get(url, headers=headers, impersonate="safari18_0", timeout=REQUEST_TIMEOUT)
+                if res_fallback.status_code == 200:
+                    res = res_fallback
+            except Exception:
+                pass
+
+        if res.status_code != 200:
+            if ccode not in LAST_FAILURE_DIAG:
+                title_match = re.search(r"<title>(.*?)</title>", res.text, re.IGNORECASE)
+                title_text = title_match.group(1).strip() if title_match else "No title"
+                server_hdr = res.headers.get("server", "unknown")
+                cf_ray = res.headers.get("cf-ray", "none")
+                LAST_FAILURE_DIAG[ccode] = {
+                    "status": res.status_code,
+                    "title": title_text[:60],
+                    "server": server_hdr,
+                    "cf_ray": cf_ray
+                }
             return vcode, ccode, [], res.status_code
 
         # Method 1: Extract from React window.__INITIAL_STATE__ (highest quality clean titles with format & language)
@@ -201,6 +210,7 @@ def scrape_venue_movies(item):
 
 
 
+
 def push_city_bundle_to_cloudflare(token: str, city_code: str, venues_map: dict, city_movies: list) -> bool:
     """Push an entire city's scraped venues and aggregated movies in a single atomic HTTP POST."""
     url = f"{CF_WORKER_URL}/api/movies/sync?token={token}"
@@ -247,11 +257,10 @@ def scrape_explore_city_movies(city_slug: str) -> list:
     """Scrape featured/upcoming movies from city's BookMyShow explore page."""
     url = f"https://in.bookmyshow.com/explore/movies-{city_slug}"
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Referer": "https://in.bookmyshow.com/",
     }
     try:
-        res = cffi_requests.get(url, headers=headers, impersonate="chrome124", timeout=8)
+        res = cffi_requests.get(url, headers=headers, impersonate="chrome131", timeout=8)
         if res.status_code == 200:
             matches = re.findall(rf"/movies/{city_slug}/([^/]+)/(ET\d{{8}})", res.text)
             seen = set()
@@ -364,7 +373,15 @@ def main():
                 "{0}x {1}".format(n, labels.get(s, "HTTP-{}".format(s)))
                 for s, n in sorted(non_ok.items())
             )
-            print("  [DIAG] {0}: failures -> {1}".format(cname, detail))
+            diag_sample = LAST_FAILURE_DIAG.get(ccode)
+            extra = ""
+            if diag_sample:
+                extra = " | Sample: Title='{0}', Server={1}, CF-Ray={2}".format(
+                    diag_sample.get("title", ""),
+                    diag_sample.get("server", ""),
+                    diag_sample.get("cf_ray", "")
+                )
+            print("  [DIAG] {0}: failures -> {1}{2}".format(cname, detail, extra))
 
         # Skip pushing if the entire city returned 0 movies — this almost certainly means
         # the scraper was bot-blocked, not that the cinemas closed. Preserves existing KV data.
