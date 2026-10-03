@@ -113,19 +113,31 @@ def scrape_venue_movies(item):
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/124.0.0.0 Safari/537.36"
+            "Chrome/131.0.0.0 Safari/537.36"
         ),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-IN,en-GB;q=0.9,en;q=0.8,hi;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "sec-ch-ua": '"Chromium";v="131", "Google Chrome";v="131", "Not?A_Brand";v="99"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "sec-fetch-dest": "document",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-site": "same-origin",
+        "sec-fetch-user": "?1",
+        "upgrade-insecure-requests": "1",
+        "cache-control": "max-age=0",
         "Referer": "https://in.bookmyshow.com/",
         "x-region-code": ccode,
-        "Cookie": f"Rgn=|Code={ccode}|",
+        "Cookie": "Rgn=|Code={0}|; bms_region={1}; bms_location={2}".format(ccode, ccode.lower(), cslug),
     }
 
     movies = []
     seen = set()
+    parse_error = None
 
     try:
-        res = cffi_requests.get(url, headers=headers, impersonate="chrome124", timeout=REQUEST_TIMEOUT)
+        res = cffi_requests.get(url, headers=headers, impersonate="chrome131", timeout=REQUEST_TIMEOUT)
         if res.status_code != 200:
             return vcode, ccode, [], res.status_code
 
@@ -153,15 +165,15 @@ def scrape_venue_movies(item):
                                             dim = (ce.get("EventDimension") or "").strip()
                                             lang = (ce.get("EventLanguage") or "").strip()
                                             parts = [p for p in [lang, dim] if p]
-                                            full_title = f"{base_title} ({' '.join(parts)})" if parts else base_title
+                                            full_title = "{} ({})".format(base_title, " ".join(parts)) if parts else base_title
                                             movies.append({"code": code, "title": full_title})
                                 else:
                                     code = e.get("EventCode")
                                     if code and code not in seen:
                                         seen.add(code)
                                         movies.append({"code": code, "title": base_title})
-                except Exception:
-                    pass
+                except Exception as ex:
+                    parse_error = str(ex)
 
         # Method 2: Extract from HTML links as fallback/supplement
         # Filters out bottom SEO/footer links by enforcing /movies/{city_slug}/ in path
@@ -175,10 +187,18 @@ def scrape_venue_movies(item):
                 clean_title = re.sub(r"\s*[\(\)]+$", "", clean_title).strip()
                 movies.append({"code": code, "title": clean_title})
 
+        # Return status 901 if we got 200 but no __INITIAL_STATE__ (JS challenge page)
+        if not movies and "window.__INITIAL_STATE__" not in res.text:
+            return vcode, ccode, [], 901
+        # Return status 902 if __INITIAL_STATE__ was present but JSON parse failed
+        if not movies and parse_error:
+            return vcode, ccode, [], 902
+
         return vcode, ccode, movies, 200
 
-    except Exception:
-        return vcode, ccode, [], 0
+    except Exception as ex:
+        return vcode, ccode, [], -1
+
 
 
 def push_city_bundle_to_cloudflare(token: str, city_code: str, venues_map: dict, city_movies: list) -> bool:
@@ -321,6 +341,7 @@ def main():
         city_venues_map = {}
         city_movies_dict = {}
         active_in_city = 0
+        status_counts = {}
 
         # Scrape all venues in this city concurrently
         with ThreadPoolExecutor(max_workers=min(6, len(venue_items) or 1)) as executor:
@@ -328,11 +349,35 @@ def main():
             for fut in as_completed(futures):
                 vcode, _, movies, status = fut.result()
                 city_venues_map[vcode] = movies
+                status_counts[status] = status_counts.get(status, 0) + 1
                 if movies:
                     active_in_city += 1
                     total_movie_instances += len(movies)
                     for m in movies:
                         city_movies_dict[m["code"]] = m["title"]
+
+        # Log diagnostics so we can see exactly what's failing (especially on CI)
+        non_ok = {s: n for s, n in status_counts.items() if s != 200}
+        if non_ok:
+            labels = {901: "no-JS-state(bot-block?)", 902: "parse-err", -1: "conn-err"}
+            detail = ", ".join(
+                "{0}x {1}".format(n, labels.get(s, "HTTP-{}".format(s)))
+                for s, n in sorted(non_ok.items())
+            )
+            print("  [DIAG] {0}: failures -> {1}".format(cname, detail))
+
+        # Skip pushing if the entire city returned 0 movies — this almost certainly means
+        # the scraper was bot-blocked, not that the cinemas closed. Preserves existing KV data.
+        if active_in_city == 0 and len(venue_items) > 0:
+            city_elapsed = time.time() - city_start
+            print(
+                "[{0}/{1}] {2} ({3}): {4} venues scraped -> 0 active "
+                "— skipping KV push to preserve existing data ({5:.2f}s)".format(
+                    idx, len(ordered_cities), cname, ccode, len(venues), city_elapsed
+                )
+            )
+            time.sleep(0.05)
+            continue
 
         # Merge with city explore page if needed
         try:
@@ -353,17 +398,19 @@ def main():
             synced_cities += 1
             total_active_venues += active_in_city
             print(
-                f"[{idx}/{len(ordered_cities)}] {cname} ({ccode}): "
-                f"{len(venues)} venues scraped -> {active_in_city} active ({len(final_city_movies)} unique movies) "
-                f"synced in {city_elapsed:.2f}s [OK]"
+                "[{0}/{1}] {2} ({3}): {4} venues scraped -> {5} active ({6} unique movies) synced in {7:.2f}s [OK]".format(
+                    idx, len(ordered_cities), cname, ccode, len(venues), active_in_city, len(final_city_movies), city_elapsed
+                )
             )
         else:
             print(
-                f"[{idx}/{len(ordered_cities)}] {cname} ({ccode}): "
-                f"{len(venues)} venues scraped but push to Cloudflare failed [ERR]"
+                "[{0}/{1}] {2} ({3}): {4} venues scraped but push to Cloudflare failed [ERR]".format(
+                    idx, len(ordered_cities), cname, ccode, len(venues)
+                )
             )
 
         time.sleep(0.05)
+
 
     elapsed = time.time() - start_time
     print(f"\n[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] === All-India Cinema Catalog Sync Completed ===")
